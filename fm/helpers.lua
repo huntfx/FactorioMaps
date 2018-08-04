@@ -21,6 +21,24 @@ function fm.helpers.makeDay(surface_name_or_index, reset)
         fm.cfg.set("resetDayTick", nil)
     end
 end
+function fm.helpers.makeNight(surface_name_or_index, reset)
+    local surface = game.surfaces[surface_name_or_index]
+
+    if not reset then
+        global["_factoriomaps_" .. surface.name .. "_time"] = surface.daytime
+        fm.cfg.set("resetDay", true)
+        fm.cfg.set("resetDayFor", surface.name)
+        fm.cfg.set("resetDayTick", game.tick)
+        surface.daytime = 0.5
+    else
+        local tempTime = global["_factoriomaps_" .. surface.name .. "_time"] + surface.daytime;
+        if tempTime > 1 then tempTime = tempTime - 1; end
+        surface.daytime = tempTime;
+        fm.cfg.set("resetDay", nil)
+        fm.cfg.set("resetDayFor", nil)
+        fm.cfg.set("resetDayTick", nil)
+    end
+end
 
 function fm.helpers.maxSize(player_name_or_index)
     local player = game.players[player_name_or_index]

@@ -68,6 +68,9 @@ function fm.generateMap(data)
 
     if data.dayOnly then
         fm.helpers.makeDay(data.surfaceName)
+    else
+        -- Set to night then
+        fm.helpers.makeNight(data.surfaceName)
     end
     for z = minZoomLevel, maxZoomLevel, 1 do  -- max and min zoomlevels
         for y = 0, numVScreenshots - 1 do
