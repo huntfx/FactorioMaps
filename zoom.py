@@ -4,15 +4,15 @@ import os, math
 
 
 folder = "../../script-output/FactorioMaps/Images/"
-maxthreads = mp.cpu_count()
-
 ext = ".jpg"
 
+maxthreads = mp.cpu_count()
     
 
 def thread(start, stop, chunks):
-    chunksize = 2**(start-stop)
+    #print(start, stop, chunks)
     for chunk in chunks:
+        chunksize = 2**(start-stop)
         for k in range(start, stop, -1):
             x = chunksize*chunk[0]
             y = chunksize*chunk[1]
@@ -22,7 +22,7 @@ def thread(start, stop, chunks):
                     
                 for j in range(y, y + chunksize, 2):
 
-                    print(k, i, j)
+                    #print(k-1, i/2, j/2)
                     
                     img1 = Image.open(folder + str(k) + "/" + str(i) + "/" + str(j) + ext)
                     size = img1.size[0]
@@ -45,20 +45,33 @@ if __name__ == '__main__':
         first = data.readline().rstrip('\n').split(" ")
         start = int(first[1])
         stop = int(first[0])
-        allChunks = []
+        allBigChunks = []
         for line in data:
-            allChunks.append(map(int, line.rstrip('\n').split(" ")))
+            pos = map(int, line.rstrip('\n').split(" "))
+            allBigChunks.append(pos)
 
-        threads = min(len(allChunks), maxthreads)
-        uneven = len(allChunks) % threads
-        even = int(math.floor(len(allChunks) / threads))
-        i = 0
-        processes = []
-        for t in range(0, threads):
-            p = mp.Process(target=thread, args=(start, stop, allChunks[i:i + even + (uneven > t)]))
-            p.start()
-            processes.append(p)
-            i = i + even + (uneven > t)
-        for p in processes:
-            p.join()
+    threadsplit = min(start - stop, int(math.ceil(math.log(maxthreads/len(allBigChunks), 2)))-1)
+    allChunks = []
+    for pos in allBigChunks:
+        for i in range(2**threadsplit):
+            for j in range(2**threadsplit):
+                allChunks.append((pos[0]*(2**threadsplit) + i, pos[1]*(2**threadsplit) + j))
+
+    threads = min(len(allChunks), maxthreads)
+    uneven = len(allChunks) % threads
+    even = int(math.floor(len(allChunks) / threads))
+    i = 0
+    processes = []
+    for t in range(0, threads):
+        print(start, stop + threadsplit, allChunks[i:i + even + (uneven > t)])
+        p = mp.Process(target=thread, args=(start, stop + threadsplit, allChunks[i:i + even + (uneven > t)]))
+        p.start()
+        processes.append(p)
+        i = i + even + (uneven > t)
+    for p in processes:
+        p.join()
+    print(stop + threadsplit, stop, allBigChunks)
+    p = mp.Process(target=thread, args=(stop + threadsplit, stop, allBigChunks))
+    p.start()
+    p.join()
     

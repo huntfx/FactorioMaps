@@ -75,9 +75,9 @@ function fm.generateMap(data)
 
 
     local pathName = "FactorioMaps/" .. data.folderName .. "/zoomData.txt"
-    local text = minZoomLevel+1 .. " " .. maxZoomLevel
-    for y = 0, numVScreenshots*2 - 1 do
-        for x = 0, numHScreenshots*2 - 1 do
+    local text = minZoomLevel .. " " .. maxZoomLevel
+    for y = 0, numVScreenshots - 1 do
+        for x = 0, numHScreenshots - 1 do
         	text = text .. "\n" .. x .. " " .. y
         end
     end
