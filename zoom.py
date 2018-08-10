@@ -29,10 +29,10 @@ def thread(start, stop, chunks):
                     
                     result = Image.new('RGB', (size, size))
                     
-                    result.paste(box=(0, 0), im=img1.resize((size/2, size/2), Image.BILINEAR))
-                    result.paste(box=(size/2, 0), im=Image.open(folder + str(k) + "/" + str(i+1) + "/" + str(j) + ext).resize((size/2, size/2), Image.BILINEAR))
-                    result.paste(box=(0, size/2), im=Image.open(folder + str(k) + "/" + str(i) + "/" + str(j+1) + ext).resize((size/2, size/2), Image.BILINEAR))
-                    result.paste(box=(size/2, size/2), im=Image.open(folder + str(k) + "/" + str(i+1) + "/" + str(j+1) + ext).resize((size/2, size/2), Image.BILINEAR))
+                    result.paste(box=(0, 0), im=img1.resize((size/2, size/2), Image.ANTIALIAS))
+                    result.paste(box=(size/2, 0), im=Image.open(folder + str(k) + "/" + str(i+1) + "/" + str(j) + ext).resize((size/2, size/2), Image.ANTIALIAS))
+                    result.paste(box=(0, size/2), im=Image.open(folder + str(k) + "/" + str(i) + "/" + str(j+1) + ext).resize((size/2, size/2), Image.ANTIALIAS))
+                    result.paste(box=(size/2, size/2), im=Image.open(folder + str(k) + "/" + str(i+1) + "/" + str(j+1) + ext).resize((size/2, size/2), Image.ANTIALIAS))
 
                     result.save(folder + str(k-1) + "/" + str(i/2) + "/" + str(j/2) + ext)     
 
@@ -50,7 +50,10 @@ if __name__ == '__main__':
             pos = map(int, line.rstrip('\n').split(" "))
             allBigChunks.append(pos)
 
-    threadsplit = min(start - stop, int(math.ceil(math.log(maxthreads/len(allBigChunks), 2)))-1)
+    threadsplit = 0
+    while 4**threadsplit * len(allBigChunks) < maxthreads:
+        threadsplit = threadsplit + 1
+    threadsplit = min(start - stop, threadsplit)
     allChunks = []
     for pos in allBigChunks:
         for i in range(2**threadsplit):
@@ -74,4 +77,5 @@ if __name__ == '__main__':
     p = mp.Process(target=thread, args=(stop + threadsplit, stop, allBigChunks))
     p.start()
     p.join()
+    os.remove(folder + "../zoomData.txt")
     

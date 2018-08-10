@@ -1,4 +1,3 @@
-
 require "stdlib/area/area"
 
 function fm.generateMap(data)
