@@ -72,25 +72,37 @@ function fm.generateMap(data)
         -- Set to night then
         fm.helpers.makeNight(data.surfaceName)
     end
-    for z = minZoomLevel, maxZoomLevel, 1 do  -- max and min zoomlevels
-        if z >= minZoomLevel+1 then -- add +X for larger maps
-            for y = 0, numVScreenshots - 1 do
-                for x = 0, numHScreenshots - 1 do
-                    
-                        if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
-                            extension = "png"
-                        else
-                            extension = "jpg"
-                        end
-                        positionTable = {screenshotTopLeftX + (1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, screenshotTopLeftY + (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
-                        pathText = basePath .. "/Images/" .. z .. "/" .. x .. "/" .. y .. "." .. extension
-                        game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = currentZoomLevel, path = pathText, show_entity_info = data.altInfo})
-                    
-                end
-            end
+
+
+    local pathName = "FactorioMaps/" .. data.folderName .. "/zoomData.txt"
+    local text = minZoomLevel .. " " .. maxZoomLevel
+    for y = 0, numVScreenshots - 1 do
+        for x = 0, numHScreenshots - 1 do
+        	text = text .. "\n" .. x .. " " .. y
         end
-        currentZoomLevel = currentZoomLevel * 2
-        numHScreenshots = numHScreenshots * 2
-        numVScreenshots = numVScreenshots * 2
     end
+    game.write_file(pathName, text, false, data.player_index)
+
+    for z = minZoomLevel, maxZoomLevel - 1, 1 do  -- max and min zoomlevels
+	    currentZoomLevel = currentZoomLevel * 2
+	    numHScreenshots = numHScreenshots * 2
+	    numVScreenshots = numVScreenshots * 2
+    end
+    z = maxZoomLevel
+	    if z >= minZoomLevel+1 then -- add +X for larger maps
+	        for y = 0, numVScreenshots - 1 do
+	            for x = 0, numHScreenshots - 1 do
+	                
+	                    if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
+	                        extension = "png"
+	                    else
+	                        extension = "jpg"
+	                    end
+	                    positionTable = {screenshotTopLeftX + (1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, screenshotTopLeftY + (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
+	                    pathText = basePath .. "/Images/" .. z .. "/" .. x .. "/" .. y .. "." .. extension
+	                    game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = 1, path = pathText, show_entity_info = data.altInfo})
+	                
+	            end
+	        end
+	    end
 end
