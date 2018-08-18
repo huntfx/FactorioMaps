@@ -22,19 +22,26 @@ def thread(start, stop, chunks):
                     
                 for j in range(y, y + chunksize, 2):
 
-                    #print(k-1, i/2, j/2)
-                    
-                    img1 = Image.open(folder + str(k) + "/" + str(i) + "/" + str(j) + ext)
-                    size = img1.size[0]
-                    
-                    result = Image.new('RGB', (size, size))
-                    
-                    result.paste(box=(0, 0), im=img1.resize((size/2, size/2), Image.ANTIALIAS))
-                    result.paste(box=(size/2, 0), im=Image.open(folder + str(k) + "/" + str(i+1) + "/" + str(j) + ext).resize((size/2, size/2), Image.ANTIALIAS))
-                    result.paste(box=(0, size/2), im=Image.open(folder + str(k) + "/" + str(i) + "/" + str(j+1) + ext).resize((size/2, size/2), Image.ANTIALIAS))
-                    result.paste(box=(size/2, size/2), im=Image.open(folder + str(k) + "/" + str(i+1) + "/" + str(j+1) + ext).resize((size/2, size/2), Image.ANTIALIAS))
+                    #print(k, i, j)
 
-                    result.save(folder + str(k-1) + "/" + str(i/2) + "/" + str(j/2) + ext)     
+                    coords = [(0,0), (1,0), (0,1), (1,1)]
+                    paths = ["%s%s/%s/%s%s" % (folder, k, i+coord[0], j+coord[1], ext) for coord in coords]
+
+                    if any(os.path.isfile(path) for path in paths):
+
+                        size = 0
+                        for path in paths:
+                            if (os.path.isfile(path)):
+                                size = Image.open(path).size[0]
+                                break
+
+                        result = Image.new('RGB', (size, size), 0)
+
+                        for m in range(4):
+                            if (os.path.isfile(paths[m])):
+                                result.paste(box=(coords[m][0]*size/2, coords[m][1]*size/2), im=Image.open(paths[m]).resize((size/2, size/2), Image.BILINEAR))
+
+                        result.save(folder + str(k-1) + "/" + str(i/2) + "/" + str(j/2) + ext)     
 
 
             chunksize = chunksize / 2
