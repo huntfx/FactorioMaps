@@ -84,5 +84,5 @@ if __name__ == '__main__':
     p = mp.Process(target=thread, args=(stop + threadsplit, stop, allBigChunks))
     p.start()
     p.join()
-    os.remove(folder + "../zoomData.txt")
+    #os.remove(folder + "../zoomData.txt")
     
