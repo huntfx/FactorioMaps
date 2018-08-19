@@ -99,21 +99,28 @@ function fm.generateMap(data)
 	    numHScreenshots = numHScreenshots * 2
 	    numVScreenshots = numVScreenshots * 2
     end
+    local lastWasActive = false
     z = maxZoomLevel
 	    if z >= minZoomLevel+1 then -- add +X for larger maps
 	        for y = 0, numVScreenshots - 1 do
 	            for x = 0, numHScreenshots - 1 do
-	                    if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
-	                        extension = "png"
-	                    else
-	                        extension = "jpg"
-                        end
+                    if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
+                        extension = "png"
+                    else
+                        extension = "jpg"
+                    end
+                    
                     positionTable = {screenshotTopLeftX + (1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, screenshotTopLeftY + (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
-
-                    if game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable)) then
+                    local isActive = game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable))
+                    if isActive or lastWasActive then
 	                    pathText = basePath .. "/Images/" .. z .. "/" .. x .. "/" .. y .. "." .. extension
-	                    game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = 1, path = pathText, show_entity_info = data.altInfo})
-	                end
+	                    game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
+                    end 
+                    if isActive then
+                        lastWasActive = true
+                    else
+                        lastWasActive = false
+                    end
 	            end
 	        end
 	    end
