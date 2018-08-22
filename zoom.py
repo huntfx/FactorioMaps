@@ -3,7 +3,8 @@ import multiprocessing as mp
 import os, math
 
 
-folder = "../../script-output/FactorioMaps/Images/"
+folder = "../../script-output/FactorioMaps/Images/Day/"
+datapath = "../../script-output/FactorioMaps/zoomData.txt"
 ext = ".jpg"
 
 maxthreads = mp.cpu_count()
@@ -16,7 +17,10 @@ def work(start, stop, chunk):
         y = chunksize*chunk[1]
         for i in range(x, x + chunksize, 2):
             if not os.path.exists(folder + str(k-1) + "/" + str(i/2)):
-                os.makedirs(folder + str(k-1) + "/" + str(i/2))
+                try:
+                    os.makedirs(folder + str(k-1) + "/" + str(i/2))
+                except WindowsError:
+                    pass
                 
             for j in range(y, y + chunksize, 2):
 
@@ -65,7 +69,7 @@ def thread(start, stop, allChunks, queue):
             
 
 if __name__ == '__main__':
-    with open(folder + "../zoomData.txt", "r") as data:
+    with open(datapath, "r") as data:
         first = data.readline().rstrip('\n').split(" ")
         start = int(first[1])
         stop = int(first[0])

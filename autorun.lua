@@ -2,20 +2,31 @@
 
 function fm.autorun(event)
 
-    if fm._autorunday ~= true then
+    event.player_index = 1
 
-        fm.helpers.makeDay(fm.cfg.get("resetDayFor"), true)
-        event.player_index = 1
+    if fm._ticks == nil then
+
         fm.gui.actions.baseSize(event)
-        fm.gui.actions.generate(event)
-        fm._autorunday = true
 
-    elseif fm._autorunnight ~= true
-
-        fm.helpers.makeNight(fm.cfg.get("resetDayFor"), true)
-        event.player_index = 1
+        game.players[event.player_index].surface.daytime = 0
+        fm._forcefolder = "day"
         fm.gui.actions.generate(event)
-        fm._autorunnight = true
+        
+        fm._ticks = 1
+
+    elseif fm._ticks < 2  then
+
+        game.players[event.player_index].surface.daytime = 0.5
+        fm._forcefolder = "night"
+        fm.gui.actions.generate(event)
+
+        fm._ticks = 2
+        
+    elseif fm._ticks < 3  then
+
+        fm._forcefolder = nil
+
+        fm._ticks = 3
 
     end
 end

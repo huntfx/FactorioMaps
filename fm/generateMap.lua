@@ -77,12 +77,12 @@ function fm.generateMap(data)
     local screenshotTopLeftX = inGameCenter.x - screenshotCenter.x
     local screenshotTopLeftY = inGameCenter.y - screenshotCenter.y
 
-    if data.dayOnly then
+    --[[if data.dayOnly then
         fm.helpers.makeDay(data.surfaceName)
     else
         -- Set to night then
         fm.helpers.makeNight(data.surfaceName)
-    end
+    end]]--
 
 
     local pathName = "FactorioMaps/" .. data.folderName .. "/zoomData.txt"
@@ -113,7 +113,7 @@ function fm.generateMap(data)
                     positionTable = {screenshotTopLeftX + (1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, screenshotTopLeftY + (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
                     local isActive = game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable))
                     if isActive or lastWasActive then
-	                    pathText = basePath .. "/Images/" .. z .. "/" .. x .. "/" .. y .. "." .. extension
+	                    pathText = basePath .. "/Images/" .. data.subfolder .. z .. "/" .. x .. "/" .. y .. "." .. extension
 	                    game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
                     end 
                     if isActive then
