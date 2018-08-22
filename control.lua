@@ -19,6 +19,8 @@ require "fm.migrations"
 require "fm.remote"
 require "fm.viewer"
 
+require "autorun"
+
 script.on_init(function()
     global.config = {}
     global.player_data = {}
@@ -44,6 +46,11 @@ script.on_load(function()
     end
 end)
 
+
+script.on_event(defines.events.on_tick, function(event)
+    game.player.print(game.tick)
+ end)
+
 script.on_configuration_changed(function (event)
     for modName,modTable in pairs(event.mod_changes) do
         if modName == "FactorioMaps" and modTable.old_version ~= nil then
@@ -57,10 +64,16 @@ script.on_event(defines.events.on_player_created, function(event)
 end)
 
 script.on_event(defines.events.on_tick, function(event)
-    fm.gui.updateCoords()
-    if fm.cfg.get("resetDay") then
-        if game.tick > fm.cfg.get("resetDayTick") + 3 then
-            fm.helpers.makeDay(fm.cfg.get("resetDayFor"), true)
+
+    if fm.autorun then
+        fm.autorun(event)
+    else
+
+        fm.gui.updateCoords()
+        if fm.cfg.get("resetDay") then
+            if game.tick > fm.cfg.get("resetDayTick") + 3 then
+                fm.helpers.makeDay(fm.cfg.get("resetDayFor"), true)
+            end
         end
     end
 end)
