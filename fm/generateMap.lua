@@ -121,7 +121,8 @@ function fm.generateMap(data)
                     else
                         lastWasActive = false
                     end
-	            end
+                end
+                lastWasActive = false
 	        end
 	    end
 end
