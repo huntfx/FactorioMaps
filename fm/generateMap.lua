@@ -15,7 +15,7 @@ function dump(o)
 function fm.generateMap(data)
     -- delete folder (if it already exists)
     local basePath = "FactorioMaps/" .. data.folderName
-    game.remove_path(basePath)
+    game.remove_path(basePath .. "/Images/" .. data.subfolder)
 
     local mapArea = Area.normalize(Area.round_to_integer({data.topLeft, data.bottomRight}))
     local _ ,inGameTotalWidth, inGameTotalHeight, _ = Area.size(mapArea)
