@@ -93,13 +93,19 @@ function fm.generateMap(data)
     end
     game.write_file(basePath .. "/zoomData.txt", text, false, data.player_index)
     
-    text = "{\n\tticks: " .. game.tick .. ",\n\tseed: " .. game.default_map_gen_settings.seed .. ",\n\tmods: ["
+    text = '{\n\t"ticks": ' .. game.tick .. ',\n\t"seed": ' .. game.default_map_gen_settings.seed .. ',\n\t"mods": ['
+    local comma = false
     for name, version in pairs(game.active_mods) do
         if name ~= "FactorioMaps" then
-            text = text .. "\n\t\t{\n\t\t\tname: " .. name .. ",\n\t\t\tversion: " .. version .. "\n\t\t},"
+            if comma then
+                text = text .. ","
+            else
+                comma = true
+            end
+            text = text .. '\n\t\t{\n\t\t\t"name": "' .. name .. '",\n\t\t\t"version": "' .. version .. '"\n\t\t}'
         end
     end
-    text = text .. "\n\t]\n}\n"
+    text = text .. '\n\t]\n}\n'
 
     game.write_file(basePath .. "/mapInfo.json", text, false, data.player_index)
 
