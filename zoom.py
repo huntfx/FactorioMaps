@@ -1,16 +1,13 @@
 from PIL import Image
 import multiprocessing as mp
-import os, math
+import os, math, sys
 
 
-folder = "../../script-output/FactorioMaps/Test/Images/Day/"
-datapath = "../../script-output/FactorioMaps/Test/zoomData.txt"
+
+    
 ext = ".jpg"
 
-maxthreads = mp.cpu_count()
-    
-
-def work(start, stop, chunk):
+def work(folder, start, stop, chunk):
     chunksize = 2**(start-stop)
     for k in range(start, stop, -1):
         x = chunksize*chunk[0]
@@ -37,7 +34,7 @@ def work(start, stop, chunk):
                             size = Image.open(path).size[0]
                             break
 
-                    result = Image.new('RGB', (size, size), 0x1B2D33)
+                    result = Image.new('RGB', (size, size), (27, 45, 51))
 
                     for m in range(4):
                         if (os.path.isfile(paths[m])):
@@ -48,7 +45,7 @@ def work(start, stop, chunk):
 
         chunksize = chunksize / 2
 
-def thread(start, stop, allChunks, queue):
+def thread(folder, start, stop, allChunks, queue):
     #print(start, stop, chunks)
     try:
         first = True
@@ -59,7 +56,7 @@ def thread(start, stop, allChunks, queue):
                 first = False
             else:
                 print("    (%s, %s)" % chunk)
-            work(start, stop, chunk)
+            work(folder, start, stop, chunk)
     except mp.queues.Empty:
         pass
 
@@ -69,6 +66,17 @@ def thread(start, stop, allChunks, queue):
             
 
 if __name__ == '__main__':
+
+
+
+
+    toppath = (sys.argv[2] if len(sys.argv) > 2 else "../../script-output/FactorioMaps/Test") + "/"
+    folder = os.path.join(toppath, "Images/", (sys.argv[1] if len(sys.argv) > 1 else "Day") + "/")
+    datapath = os.path.join(toppath, "zoomData.txt")
+    maxthreads = mp.cpu_count()
+
+    print(folder)
+    
     with open(datapath, "r") as data:
         first = data.readline().rstrip('\n').split(" ")
         start = int(first[1])
@@ -95,7 +103,7 @@ if __name__ == '__main__':
     
     print("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks)))
     for t in range(0, threads):
-        p = mp.Process(target=thread, args=(start, stop + threadsplit, allChunks, queue))
+        p = mp.Process(target=thread, args=(folder, start, stop + threadsplit, allChunks, queue))
         p.start()
         processes.append(p)
         print("    (%s, %s)" % allChunks[t])
@@ -109,7 +117,7 @@ if __name__ == '__main__':
     processes = []
     i = len(allBigChunks) - 1
     for chunk in allBigChunks:
-        p = mp.Process(target=work, args=(stop + threadsplit, stop, chunk))
+        p = mp.Process(target=work, args=(folder, stop + threadsplit, stop, chunk))
         print("    (%s, %s)" % (chunk[0], chunk[1]))
         i = i - 1
         p.start()
