@@ -204,12 +204,17 @@ function fm.gui.actions.generate(event)
         y = fm.cfg.get("bottomRightY")
     }
 
-    if fm._forcefolder then
-        data.subfolder = fm._forcefolder .. "/"
+    if fm._subfolder then
+        data.subfolder = fm._subfolder .. "/"
     else
         data.subfolder = ""
     end
-    data.folderName = fm.cfg.get("folderName")
+    if fm._topfolder then
+        data.folderName = fm._topfolder .. fm.cfg.get("folderName")
+    else
+        data.folderName = fm.cfg.get("folderName")
+    end
+
     data.gridSizeIndex = fm.cfg.get("gridSize")
     data.extension = fm.cfg.get("extension")
     data.dayOnly = fm.cfg.get("dayOnly")

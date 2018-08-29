@@ -3,7 +3,7 @@ import multiprocessing as mp
 import os, math
 
 
-folder = "../../script-output/FactorioMaps/Images/Day/"
+folder = "../../script-output/FactorioMaps/Images/Night/"
 datapath = "../../script-output/FactorioMaps/zoomData.txt"
 ext = ".jpg"
 
