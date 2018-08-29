@@ -3,8 +3,8 @@ import multiprocessing as mp
 import os, math
 
 
-folder = "../../script-output/FactorioMaps/Images/Night/"
-datapath = "../../script-output/FactorioMaps/zoomData.txt"
+folder = "../../script-output/FactorioMaps/Test/Images/Day/"
+datapath = "../../script-output/FactorioMaps/Test/zoomData.txt"
 ext = ".jpg"
 
 maxthreads = mp.cpu_count()
@@ -37,7 +37,7 @@ def work(start, stop, chunk):
                             size = Image.open(path).size[0]
                             break
 
-                    result = Image.new('RGB', (size, size), 0)
+                    result = Image.new('RGB', (size, size), 0x1B2D33)
 
                     for m in range(4):
                         if (os.path.isfile(paths[m])):

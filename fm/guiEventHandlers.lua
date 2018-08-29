@@ -210,7 +210,7 @@ function fm.gui.actions.generate(event)
         data.subfolder = ""
     end
     if fm._topfolder then
-        data.folderName = fm._topfolder .. fm.cfg.get("folderName")
+        data.folderName = fm._topfolder
     else
         data.folderName = fm.cfg.get("folderName")
     end

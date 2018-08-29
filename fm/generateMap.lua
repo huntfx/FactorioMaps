@@ -85,14 +85,23 @@ function fm.generateMap(data)
     end]]--
 
 
-    local pathName = "FactorioMaps/" .. data.folderName .. "/zoomData.txt"
     local text = minZoomLevel .. " " .. maxZoomLevel
     for y = 0, numVScreenshots - 1 do
         for x = 0, numHScreenshots - 1 do
         	text = text .. "\n" .. x .. " " .. y
         end
     end
-    game.write_file(pathName, text, false, data.player_index)
+    game.write_file(basePath .. "/zoomData.txt", text, false, data.player_index)
+    
+    text = "{\n\tticks: " .. game.tick .. ",\n\tseed: " .. game.default_map_gen_settings.seed .. ",\n\tmods: ["
+    for name, version in pairs(game.active_mods) do
+        if name ~= "FactorioMaps" then
+            text = text .. "\n\t\t{\n\t\t\tname: " .. name .. ",\n\t\t\tversion: " .. version .. "\n\t\t},"
+        end
+    end
+    text = text .. "\n\t]\n}\n"
+
+    game.write_file(basePath .. "/mapInfo.json", text, false, data.player_index)
 
     for z = minZoomLevel, maxZoomLevel - 1, 1 do  -- max and min zoomlevels
 	    currentZoomLevel = currentZoomLevel * 2
