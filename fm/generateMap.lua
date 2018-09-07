@@ -84,17 +84,16 @@ function fm.generateMap(data)
         fm.helpers.makeNight(data.surfaceName)
     end]]--
 
-
-    local text = minZoomLevel .. " " .. maxZoomLevel
-    for y = 0, numVScreenshots - 1 do
-        for x = 0, numHScreenshots - 1 do
+    local text = (minZoomLevel + 20 - maxZoomLevel) .. " " .. 20
+    for y = math.floor(screenshotTopLeftX/32/math.pow(2, maxZoomLevel-minZoomLevel)), numHScreenshots - 1 + math.ceil(screenshotTopLeftX/32/math.pow(2, maxZoomLevel-minZoomLevel)) do
+        for x = math.floor(screenshotTopLeftY/32/math.pow(2, maxZoomLevel-minZoomLevel)), numHScreenshots - 1 + math.ceil(screenshotTopLeftY/32/math.pow(2, maxZoomLevel-minZoomLevel)) do
         	text = text .. "\n" .. x .. " " .. y
         end
     end
     game.write_file(basePath .. "/zoomData.txt", text, false, data.player_index)
     
     text = '{\n\t"ticks": ' .. game.tick .. ',\n\t"seed": ' .. game.default_map_gen_settings.seed .. ',\n\t"mods": ['
-    local comma = false
+    local comma = false 
     for name, version in pairs(game.active_mods) do
         if name ~= "FactorioMaps" then
             if comma then
@@ -105,7 +104,7 @@ function fm.generateMap(data)
             text = text .. '\n\t\t{\n\t\t\t"name": "' .. name .. '",\n\t\t\t"version": "' .. version .. '"\n\t\t}'
         end
     end
-    text = text .. '\n\t]\n}\n'
+    text = text .. '\n\t],\n\t"center": [' .. screenshotTopLeftX/32 .. ', ' .. screenshotTopLeftY/32 .. ']\n}\n'
 
     game.write_file(basePath .. "/mapInfo.json", text, false, data.player_index)
 
@@ -115,27 +114,23 @@ function fm.generateMap(data)
 	    numVScreenshots = numVScreenshots * 2
     end
     local lastWasActive = false
-    z = maxZoomLevel
+    z = 20
 	    if z >= minZoomLevel+1 then -- add +X for larger maps
-	        for y = 0, numVScreenshots - 1 do
-	            for x = 0, numHScreenshots - 1 do
+	        for y = math.floor(screenshotTopLeftX/32), numVScreenshots - 1 + math.ceil(screenshotTopLeftX/32) do
+	            for x = math.floor(screenshotTopLeftY/32), numHScreenshots - 1 + math.ceil(screenshotTopLeftY/32) do
                     if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
                         extension = "png"
                     else
                         extension = "jpg"
                     end
                     
-                    positionTable = {screenshotTopLeftX + (1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, screenshotTopLeftY + (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
+                    positionTable = {(1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
                     local isActive = game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable))
                     if isActive or lastWasActive then
 	                    pathText = basePath .. "/Images/" .. data.subfolder .. z .. "/" .. x .. "/" .. y .. "." .. extension
 	                    game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
                     end 
-                    if isActive then
-                        lastWasActive = true
-                    else
-                        lastWasActive = false
-                    end
+                    lastWasActive = isActive
                 end
                 lastWasActive = false
 	        end
