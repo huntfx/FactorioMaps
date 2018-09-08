@@ -71,46 +71,57 @@ script.on_event(defines.events.on_tick, function(event)
     
         if fm._ticks == nil then
         
-            fm._topfolder = fm.autorun.path
+            fm._topfolder = "FactorioMaps/" .. fm.autorun.path
+            game.remove_path(fm._topfolder)
+            
+            fm.gui.actions.baseSize(event)
+            
+            -- remove no path sign
+            for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type="flying-text"})) do
+                entity.destroy()
+            end
             
             -- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
             for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({})) do
                 entity.active = false
             end
+
+            if fm.autorun.night then
+                game.players[event.player_index].surface.daytime = 0.5
+                fm._subfolder = "night"
+                fm._render_light = true
+                fm.gui.actions.generate(event)
+                fm._render_light = false
+            end
             
+            fm._ticks = 1
+
+        elseif fm._ticks < 2 then
+            
+            if fm.autorun.night then
+                game.write_file(fm._topfolder .. "/done-night.txt", "", false, event.player_index)
+            end
+    
             -- remove no path sign
             for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type="flying-text"})) do
                 entity.destroy()
             end
-    
-            fm.gui.actions.baseSize(event)
-    
+
             if fm.autorun.day then
                 game.players[event.player_index].surface.daytime = 0
                 fm._subfolder = "day"
                 fm.gui.actions.generate(event)
             end
-            
-            fm._ticks = 1
-    
-        elseif fm._ticks < 2  then
-            
-            -- remove no path sign
-            for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type="flying-text"})) do
-                entity.destroy()
-            end
-    
-            
-            if fm.autorun.night then
-                game.players[event.player_index].surface.daytime = 0.5
-                fm._subfolder = "night"
-                fm.gui.actions.generate(event)
-            end
     
             fm._ticks = 2
-            
-        elseif fm._ticks < 3  then
     
+        elseif fm._ticks < 3 then
+            
+            if fm.autorun.day then
+                game.write_file(fm._topfolder .. "/done-day.txt", "", false, event.player_index)
+            end
+            
+            -- unfreeze all entities
             for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({})) do
                 entity.active = true
             end
@@ -119,7 +130,7 @@ script.on_event(defines.events.on_tick, function(event)
             fm._topfolder = nil
     
             fm._ticks = 3
-    
+
         end
 
     else

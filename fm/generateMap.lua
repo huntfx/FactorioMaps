@@ -14,8 +14,8 @@ function dump(o)
  end
 function fm.generateMap(data)
     -- delete folder (if it already exists)
-    local basePath = "FactorioMaps/" .. data.folderName
-    game.remove_path(basePath .. "/Images/" .. data.subfolder)
+    local basePath = data.folderName
+    game.remove_path(basePath .. "/Images/" .. data.subfolder .. "/")
 
     local mapArea = Area.normalize(Area.round_to_integer({data.topLeft, data.bottomRight}))
     local _ ,inGameTotalWidth, inGameTotalHeight, _ = Area.size(mapArea)
@@ -104,7 +104,7 @@ function fm.generateMap(data)
             text = text .. '\n\t\t{\n\t\t\t"name": "' .. name .. '",\n\t\t\t"version": "' .. version .. '"\n\t\t}'
         end
     end
-    text = text .. '\n\t],\n\t"center": [' .. screenshotTopLeftX/32 .. ', ' .. screenshotTopLeftY/32 .. ']\n}\n'
+    text = text .. '\n\t]\n}'
 
     game.write_file(basePath .. "/mapInfo.json", text, false, data.player_index)
 
@@ -113,26 +113,60 @@ function fm.generateMap(data)
 	    numHScreenshots = numHScreenshots * 2
 	    numVScreenshots = numVScreenshots * 2
     end
-    local lastWasActive = false
+
+    local cropText = ""
+
+    --local lastWasActive = false
     z = 20
-	    if z >= minZoomLevel+1 then -- add +X for larger maps
-	        for y = math.floor(screenshotTopLeftX/32), numVScreenshots - 1 + math.ceil(screenshotTopLeftX/32) do
-	            for x = math.floor(screenshotTopLeftY/32), numHScreenshots - 1 + math.ceil(screenshotTopLeftY/32) do
-                    if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
-                        extension = "png"
-                    else
-                        extension = "jpg"
-                    end
-                    
-                    positionTable = {(1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
-                    local isActive = game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable))
-                    if isActive or lastWasActive then
-	                    pathText = basePath .. "/Images/" .. data.subfolder .. z .. "/" .. x .. "/" .. y .. "." .. extension
-	                    game.take_screenshot({by_player=game.players[data.player_index], position = positionTable, resolution = {gridSize, gridSize}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
-                    end 
-                    lastWasActive = isActive
+    if z >= minZoomLevel+1 then -- add +X for larger maps
+        -- local lastAllActive = {}
+        for y = math.floor(screenshotTopLeftX/32), numVScreenshots - 1 + math.ceil(screenshotTopLeftX/32) do
+            --local allActive = {}
+            --local i = 0
+            for x = math.floor(screenshotTopLeftY/32), numHScreenshots - 1 + math.ceil(screenshotTopLeftY/32) do
+                if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
+                    extension = "png"
+                else
+                    extension = "jpg"
                 end
-                lastWasActive = false
-	        end
-	    end
+
+                positionTable = {(1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
+                    
+                local isActive = game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable))
+                --allActive[i] = isActive
+                if isActive then -- or lastWasActive or lastAllActive[i] then
+                
+                    local box = { positionTable[1], positionTable[2], (positionTable[1] + gridSize/32), (positionTable[2] + gridSize/32) } -- -X -Y X Y
+                    if data.render_light then
+                        for _, t in pairs(game.players[data.player_index].surface.find_entities_filtered{area={{box[1] - 16, box[2] - 16}, {box[3] + 16, box[4] + 16}}, type="lamp"}) do 
+                            if t.position.x < box[1] then
+                                box[1] = t.position.x + 0.46875  --15/32, makes it so 1 pixel remains of the lamp
+                            elseif t.position.x > box[3] then
+                                box[3] = t.position.x - 0.46875
+                            end
+                            if t.position.y < box[2] then
+                                box[2] = t.position.y + 0.46875
+                            elseif t.position.y > box[4] then
+                                box[4] = t.position.y - 0.46875
+                            end
+                        end
+                        if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridSize/32 or box[4] > positionTable[2] + gridSize/32 then
+                            cropText = cropText .. "\n" .. x .. " " .. y .. " " .. (positionTable[1] - box[1])*32 .. " " .. (positionTable[2] - box[2])*32
+                        end
+                    end
+
+                    pathText = basePath .. "/Images/" .. data.subfolder .. "/" .. z .. "/" .. x .. "/" .. y .. "." .. extension
+                    game.take_screenshot({by_player=game.players[data.player_index], position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
+                end 
+                --lastWasActive = isActive
+                --i = i + 1
+            end
+            --lastWasActive = false
+            --lastAllActive = allActive
+        end
+    end
+        
+    if data.render_light then
+        game.write_file(basePath .. "/crop-" .. data.subfolder .. ".txt", gridSize .. cropText, false, data.player_index)
+    end
 end

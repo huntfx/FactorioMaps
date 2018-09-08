@@ -1,6 +1,6 @@
 function fm.generateIndex(data)
     -- generate index.html
-    local pathName = "FactorioMaps/" .. data.folderName .. "/index.html"
+    local pathName = data.folderName .. "/index.html"
 
     local googleKey = ""
     if (data.googleKey ~= nil) and (data.googleKey ~= "") then

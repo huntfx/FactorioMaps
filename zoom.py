@@ -89,7 +89,7 @@ if __name__ == '__main__':
     threadsplit = 0
     while 4**threadsplit * len(allBigChunks) < maxthreads:
         threadsplit = threadsplit + 1
-    threadsplit = min(start - stop, threadsplit)
+    threadsplit = min(start - stop, threadsplit + 4)
     allChunks = []
     queue = mp.Queue()
     for pos in allBigChunks:
