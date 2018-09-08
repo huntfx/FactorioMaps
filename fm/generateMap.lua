@@ -1,5 +1,7 @@
 
 require "stdlib/area/area"
+require "stdlib/area/chunk"
+
 function dump(o)
     if type(o) == 'table' then
        local s = '{ '
@@ -12,23 +14,74 @@ function dump(o)
        return tostring(o)
     end
  end
+
+
 function fm.generateMap(data)
     -- delete folder (if it already exists)
     local basePath = data.folderName
     game.remove_path(basePath .. "/Images/" .. data.subfolder .. "/")
 
-    local mapArea = Area.normalize(Area.round_to_integer({data.topLeft, data.bottomRight}))
-    local _ ,inGameTotalWidth, inGameTotalHeight, _ = Area.size(mapArea)
-    local inGameCenter = Area.center(mapArea)
 
-    --Resolution to use for grid sections
-    local gridSizes = {256, 512, 1024, 2048}
+    
+    -- Number of pixels in an image
+    local gridSizes = {256, 512, 1024} -- cant have 2048 anymore. code now relies on it being smaller than one game chunk (32 tiles * 32 pixels)
     local gridSize = gridSizes[data.gridSizeIndex]
 
     -- These are the number of tiles per grid section
-    -- gridPixelSize[x] = gridSize[x] / 32 -- 32 is a hardcoded Factorio value for pixels per tile.
-    local gridPixelSizes = {8, 16, 32, 64}
-    local gridPixelSize = gridPixelSizes[data.gridSizeIndex]
+    local gridPixelSize = gridSize / 32 -- 32 is a hardcoded Factorio value for pixels per tile.
+
+
+
+    local player = game.players[data.player_index]
+    
+    local minX = nil
+    local minY = nil
+    local maxX = nil
+    local maxY = nil
+
+    local buildChunks = {}
+    local allGrid = {}
+    for chunk in player.surface.get_chunks() do
+        if player.force.is_chunk_charted(player.surface, chunk) then
+            for gridX = chunk.x * 32 / gridPixelSize, (chunk.x + 1) * 32 / gridPixelSize - 1 do
+                for gridY = chunk.y * 32 / gridPixelSize, (chunk.y + 1) * 32 / gridPixelSize - 1 do
+                    for k = 0, fm.autorun.around_build_range, 1 do
+                        for l = 0, fm.autorun.around_build_range, 1 do
+                            for i = -k, k, 2*k do
+                                for j = -l, l, 2*l do
+                                    if math.pow(2, i) + math.pow(2, j) <= math.pow(2, fm.autorun.around_build_range + .5) then
+                                        local x = gridX + i
+                                        local y = gridY + j
+                                        local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
+                                        if buildChunks[x .. " " .. y] == nil then
+                                            buildChunks[x .. " " .. y] = player.surface.count_entities_filtered({ force=player.force.name, area=area }) > player.surface.count_entities_filtered({ force=player.force.name, area=area, type="player" })
+                                        end
+                                        if buildChunks[x .. " " .. y] then
+                                            allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+
+                                            minX = fm.helpers.getMin(minX, area[1][1])
+                                            minY = fm.helpers.getMin(minY, area[1][2])
+                            
+                                            maxX = fm.helpers.getMax(maxX, area[2][1])
+                                            maxY = fm.helpers.getMax(maxY, area[2][2])
+                                            goto done
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    ::done::
+                end
+            end
+        end
+    end
+    
+
+    local mapArea = Area.normalize(Area.round_to_integer({{minX, minY}, {maxX, maxY}}))
+    local _ ,inGameTotalWidth, inGameTotalHeight, _ = Area.size(mapArea)
+    local inGameCenter = Area.center(mapArea)
+
 
     local minZoomLevel = data.gridSizeIndex
     local maxZoomLevel = 0 -- default
@@ -55,24 +108,16 @@ function fm.generateMap(data)
     data.index.gridSize = gridSize
     data.index.gridPixelSize = gridPixelSize
 
-    --Temp variables used in loops
-    local currentZoomLevel = 0;
-    if data.extraZoomIn ~= true then
-        currentZoomLevel = 1 / 2 ^ (maxZoomLevel + 1 - minZoomLevel) -- counter for measuring zoom, 1/1, 1/2,1/4,1/8 etc
-    else
-        currentZoomLevel = 1 / 2 ^ (maxZoomLevel - minZoomLevel) -- counter for measuring zoom, 1/1, 1/2,1/4,1/8 etc
-    end
-    local extension = ""
+    local extension = "jpg"
     local pathText = ""
     local positionText = ""
     local resolutionText = ""
-    local screenshotSize = gridPixelSize / currentZoomLevel
-    local numHScreenshots = math.ceil(inGameTotalWidth / screenshotSize)
-    local numVScreenshots =  math.ceil(inGameTotalHeight / screenshotSize)
+    local numHScreenshots = math.ceil(inGameTotalWidth / gridPixelSize)
+    local numVScreenshots =  math.ceil(inGameTotalHeight / gridPixelSize)
 
     --Aligns the center of the Google map with the center of the coords we are making a map of.
-    local screenshotWidth = screenshotSize * numHScreenshots
-    local screenshotHeight = screenshotSize * numVScreenshots
+    local screenshotWidth = gridPixelSize * numHScreenshots
+    local screenshotHeight = gridPixelSize * numVScreenshots
     local screenshotCenter = {x = screenshotWidth / 2, y = screenshotHeight / 2}
     local screenshotTopLeftX = inGameCenter.x - screenshotCenter.x
     local screenshotTopLeftY = inGameCenter.y - screenshotCenter.y
@@ -85,8 +130,8 @@ function fm.generateMap(data)
     end]]--
 
     local text = (minZoomLevel + 20 - maxZoomLevel) .. " " .. 20
-    for y = math.floor(screenshotTopLeftX/32/math.pow(2, maxZoomLevel-minZoomLevel)), numHScreenshots - 1 + math.ceil(screenshotTopLeftX/32/math.pow(2, maxZoomLevel-minZoomLevel)) do
-        for x = math.floor(screenshotTopLeftY/32/math.pow(2, maxZoomLevel-minZoomLevel)), numHScreenshots - 1 + math.ceil(screenshotTopLeftY/32/math.pow(2, maxZoomLevel-minZoomLevel)) do
+    for y = math.floor(minX/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)), math.ceil(maxX/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)) do
+        for x = math.floor(minY/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)), math.ceil(maxY/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)) do
         	text = text .. "\n" .. x .. " " .. y
         end
     end
@@ -108,65 +153,39 @@ function fm.generateMap(data)
 
     game.write_file(basePath .. "/mapInfo.json", text, false, data.player_index)
 
-    for z = minZoomLevel, maxZoomLevel - 1, 1 do  -- max and min zoomlevels
-	    currentZoomLevel = currentZoomLevel * 2
-	    numHScreenshots = numHScreenshots * 2
-	    numVScreenshots = numVScreenshots * 2
-    end
 
     local cropText = ""
 
-    --local lastWasActive = false
-    z = 20
-    if z >= minZoomLevel+1 then -- add +X for larger maps
-        -- local lastAllActive = {}
-        for y = math.floor(screenshotTopLeftX/32), numVScreenshots - 1 + math.ceil(screenshotTopLeftX/32) do
-            --local allActive = {}
-            --local i = 0
-            for x = math.floor(screenshotTopLeftY/32), numHScreenshots - 1 + math.ceil(screenshotTopLeftY/32) do
-                if((data.extension == 2 and z == maxZoomLevel) or data.extension == 3) then
-                    extension = "png"
-                else
-                    extension = "jpg"
+    for _, chunk in pairs(allGrid) do   
+        --game.print(chunk)
+
+        positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
+
+        local box = { positionTable[1], positionTable[2], (positionTable[1] + gridPixelSize), (positionTable[2] + gridPixelSize) } -- -X -Y X Y
+        if data.render_light then
+            for _, t in pairs(player.surface.find_entities_filtered{area={{box[1] - 16, box[2] - 16}, {box[3] + 16, box[4] + 16}}, type="lamp"}) do 
+                if t.position.x < box[1] then
+                    box[1] = t.position.x + 0.46875  --15/32, makes it so 1 pixel remains of the lamp
+                elseif t.position.x > box[3] then
+                    box[3] = t.position.x - 0.46875
                 end
-
-                positionTable = {(1 / (2 * currentZoomLevel)) * gridPixelSize + x * (1 / currentZoomLevel) * gridPixelSize, (1 / (2 * currentZoomLevel)) * gridPixelSize + y * (1 / currentZoomLevel) * gridPixelSize}
-                    
-                local isActive = game.forces["player"].is_chunk_charted(1, Chunk.from_position(positionTable))
-                --allActive[i] = isActive
-                if isActive then -- or lastWasActive or lastAllActive[i] then
-                
-                    local box = { positionTable[1], positionTable[2], (positionTable[1] + gridSize/32), (positionTable[2] + gridSize/32) } -- -X -Y X Y
-                    if data.render_light then
-                        for _, t in pairs(game.players[data.player_index].surface.find_entities_filtered{area={{box[1] - 16, box[2] - 16}, {box[3] + 16, box[4] + 16}}, type="lamp"}) do 
-                            if t.position.x < box[1] then
-                                box[1] = t.position.x + 0.46875  --15/32, makes it so 1 pixel remains of the lamp
-                            elseif t.position.x > box[3] then
-                                box[3] = t.position.x - 0.46875
-                            end
-                            if t.position.y < box[2] then
-                                box[2] = t.position.y + 0.46875
-                            elseif t.position.y > box[4] then
-                                box[4] = t.position.y - 0.46875
-                            end
-                        end
-                        if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridSize/32 or box[4] > positionTable[2] + gridSize/32 then
-                            cropText = cropText .. "\n" .. x .. " " .. y .. " " .. (positionTable[1] - box[1])*32 .. " " .. (positionTable[2] - box[2])*32
-                        end
-                    end
-
-                    pathText = basePath .. "/Images/" .. data.subfolder .. "/" .. z .. "/" .. x .. "/" .. y .. "." .. extension
-                    game.take_screenshot({by_player=game.players[data.player_index], position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
-                end 
-                --lastWasActive = isActive
-                --i = i + 1
+                if t.position.y < box[2] then
+                    box[2] = t.position.y + 0.46875
+                elseif t.position.y > box[4] then
+                    box[4] = t.position.y - 0.46875
+                end
             end
-            --lastWasActive = false
-            --lastAllActive = allActive
+            if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridPixelSize or box[4] > positionTable[2] + gridPixelSize then
+                cropText = cropText .. "\n" .. chunk.x .. " " .. chunk.y .. " " .. (positionTable[1] - box[1])*32 .. " " .. (positionTable[2] - box[2])*32
+            end
         end
-    end
-        
+
+        pathText = basePath .. "/Images/" .. data.subfolder .. "/20/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
+        game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
+    end 
+    
     if data.render_light then
         game.write_file(basePath .. "/crop-" .. data.subfolder .. ".txt", gridSize .. cropText, false, data.player_index)
     end
+    
 end
