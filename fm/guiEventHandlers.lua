@@ -205,14 +205,14 @@ function fm.gui.actions.generate(event)
     }
 
     if fm._subfolder then
-        data.subfolder = fm._subfolder .. "/"
+        data.subfolder = fm._subfolder
     else
         data.subfolder = ""
     end
     if fm._topfolder then
         data.folderName = fm._topfolder
     else
-        data.folderName = fm.cfg.get("folderName")
+        data.folderName = "FactorioMaps/" .. fm.cfg.get("folderName")
     end
 
     data.gridSizeIndex = fm.cfg.get("gridSize")
@@ -220,6 +220,7 @@ function fm.gui.actions.generate(event)
     data.dayOnly = fm.cfg.get("dayOnly")
     data.altInfo = fm.cfg.get("altInfo")
     data.extraZoomIn = fm.cfg.get("extraZoomIn")
+    data.render_light = fm._render_light
     data.surfaceName = player.surface.name
     data.player_index = player.index
 
