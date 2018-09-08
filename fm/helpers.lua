@@ -91,7 +91,6 @@ function fm.helpers.cropToBase(player_name_or_index)
                 maxY = fm.helpers.getMax(maxY, tmpChunk.right_bottom.y)
             end
         end
-
     end
 
     if(minX ~= nil and minY ~= nil and maxX ~= nil and maxY ~= nil) then
