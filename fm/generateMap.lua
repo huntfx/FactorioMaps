@@ -47,14 +47,16 @@ function fm.generateMap(data)
                 for gridY = chunk.y * 32 / gridPixelSize, (chunk.y + 1) * 32 / gridPixelSize - 1 do
                     for k = 0, fm.autorun.around_build_range, 1 do
                         for l = 0, fm.autorun.around_build_range, 1 do
-                            for i = -k, k, 2*k do
-                                for j = -l, l, 2*l do
+                            for m = -1, k > 0 and 1 or -1, 2 do
+                                for n = -1, l > 0 and 1 or -1, 2 do
+                                    local i = k * m
+                                    local j = l * n
                                     if math.pow(2, i) + math.pow(2, j) <= math.pow(2, fm.autorun.around_build_range + .5) then
                                         local x = gridX + i
                                         local y = gridY + j
                                         local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
                                         if buildChunks[x .. " " .. y] == nil then
-                                            buildChunks[x .. " " .. y] = player.surface.count_entities_filtered({ force=player.force.name, area=area }) > player.surface.count_entities_filtered({ force=player.force.name, area=area, type="player" })
+                                            buildChunks[x .. " " .. y] = player.surface.count_entities_filtered({ force=player.force.name, area=area }) > player.surface.count_entities_filtered({ force=player.force.name, area=area, type={"player", "lamp", "electric-pole"} })
                                         end
                                         if buildChunks[x .. " " .. y] then
                                             allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
