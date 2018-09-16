@@ -24,10 +24,17 @@ def work(line, imgsize, folder):
 
 if __name__ == '__main__':
 
+    subname = (sys.argv[1] if len(sys.argv) > 1 else "Night")
     toppath = (sys.argv[2] if len(sys.argv) > 2 else "../../script-output/FactorioMaps/Test") + "/"
-    folder = os.path.join(toppath, "Images/", (sys.argv[1] if len(sys.argv) > 1 else "Night") + "/20/")
-    datapath = os.path.join(toppath, "crop-" + (sys.argv[1] if len(sys.argv) > 1 else "Night") + ".txt")
+    folder = os.path.join(toppath, "Images/", subname + "/20/")
+    datapath = os.path.join(toppath, "crop-" + subname + ".txt")
     maxthreads = mp.cpu_count()
+
+    
+    if not os.path.exists(datapath):
+        print("waiting for crop-" + subname + ".txt")
+        while not os.path.exists(datapath):
+            time.sleep(1)
 
     print(folder)
     
