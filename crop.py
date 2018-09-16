@@ -1,6 +1,6 @@
 from PIL import Image
 import multiprocessing as mp
-import os, math, sys, time
+import os, math, sys, time, psutil
 from functools import partial
 
 

@@ -13,3 +13,4 @@ data.raw["utility-sprites"].default["recharge_icon"]["filename"] = "__FactorioMa
 data.raw["utility-sprites"].default["too_far_from_roboport_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
 data.raw["utility-sprites"].default["warning_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
 data.raw["item-request-proxy"]["item-request-proxy"].picture.filename = "__FactorioMaps__/graphics/empty64.png"
+
