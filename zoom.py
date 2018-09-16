@@ -1,6 +1,6 @@
 from PIL import Image
 import multiprocessing as mp
-import os, math, sys
+import os, math, sys, time
 
 
 
@@ -69,13 +69,19 @@ if __name__ == '__main__':
 
 
 
-
+    subname = (sys.argv[1] if len(sys.argv) > 1 else "Day")
     toppath = (sys.argv[2] if len(sys.argv) > 2 else "../../script-output/FactorioMaps/Test") + "/"
-    folder = os.path.join(toppath, "Images/", (sys.argv[1] if len(sys.argv) > 1 else "Day") + "/")
+    folder = os.path.join(toppath, "Images/", subname + "/")
     datapath = os.path.join(toppath, "zoomData.txt")
     maxthreads = mp.cpu_count()
 
     print(folder)
+
+    waitfilename = os.path.join(toppath, "done-" + subname + ".txt")
+    if not os.path.exists(waitfilename):
+        print("waiting for done-" + subname + ".txt")
+        while not os.path.exists(waitfilename):
+            time.sleep(1)
     
     with open(datapath, "r") as data:
         first = data.readline().rstrip('\n').split(" ")

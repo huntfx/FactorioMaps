@@ -33,6 +33,42 @@ function fm.generateMap(data)
 
 
     local player = game.players[data.player_index]
+
+    
+    local blacklist = {
+        "water",
+        "dirt",
+        "grass",
+        "lab",
+        "out-of-map",
+        "desert",
+        "sand",
+        "tutorial",
+        "ghost"
+    }
+
+
+    local tilenamedict = {}
+    for _, item in pairs(game.item_prototypes) do 
+        if item.place_as_tile_result ~= nil and tilenamedict[item.place_as_tile_result.result.name] == nil then
+            for _, keyword in pairs(blacklist) do
+                if string.match(item.place_as_tile_result.result.name, keyword) then
+                    tilenamedict[item.place_as_tile_result.result.name] = false
+                    goto continue
+                end
+            end
+            tilenamedict[item.place_as_tile_result.result.name] = true
+        end
+        ::continue::
+    end
+    local tilenames = {}
+    for tilename, value in pairs(tilenamedict) do
+        if value then
+            tilenames[#tilenames+1] = tilename
+        end
+    end
+
+
     
     local minX = nil
     local minY = nil
@@ -47,18 +83,29 @@ function fm.generateMap(data)
                 for gridY = chunk.y * 32 / gridPixelSize, (chunk.y + 1) * 32 / gridPixelSize - 1 do
                     for k = 0, fm.autorun.around_build_range, 1 do
                         for l = 0, fm.autorun.around_build_range, 1 do
-                            for m = -1, k > 0 and 1 or -1, 2 do
-                                for n = -1, l > 0 and 1 or -1, 2 do
+                            for m = 1, k > 0 and -1 or 1, -2 do
+                                for n = 1, l > 0 and -1 or 1, -2 do
                                     local i = k * m
                                     local j = l * n
-                                    if math.pow(2, i) + math.pow(2, j) <= math.pow(2, fm.autorun.around_build_range + .5) then
-                                        local x = gridX + i
-                                        local y = gridY + j
+                                    if math.pow(i, 2) + math.pow(j, 2) <= math.pow(fm.autorun.around_build_range + 0.5, 2) then
+                                        local x = gridX + i + (32 / gridPixelSize - 1) / 2
+                                        local y = gridY + j + (32 / gridPixelSize - 1) / 2
                                         local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
                                         if buildChunks[x .. " " .. y] == nil then
-                                            buildChunks[x .. " " .. y] = player.surface.count_entities_filtered({ force=player.force.name, area=area }) > player.surface.count_entities_filtered({ force=player.force.name, area=area, type={"player", "lamp", "electric-pole"} })
+                                            local powerCount = 0
+                                            if fm.autorun.smaller_types and #fm.autorun.smaller_types > 0 then
+                                                powerCount = player.surface.count_entities_filtered({ force=player.force.name, area=area, type=fm.autorun.smaller_types })
+                                            end
+                                            local excludeCount = powerCount + player.surface.count_entities_filtered({ force=player.force.name, area=area, type={"player"} })
+                                            if player.surface.count_entities_filtered({ force=player.force.name, area=area, limit=excludeCount + 1 }) > excludeCount or player.surface.count_tiles_filtered({ area=area, limit=excludeCount + 1, name=tilenames }) > 0 then
+                                                buildChunks[x .. " " .. y] = 2
+                                            elseif powerCount > 0 then
+                                                buildChunks[x .. " " .. y] = 1
+                                            else
+                                                buildChunks[x .. " " .. y] = 0
+                                            end
                                         end
-                                        if buildChunks[x .. " " .. y] then
+                                        if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and math.pow(i, 2) + math.pow(j, 2) <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
                                             allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
 
                                             minX = fm.helpers.getMin(minX, area[1][1])
@@ -163,7 +210,7 @@ function fm.generateMap(data)
 
         positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
 
-        local box = { positionTable[1], positionTable[2], (positionTable[1] + gridPixelSize), (positionTable[2] + gridPixelSize) } -- -X -Y X Y
+        local box = { positionTable[1], positionTable[2], positionTable[1] + gridPixelSize, positionTable[2] + gridPixelSize } -- -X -Y X Y
         if data.render_light then
             for _, t in pairs(player.surface.find_entities_filtered{area={{box[1] - 16, box[2] - 16}, {box[3] + 16, box[4] + 16}}, type="lamp"}) do 
                 if t.position.x < box[1] then
