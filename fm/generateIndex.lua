@@ -1,4 +1,5 @@
 function fm.generateIndex(data)
+end function dummy(data)
     -- generate index.html
     local pathName = data.folderName .. "/index.html"
 

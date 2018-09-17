@@ -2,6 +2,8 @@
 require "stdlib/area/area"
 require "stdlib/area/chunk"
 
+math.log2 = function(x) return math.log(x) / math.log(2) end
+
 function dump(o)
     if type(o) == 'table' then
        local s = '{ '
@@ -70,10 +72,10 @@ function fm.generateMap(data)
 
 
     
-    local minX = nil
-    local minY = nil
-    local maxX = nil
-    local maxY = nil
+    local minX = 0 --spawn area is always 0, 0
+    local minY = 0
+    local maxX = 0
+    local maxY = 0
 
     local buildChunks = {}
     local allGrid = {}
@@ -107,12 +109,18 @@ function fm.generateMap(data)
                                         end
                                         if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and math.pow(i, 2) + math.pow(j, 2) <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
                                             allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+                                            
+                                            local x = gridX + (32 / gridPixelSize - 1) / 2
+                                            local y = gridY + (32 / gridPixelSize - 1) / 2
+                                            local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
 
-                                            minX = fm.helpers.getMin(minX, area[1][1])
-                                            minY = fm.helpers.getMin(minY, area[1][2])
-                            
-                                            maxX = fm.helpers.getMax(maxX, area[2][1])
-                                            maxY = fm.helpers.getMax(maxY, area[2][2])
+                                            game.print(minX)
+                                            game.print(gridX)
+                                            minX = math.min(minX, gridX)
+                                            minY = math.min(minY, gridY)
+                                            maxX = math.max(maxX, gridX)
+                                            maxY = math.max(maxY, gridY)
+                                            
                                             goto done
                                         end
                                     end
@@ -127,6 +135,7 @@ function fm.generateMap(data)
     end
     
 
+    --[[
     local mapArea = Area.normalize(Area.round_to_integer({{minX, minY}, {maxX, maxY}}))
     local _ ,inGameTotalWidth, inGameTotalHeight, _ = Area.size(mapArea)
     local inGameCenter = Area.center(mapArea)
@@ -157,7 +166,6 @@ function fm.generateMap(data)
     data.index.gridSize = gridSize
     data.index.gridPixelSize = gridPixelSize
 
-    local extension = "jpg"
     local pathText = ""
     local positionText = ""
     local resolutionText = ""
@@ -176,14 +184,18 @@ function fm.generateMap(data)
     else
         -- Set to night then
         fm.helpers.makeNight(data.surfaceName)
-    end]]--
+    end
 
     local text = (minZoomLevel + 20 - maxZoomLevel) .. " " .. 20
     for y = math.floor(minX/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)), math.ceil(maxX/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)) do
         for x = math.floor(minY/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)), math.ceil(maxY/gridPixelSize/math.pow(2, maxZoomLevel-minZoomLevel)) do
         	text = text .. "\n" .. x .. " " .. y
         end
-    end
+    end]]--
+    
+    local extension = "jpg"
+
+    local text = (20 - math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))) .. " 20"
     game.write_file(basePath .. "/zoomData.txt", text, false, data.player_index)
     
     text = '{\n\t"ticks": ' .. game.tick .. ',\n\t"seed": ' .. game.default_map_gen_settings.seed .. ',\n\t"mods": ['
@@ -208,7 +220,7 @@ function fm.generateMap(data)
     for _, chunk in pairs(allGrid) do   
         --game.print(chunk)
 
-        positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
+        local positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
 
         local box = { positionTable[1], positionTable[2], positionTable[1] + gridPixelSize, positionTable[2] + gridPixelSize } -- -X -Y X Y
         if data.render_light then
@@ -229,7 +241,7 @@ function fm.generateMap(data)
             end
         end
 
-        pathText = basePath .. "/Images/" .. data.subfolder .. "/20/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
+        local pathText = basePath .. "/Images/" .. data.subfolder .. "/20/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
         game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
     end 
     
