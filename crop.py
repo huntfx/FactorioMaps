@@ -45,6 +45,7 @@ if __name__ == '__main__':
             files.append(line)
     
     pool = mp.Pool(processes=maxthreads)
+    
     while len(files) > 0:
         print("left: %s" % len(files))
         files = filter(lambda x: x, pool.map(partial(work, imgsize=imgsize, folder=folder), files, 128))

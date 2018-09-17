@@ -1,5 +1,5 @@
 fm.autorun = {
-    path = "user-themodernsophist-The-Grid-2018-09-16/", --you can specify the image path name like this if you don't want to use the save name.
+    path = "%%PATH%%", --you can specify the image path name like this if you don't want to use the save name.
     day = true,
     night = false,
     around_build_range = 5.2,
