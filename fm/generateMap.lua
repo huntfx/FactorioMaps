@@ -195,10 +195,24 @@ function fm.generateMap(data)
     
     local extension = "jpg"
 
-    local text = (20 - math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))) .. " 20"
+    local minZoom = (20 - math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4)))
+    local text = minZoom .. " 20"
     game.write_file(basePath .. "/zoomData.txt", text, false, data.player_index)
     
-    text = '{\n\t"ticks": ' .. game.tick .. ',\n\t"seed": ' .. game.default_map_gen_settings.seed .. ',\n\t"mods": ['
+    local spawn = player.force.get_spawn_position(player.surface)
+    text = [[{
+    "ticks": ]] .. game.tick .. [[,
+    "seed": ]] .. game.default_map_gen_settings.seed .. [[,
+    "spawn": {
+        "x": ]] .. spawn.x .. [[,
+        "y": ]] .. spawn.y .. [[
+    },
+    "zoom": {
+        "min": ]] .. minZoom .. [[,
+        "max": 20
+    },
+    "surface": "]] .. player.surface.name .. [[",
+    "mods": []]
     local comma = false 
     for name, version in pairs(game.active_mods) do
         if name ~= "FactorioMaps" then
