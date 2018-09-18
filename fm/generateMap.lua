@@ -204,8 +204,8 @@ function fm.generateMap(data)
     "ticks": ]] .. game.tick .. [[,
     "seed": ]] .. game.default_map_gen_settings.seed .. [[,
     "spawn": {
-        "x": ]] .. spawn.x .. [[,
-        "y": ]] .. spawn.y .. [[
+        "x": ]] .. spawn.x / gridPixelSize .. [[,
+        "y": ]] .. spawn.y / gridPixelSize .. [[
     },
     "zoom": {
         "min": ]] .. minZoom .. [[,
