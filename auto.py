@@ -3,6 +3,7 @@ import subprocess, signal
 import json
 import threading
 import time
+from shutil import copy
 
 
 savename = sys.argv[1] if len(sys.argv) > 1 else os.path.splitext(os.path.basename(max([os.path.join("../../saves/", basename) for basename in os.listdir("../../saves/") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
@@ -59,7 +60,11 @@ changeModlist(True)
 
 
 
-print("creating autorun.lua")
+print("creating autorun.lua from autorun.lua.template")
+try: os.remove("autorun.lua.bak")
+except OSError: pass
+os.rename("autorun.lua", "autorun.lua.bak")
+
 with open("autorun.lua", "w") as target:
     with open("autorun.lua.template", "r") as template:
         for line in template:
@@ -93,6 +98,15 @@ try:
     print("downsampling day images")
     os.system('zoom.py Day "' + workfolder + '"')
 
+
+
+    print("enabling FactorioMaps mod")
+    changeModlist(False)
+    
+
+
+    print("fixing autorun.lua")
+    shutil.copy("autorun.lua.bak", "autorun.lua")
 
 
 
