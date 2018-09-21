@@ -4,5 +4,8 @@ fm.autorun = {
     night = true,
     around_build_range = 5.2,
     smaller_types = {"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"},
-    around_smaller_range = 1
+    around_smaller_range = 1,
+    date = "%%DATE%%",
+    mapInfo = %%MAPINFO%%,
+    chunkCache = %%CHUNKCACHE%%
 }
