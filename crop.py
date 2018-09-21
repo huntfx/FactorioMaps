@@ -10,7 +10,7 @@ ext = ".jpg"
 
 def work(line, imgsize, folder):
     arg = line.rstrip('\n').split(" ")
-    path = "%s%s/%s%s" % (folder, arg[0], arg[1], ext)
+    path = os.path.join(folder, arg[0], arg[1] + ext)
     top = int(arg[2])
     left = int(arg[3])
     try:
@@ -24,20 +24,20 @@ def work(line, imgsize, folder):
 
 if __name__ == '__main__':
 
-    subname = (sys.argv[1] if len(sys.argv) > 1 else "Night")
-    toppath = (sys.argv[2] if len(sys.argv) > 2 else "../../script-output/FactorioMaps/Test") + "/"
-    folder = os.path.join(toppath, "Images/", subname + "/20/")
-    datapath = os.path.join(toppath, "crop-" + subname + ".txt")
+    subname = "\\".join(sys.argv[2:5])
+    toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
+    basepath = os.path.join(toppath, "Images", subname)
+    folder = os.path.join(basepath, "20")
+    datapath = os.path.join(basepath, "crop.txt")
     maxthreads = mp.cpu_count()
 
-    
+    print(basepath, folder)
+
     if not os.path.exists(datapath):
-        print("waiting for crop-" + subname + ".txt")
+        print("waiting for crop.txt")
         while not os.path.exists(datapath):
             time.sleep(1)
 
-    print(folder)
-    
     files = []
     with open(datapath, "r") as data:
         imgsize = int(data.readline().rstrip('\n'))
@@ -49,6 +49,14 @@ if __name__ == '__main__':
     while len(files) > 0:
         print("left: %s" % len(files))
         files = filter(lambda x: x, pool.map(partial(work, imgsize=imgsize, folder=folder), files, 128))
-        time.sleep(2.5)
+        if len(files) > 0:
+            time.sleep(2.5)
+
+    
+    waitfilename = os.path.join(basepath, "done.txt")
+    if not os.path.exists(waitfilename):
+        print("waiting for done.txt")
+        while not os.path.exists(waitfilename):
+            time.sleep(1)
 
 

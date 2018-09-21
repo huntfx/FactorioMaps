@@ -67,15 +67,44 @@ script.on_event(defines.events.on_tick, function(event)
 
     if fm.autorun then
 
-        event.player_index = 1
+        event.player_index = game.connected_players[1].index
     
         if fm._ticks == nil then
         
             fm._topfolder = "FactorioMaps/" .. (fm.autorun.path or "")
+            fm.autorun.tick = game.tick
+
+            hour = math.ceil(fm.autorun.tick / 60 / 60 / 60)
+            exists = true
+            fm.autorun.filePath = tostring(hour)
+            i = 1
+            while exists do
+                exists = false
+                if fm.autorun.mapInfo.maps ~= nil then
+                    for _, map in pairs(fm.autorun.mapInfo.maps) do
+                        if map.path == fm.autorun.filePath then
+                            exists = true
+                            break
+                        end
+                    end
+                end
+                if exists then
+                    fm.autorun.filePath = tostring(hour) .. "-" .. tostring(i)
+                    i = i + 1
+                end
+            end
             
-            game.remove_path(fm._topfolder)
             
-            --fm.gui.actions.baseSize(event)
+            latest = ""
+            if fm.autorun.night then
+                latest = latest .. fm.autorun.path:sub(1, -2) .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " night\n"
+            end
+            if fm.autorun.day then
+                latest = latest .. fm.autorun.path:sub(1, -2) .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " day\n"
+            end
+            game.write_file(fm._topfolder .. "latest.txt", latest, false, event.player_index)
+
+
             
             -- remove no path sign and ghost entities
             for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
@@ -90,7 +119,7 @@ script.on_event(defines.events.on_tick, function(event)
 
             if fm.autorun.night then
                 game.players[event.player_index].surface.daytime = 0.5
-                fm._subfolder = "Night"
+                fm._subfolder = "night"
                 fm._render_light = true
                 fm.gui.actions.generate(event)
                 fm._render_light = false
@@ -101,7 +130,7 @@ script.on_event(defines.events.on_tick, function(event)
         elseif fm._ticks < 2 then
             
             if fm.autorun.night then
-                game.write_file(fm._topfolder .. "/done-night.txt", "", false, event.player_index)
+                game.write_file(fm._topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
             end
     
             -- remove no path sign
@@ -111,7 +140,7 @@ script.on_event(defines.events.on_tick, function(event)
 
             if fm.autorun.day then
                 game.players[event.player_index].surface.daytime = 0
-                fm._subfolder = "Day"
+                fm._subfolder = "day"
                 fm.gui.actions.generate(event)
             end
     
@@ -120,7 +149,7 @@ script.on_event(defines.events.on_tick, function(event)
         elseif fm._ticks < 3 then
             
             if fm.autorun.day then
-                game.write_file(fm._topfolder .. "/done-day.txt", "", false, event.player_index)
+                game.write_file(fm._topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/day/done.txt", "", false, event.player_index)
             end
             
             -- unfreeze all entities
