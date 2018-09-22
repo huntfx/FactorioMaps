@@ -223,10 +223,12 @@ function fm.generateMap(data)
 
     
     game.write_file(basePath .. "/mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
+    game.write_file(basePath .. "/mapInfo2.json", json(fm.autorun.mapInfo), false, data.player_index)
 
 
     local cropText = ""
 
+    lamps = 0
     for _, chunk in pairs(allGrid) do   
         --game.print(chunk)
 
@@ -247,17 +249,20 @@ function fm.generateMap(data)
                 box[4] = t.position.y - 8/32
             end
         end
-        if data.render_light then
-            for _, t in pairs(surface.find_entities_filtered{area = area, type="lamp"}) do 
+        for _, t in pairs(surface.find_entities_filtered{area = area, type="lamp"}) do 
+            local control = t.get_control_behavior()
+            if t.energy > t.prototype.max_energy_usage and ((control and not control.disabled) or (not control and surface.darkness > 0.3)) then
+                t.energy = t.electric_buffer_size --supply all lamps that are turned on with max power. This helps the timelapse image referencing process.
+                lamps = lamps + 1
                 if t.position.x < box[1] then
-                    box[1] = t.position.x + 0.46875  --15/32, makes it so 1 pixel remains of the lamp/
+                    box[1] = t.position.x + 8/32
                 elseif t.position.x > box[3] then
-                    box[3] = t.position.x - 0.46875
+                    box[3] = t.position.x - 8/32
                 end
                 if t.position.y < box[2] then
-                    box[2] = t.position.y + 0.46875
+                    box[2] = t.position.y + 8/32
                 elseif t.position.y > box[4] then
-                    box[4] = t.position.y - 0.46875
+                    box[4] = t.position.y - 8/32
                 end
             end
         end

@@ -96,11 +96,11 @@ script.on_event(defines.events.on_tick, function(event)
             
             
             latest = ""
-            if fm.autorun.night then
-                latest = latest .. fm.autorun.path:sub(1, -2) .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " night\n"
-            end
             if fm.autorun.day then
                 latest = latest .. fm.autorun.path:sub(1, -2) .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " day\n"
+            end
+            if fm.autorun.night then
+                latest = latest .. fm.autorun.path:sub(1, -2) .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " night\n"
             end
             game.write_file(fm._topfolder .. "latest.txt", latest, false, event.player_index)
 
@@ -117,20 +117,18 @@ script.on_event(defines.events.on_tick, function(event)
                 entity.active = false
             end
 
-            if fm.autorun.night then
-                game.players[event.player_index].surface.daytime = 0.5
-                fm._subfolder = "night"
-                fm._render_light = true
+            if fm.autorun.day then
+                game.players[event.player_index].surface.daytime = 0
+                fm._subfolder = "day"
                 fm.gui.actions.generate(event)
-                fm._render_light = false
             end
             
             fm._ticks = 1
 
         elseif fm._ticks < 2 then
             
-            if fm.autorun.night then
-                game.write_file(fm._topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
+            if fm.autorun.day then
+                game.write_file(fm._topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/day/done.txt", "", false, event.player_index)
             end
     
             -- remove no path sign
@@ -138,9 +136,9 @@ script.on_event(defines.events.on_tick, function(event)
                 entity.destroy()
             end
 
-            if fm.autorun.day then
-                game.players[event.player_index].surface.daytime = 0
-                fm._subfolder = "day"
+            if fm.autorun.night then
+                game.players[event.player_index].surface.daytime = 0.5
+                fm._subfolder = "night"
                 fm.gui.actions.generate(event)
             end
     
@@ -148,8 +146,8 @@ script.on_event(defines.events.on_tick, function(event)
     
         elseif fm._ticks < 3 then
             
-            if fm.autorun.day then
-                game.write_file(fm._topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/day/done.txt", "", false, event.player_index)
+            if fm.autorun.night then
+                game.write_file(fm._topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
             end
             
             -- unfreeze all entities

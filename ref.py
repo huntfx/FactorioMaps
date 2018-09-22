@@ -1,4 +1,4 @@
-import os, sys, math, time, json
+import os, sys, math, time, json, psutil
 from PIL import Image, ImageChops, ImageStat
 import multiprocessing as mp
 from functools import partial
@@ -14,9 +14,8 @@ def compare(path, basePath, new, treshold):
         #diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))
         #Image.open(os.path.join(basePath, *path)).save(os.path.join(basePath, new, *test))
         #print(ImageStat.Stat(ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))).sum2)
-        diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:]), mode='r'), Image.open(os.path.join(basePath, *path), mode='r')).point(lambda x: 255 if x >= 16 else x ** 2)
-        #diff.save(os.path.join(basePath, new, *path[1:]))
-        if sum(ImageStat.Stat(diff).sum2) > treshold:
+        diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:]), mode='r'), Image.open(os.path.join(basePath, *path), mode='r'))
+        if sum(ImageStat.Stat(diff.copy().point(lambda x: 255 if x >= 16 else x ** 2)).sum2) + 256 * sum(ImageStat.Stat(diff.point(lambda x: x ** 2 >> 8)).sum2) > treshold:
             #print("%s %s" % (total, path))
             return (True, path[1:])
     except IOError:
@@ -49,8 +48,10 @@ def getBase64(number): #coordinate to 18 bit value (3 char base64)
 
 if __name__ == '__main__':
 
+    psutil.Process(os.getpid()).nice(psutil.IDLE_PRIORITY_CLASS or -15)
 
-    toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMap"), sys.argv[1])
+
+    toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
     datapath = os.path.join(toppath, "mapInfo.json")
     maxthreads = mp.cpu_count()
 
@@ -61,6 +62,12 @@ if __name__ == '__main__':
     print(datapath)
     with open(datapath, "r") as f:
         data = json.load(f)
+    if os.path.isfile(datapath[:-5] + ".out.json"):
+        print(datapath[:-5] + ".out.json")
+        with open(datapath[:-5] + ".out.json", "r") as f:
+            outdata = json.load(f)
+    else:
+        outdata = {}
 
 
     if len(sys.argv) > 2:
@@ -74,34 +81,45 @@ if __name__ == '__main__':
 
     compareList = []
     keepList = []
+    removeList = []
     newMap = data["maps"][new]
     allImageIndex = {}
     for surfaceName, surface in newMap["surfaces"].iteritems():
         if len(sys.argv) <= 3 or surfaceName == sys.argv[3]:
             daytimes = []
-            try:
-                if surface["day"]: daytimes.append("day")
-            except KeyError: pass
-            try:
-                if surface["night"]: daytimes.append("night")
-            except KeyError: pass
+            if "day" in surface and str(surface["day"]) == "true": daytimes.append("day")
+            if "night" in surface and str(surface["night"]) == "true": daytimes.append("night")
             for daytime in daytimes:
                 if len(sys.argv) <= 4 or daytime == sys.argv[4]:
-                    oldImages = {}
                     z = surface["zoom"]["max"]
+                    if daytime != "day":
+                        if not os.path.isdir(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day")):
+                            print("WARNING: cannot find day surface to copy non-day surface from. running ref.py on night surfaces is not very accurate.")
+                        else:
+                            print("found day surface, copy results from ref.py from there")
+                            path = os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, str(z))
+                            for x in os.listdir(path):
+                                for y in os.listdir(os.path.join(path, x)):
+                                    if os.path.isfile(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", str(z), x, y)):
+                                        keepList.append((surfaceName, daytime, str(z), x, y))
+                                    else:
+                                        removeList.append((surfaceName, daytime, str(z), x, y))
+                            break
+
+                    oldImages = {}
                     for old in range(new - 1, -1, -1):
                         if surfaceName in data["maps"][old]["surfaces"] and daytime in surface and z == surface["zoom"]["max"]:
                             if surfaceName not in allImageIndex:
                                 allImageIndex[surfaceName] = {}
-                            path = os.path.join(toppath, "Images", str(data["maps"][old]["path"]), surfaceName, daytime, str(z))
+                            path = os.path.join(toppath, "Images", data["maps"][old]["path"], surfaceName, daytime, str(z))
                             for x in os.listdir(path):
-                                for y in os.listdir(os.path.join(path, str(x))):
-                                    oldImages[(z, x, y)] = str(data["maps"][old]["path"])
+                                for y in os.listdir(os.path.join(path, x)):
+                                    oldImages[(z, x, y)] = data["maps"][old]["path"]
                     
 
-                    path = os.path.join(toppath, "Images", str(newMap["path"]), surfaceName, daytime, str(z))
+                    path = os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, str(z))
                     for x in os.listdir(path):
-                        for y in os.listdir(os.path.join(path, str(x))):
+                        for y in os.listdir(os.path.join(path, x)):
                             if (z, x, y) in oldImages:
                                 compareList.append((oldImages[(z, x, y)], surfaceName, daytime, str(z), x, y))
                             else:
@@ -113,12 +131,15 @@ if __name__ == '__main__':
     if len(compareList) > 0:
         resultList = pool.map(partial(compare, treshold=2000*Image.open(os.path.join(toppath, "Images", *compareList[0])).size[0] ** 2, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
         newList = map(lambda x: x[1], filter(lambda x: x[0], resultList))
-        print("deleting %s, keeping %s of %s existing images" % (len(compareList) - len(newList), len(newList), len(compareList)))
+        keepList += newList
+    print("deleting %s, keeping %s of %s existing images" % (len(compareList) - len(keepList) + len(removeList), len(keepList), len(compareList) + len(removeList)))
+    if len(compareList) > 0:
         for x in resultList:
             if not x[0]:
-                os.remove(os.path.join(toppath, "Images", str(newMap["path"]), *x[1]))
-                pass
-        keepList += newList
+                os.remove(os.path.join(toppath, "Images", newMap["path"], *x[1]))
+    for x in removeList:
+        os.remove(os.path.join(toppath, "Images", newMap["path"], *x))
+
     print("creating index")
     for coord in keepList:
         x = int(coord[3])
@@ -137,6 +158,10 @@ if __name__ == '__main__':
 
     # compress and build string
     changed = False
+    if "maps" not in outdata:
+        outdata["maps"] = {}
+    if new not in outdata["maps"]:
+        outdata["maps"][new] = { "surfaces": {} }
     for surfaceName, surfaceImageIndex in allImageIndex.iteritems():
         indexList = []
         for z, yIndex in surfaceImageIndex.iteritems():
@@ -151,15 +176,18 @@ if __name__ == '__main__':
                         string += getBase64(x)
                 yList.append(string)
             indexList.append('|'.join(yList))
-        newMap["surfaces"][surfaceName]["chunks"] = ' '.join(indexList)
+            
+        if surfaceName not in outdata["maps"][new]["surfaces"]:
+            outdata["maps"][new]["surfaces"][surfaceName] = {}
+        outdata["maps"][new]["surfaces"][surfaceName]["chunks"] = ' '.join(indexList)
         if len(indexList) > 0:
             changed = True
 
 
     if changed:
-        print("writing mapInfo.json")
-        with open(datapath, "w") as f:
-            json.dump(data, f, separators=(',',':'))
+        print("writing mapInfo.out.json")
+        with open(datapath[:-5] + ".out.json", "w+") as f:
+            json.dump(outdata, f)
 
         print("deleting empty folders")
         for curdir, subdirs, files in os.walk(toppath, *sys.argv[2:5]):
