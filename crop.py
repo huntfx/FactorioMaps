@@ -24,6 +24,8 @@ def work(line, imgsize, folder):
 
 if __name__ == '__main__':
 
+    psutil.Process(os.getpid()).nice(psutil.IDLE_PRIORITY_CLASS or -15)
+
     subname = "\\".join(sys.argv[2:5])
     toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
     basepath = os.path.join(toppath, "Images", subname)
@@ -31,7 +33,6 @@ if __name__ == '__main__':
     datapath = os.path.join(basepath, "crop.txt")
     maxthreads = mp.cpu_count()
 
-    print(basepath, folder)
 
     if not os.path.exists(datapath):
         print("waiting for crop.txt")

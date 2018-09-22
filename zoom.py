@@ -1,6 +1,6 @@
 from PIL import Image
 import multiprocessing as mp
-import os, math, sys, time, math, json
+import os, math, sys, time, math, json, psutil
 
 
 
@@ -70,6 +70,8 @@ def thread(basepath, pathList, surfaceName, daytime, start, stop, allChunks, que
 
 if __name__ == '__main__':
 
+    psutil.Process(os.getpid()).nice(psutil.IDLE_PRIORITY_CLASS or -15)
+
 
     toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
     datapath = os.path.join(toppath, "mapInfo.json")
@@ -77,6 +79,7 @@ if __name__ == '__main__':
     maxthreads = mp.cpu_count()
 
 
+    print(basepath)
 
 
     with open(datapath, "r") as f:

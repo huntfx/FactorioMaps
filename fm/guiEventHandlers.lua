@@ -220,7 +220,6 @@ function fm.gui.actions.generate(event)
     data.dayOnly = fm.cfg.get("dayOnly")
     data.altInfo = fm.cfg.get("altInfo")
     data.extraZoomIn = fm.cfg.get("extraZoomIn")
-    data.render_light = fm._render_light
     data.surfaceName = player.surface.name
     data.player_index = player.index
 
