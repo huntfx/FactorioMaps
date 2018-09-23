@@ -31,9 +31,9 @@ possiblePaths = [
     "D:\\Program Files (x86)\\Steam\\steamapps\\common\\Factorio\\bin\\x64\\factorio.exe"
 ]
 try:
-    factorioPath = kwargs["factorio"] if "factorio" in kwargs else next(x for x in possiblePaths if os.path.isfile(x))
+    factorioPath = next(x for x in ([kwargs["factorio"]] if "factorio" in kwargs else possiblePaths) if os.path.isfile(x))
 except StopIteration:
-    raise Exception("Can't find factorio.exe. Please pass the path as an argument.")
+    raise Exception("Can't find factorio.exe. Please pass --factorio=PATH as an argument.")
 
 print(factorioPath)
 
@@ -155,7 +155,7 @@ try:
                     time.sleep(0.5)
                 if os.path.isfile(os.path.join(workfolder, "mapInfo.json")):
                     os.remove(os.path.join(workfolder, "mapInfo.json"))
-                os.rename(os.path.join(workfolder, "mapInfo2.json"), os.path.join(workfolder, "mapInfo.json"))
+                copy(os.path.join(workfolder, "mapInfo2.json"), os.path.join(workfolder, "mapInfo.json"))
                 print("Crossreferencing %s images" % screenshot)
                 if 0 != call('python ref.py %s %s' % (screenshot, basepath)): raise RuntimeError("ref failed")
                 print("downsampling %s images" % screenshot)
@@ -166,14 +166,6 @@ try:
                 workthread = threading.Thread(target=refZoom)
                 workthread.daemon = True
                 workthread.start()
-        
-
-        print("generating mapInfo.js")
-        with open(os.path.join(workfolder, "mapInfo.js"), 'w+') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
-            outf.write("window.mapInfo = JSON.parse('")
-            outf.write(inf.read())
-            outf.write("');")
-
 
 
 except KeyboardInterrupt:
@@ -191,7 +183,7 @@ if workthread.isAlive():
     workthread.join()
     
 
-print("updating mapInfo.json and mapInfo.js")
+print("updating mapInfo.json")
 with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
     data = json.load(outf)
     for mapIndex, mapStuff in json.load(inf)["maps"].iteritems():
