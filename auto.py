@@ -128,6 +128,9 @@ try:
         def watchAndKill():
             while not os.path.exists(os.path.join(os.path.join(basepath, latest[-1].split(" ")[0], "Images", *latest[-1].split(" ")[1:4]), "done.txt")):
                 time.sleep(1)
+            while not os.path.isfile(os.path.join(workfolder, "mapInfo2.json")):
+                time.sleep(0.5)
+                
             print("killing factorio")
             if p.poll() is None:
                 p.kill()
@@ -148,7 +151,8 @@ try:
             print("Cropping %s images" % screenshot)
             if 0 != call('python crop.py %s %s' % (screenshot, basepath)): raise RuntimeError("crop failed")
             def refZoom():
-                time.sleep(0.5)
+                while not os.path.isfile(os.path.join(workfolder, "mapInfo2.json")):
+                    time.sleep(0.5)
                 if os.path.isfile(os.path.join(workfolder, "mapInfo.json")):
                     os.remove(os.path.join(workfolder, "mapInfo.json"))
                 os.rename(os.path.join(workfolder, "mapInfo2.json"), os.path.join(workfolder, "mapInfo.json"))
