@@ -29,6 +29,35 @@ function prettyjson(o, i)
 
 
 
+--[[
+x+ = UP, y+ = RIGHT
+corners:
+2   1
+  X
+4   3 
+]]--
+
+function adjustBox(pos, box, initBox, corners)
+    if pos.x < box[1] then
+        box[1] = pos.x + 8/32  --8 pixel remains of the lamp, 8 pixels because dont wanna mess with jpg
+    elseif pos.x > box[3] then
+        box[3] = pos.x - 8/32
+    end
+    if pos.y < box[2] then
+        box[2] = pos.y + 8/32
+    elseif pos.y > box[4] then
+        box[4] = pos.y - 8/32
+    end
+
+    if pos.x > initBox[3] then
+        if not (pos.y < initBox[2]) then corners[1] = 1 end
+        if not (pos.y > initBox[4]) then corners[2] = 1 end
+    elseif pos.x < initBox[1] then
+        if not (pos.y < initBox[2]) then corners[3] = 1 end
+        if not (pos.y > initBox[4]) then corners[4] = 1 end
+    end
+end
+
 function fm.generateMap(data)
 
     local player = game.players[data.player_index]
@@ -120,6 +149,7 @@ function fm.generateMap(data)
                     gridY = tonumber(gridY)
 
                     allGrid[s] = {x = gridX, y = gridY}
+                    game.print(s)
 
                     minX = math.min(minX, gridX)
                     minY = math.min(minY, gridY)
@@ -127,7 +157,13 @@ function fm.generateMap(data)
                     maxY = math.max(maxY, gridY)
                 end
                 if tonumber(mapTick) == fm.autorun.tick then
-                    mapIndex = i
+                    game.print("SAME TICK FOUND YEA")
+                    for i, map in pairs(fm.autorun.mapInfo.maps) do
+                        if map.tick == mapTick then
+                            mapIndex = i
+                            break
+                        end
+                    end
                 end
             end
         end
@@ -217,13 +253,11 @@ function fm.generateMap(data)
     end
     fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][data.subfolder] = true
 
-    
-    
+   
     local extension = "jpg"
 
     
     game.write_file(basePath .. "/mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
-    game.write_file(basePath .. "/mapInfo2.json", json(fm.autorun.mapInfo), false, data.player_index)
 
 
     local cropText = ""
@@ -235,39 +269,24 @@ function fm.generateMap(data)
         local positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
 
         local box = { positionTable[1], positionTable[2], positionTable[1] + gridPixelSize, positionTable[2] + gridPixelSize } -- -X -Y X Y
+        local initialBox = { box[1], box[2], box[3], box[4] }
         local area = {{box[1] - 16, box[2] - 16}, {box[3] + 16, box[4] + 16}}
         
+        local corners = {0, 0, 0, 0}
+
         for _, t in pairs(surface.find_entities_filtered{area = area, name="big-electric-pole"}) do 
-            if t.position.x < box[1] then
-                box[1] = t.position.x + 8/32  --8 pixel remains of the lamp, 8 pixels because dont wanna mess with jpg
-            elseif t.position.x > box[3] then
-                box[3] = t.position.x - 8/32
-            end
-            if t.position.y < box[2] then
-                box[2] = t.position.y + 8/32
-            elseif t.position.y > box[4] then
-                box[4] = t.position.y - 8/32
-            end
+            adjustBox(t.position, box, initialBox, corners)
         end
         for _, t in pairs(surface.find_entities_filtered{area = area, type="lamp"}) do 
             local control = t.get_control_behavior()
             if t.energy > t.prototype.max_energy_usage and ((control and not control.disabled) or (not control and surface.darkness > 0.3)) then
                 t.energy = t.electric_buffer_size --supply all lamps that are turned on with max power. This helps the timelapse image referencing process.
                 lamps = lamps + 1
-                if t.position.x < box[1] then
-                    box[1] = t.position.x + 8/32
-                elseif t.position.x > box[3] then
-                    box[3] = t.position.x - 8/32
-                end
-                if t.position.y < box[2] then
-                    box[2] = t.position.y + 8/32
-                elseif t.position.y > box[4] then
-                    box[4] = t.position.y - 8/32
-                end
+                adjustBox(t.position, box, initialBox, corners)
             end
         end
         if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridPixelSize or box[4] > positionTable[2] + gridPixelSize then
-            cropText = cropText .. "\n" .. chunk.x .. " " .. chunk.y .. " " .. (positionTable[1] - box[1])*32 .. " " .. (positionTable[2] - box[2])*32
+            cropText = cropText .. "\n" .. chunk.x .. " " .. chunk.y .. " " .. (positionTable[1] - box[1])*32 .. " " .. (positionTable[2] - box[2])*32 .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4])
         end
 
         local pathText = subPath .. "20/" .. chunk.x .. "/" .. chunk.y .. "." .. extension

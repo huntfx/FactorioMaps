@@ -41,7 +41,11 @@ psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS or 5)
 
 basepath = kwargs["basepath"] if "basepath" in kwargs else "..\\..\\script-output\\FactorioMaps"
 workthread = None
-killthread = None
+
+print("backing up autorun.lua")
+if (os.path.isfile("autorun.lua")):
+    if not os.path.isfile("autorun.lua.bak"):
+        os.rename("autorun.lua", "autorun.lua.bak")
 
 
 print("enabling FactorioMaps mod")
@@ -75,25 +79,8 @@ try:
 
 
 
-        if killthread and killthread.isAlive():
-            print("waiting for previous factorio instance")
-            killthread.join()
-
-            print("updating mapInfo.json and mapInfo.js")
-            with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
-                data = json.load(outf)
-                data.update(json.load(inf))
-                outf.seek(0)
-                json.dump(data, outf)
-                outf.truncate()
-
-
 
         print("creating autorun.lua from autorun.template.lua")
-        if (os.path.isfile("autorun.lua")):
-            if not os.path.isfile("autorun.lua.bak"):
-                os.rename("autorun.lua", "autorun.lua.bak")
-
         if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
             with open(os.path.join(workfolder, "mapInfo.json"), "r") as f:
                 mapInfoLua = re.sub(r'"([\d\w]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
@@ -112,7 +99,7 @@ try:
 
 
         print("starting factorio")
-        p = subprocess.Popen(factorioPath + ' --load-game "' + savename + '"')
+        p = subprocess.Popen(factorioPath + ' --load-game "' + savename + '" --disable-audio')
 
         if not os.path.exists(datapath):
             while not os.path.exists(datapath):
@@ -124,24 +111,6 @@ try:
                 latest.append(line.rstrip("\n"))
 
 
-
-        def watchAndKill():
-            while not os.path.exists(os.path.join(os.path.join(basepath, latest[-1].split(" ")[0], "Images", *latest[-1].split(" ")[1:4]), "done.txt")):
-                time.sleep(1)
-            while not os.path.isfile(os.path.join(workfolder, "mapInfo2.json")):
-                time.sleep(0.5)
-                
-            print("killing factorio")
-            if p.poll() is None:
-                p.kill()
-            else:
-                os.system("taskkill /im factorio.exe")
-        
-        killthread = threading.Thread(target=watchAndKill)
-        killthread.daemon = True
-        killthread.start()
-
-
         
         if workthread and workthread.isAlive():
             print("waiting for workthread")
@@ -150,12 +119,9 @@ try:
         for screenshot in latest:
             print("Cropping %s images" % screenshot)
             if 0 != call('python crop.py %s %s' % (screenshot, basepath)): raise RuntimeError("crop failed")
+
+
             def refZoom():
-                while not os.path.isfile(os.path.join(workfolder, "mapInfo2.json")):
-                    time.sleep(0.5)
-                if os.path.isfile(os.path.join(workfolder, "mapInfo.json")):
-                    os.remove(os.path.join(workfolder, "mapInfo.json"))
-                copy(os.path.join(workfolder, "mapInfo2.json"), os.path.join(workfolder, "mapInfo.json"))
                 print("Crossreferencing %s images" % screenshot)
                 if 0 != call('python ref.py %s %s' % (screenshot, basepath)): raise RuntimeError("ref failed")
                 print("downsampling %s images" % screenshot)
@@ -163,18 +129,23 @@ try:
             if screenshot != latest[-1]:
                 refZoom()
             else:
+                print("killing factorio")
+                if p.poll() is None:
+                    p.kill()
+                else:
+                    os.system("taskkill /im factorio.exe")
                 workthread = threading.Thread(target=refZoom)
                 workthread.daemon = True
                 workthread.start()
+                time.sleep(2)
 
 
 except KeyboardInterrupt:
-    if not killthread or killthread.isAlive():
-        print("killing factorio")
-        if p.poll() is None:
-            p.kill()
-        else:
-            os.system("taskkill /im factorio.exe")
+    print("killing factorio")
+    if p.poll() is None:
+        p.kill()
+    else:
+        os.system("taskkill /im factorio.exe")
     raise
 
 
@@ -200,15 +171,6 @@ with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.joi
     outf.write("window.mapInfo = JSON.parse('")
     outf.write(inf.read())
     outf.write("');")
-
-
-
-if killthread.isAlive():
-    print("killing factorio")
-    if p.poll() is None:
-        p.kill()
-    else:
-        os.system("taskkill /im factorio.exe")
     
     
 print("copying index.html")
@@ -226,4 +188,5 @@ changeModlist(False)
 print("reverting autorun.lua")
 if os.path.isfile("autorun.lua"):
     os.remove("autorun.lua")
-os.rename("autorun.lua.bak", "autorun.lua")
+if os.path.isfile("autorun.lua.bak"):
+    os.rename("autorun.lua.bak", "autorun.lua")

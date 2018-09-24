@@ -15,7 +15,8 @@ def compare(path, basePath, new, treshold):
         #Image.open(os.path.join(basePath, *path)).save(os.path.join(basePath, new, *test))
         #print(ImageStat.Stat(ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))).sum2)
         diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:]), mode='r'), Image.open(os.path.join(basePath, *path), mode='r'))
-        if sum(ImageStat.Stat(diff.copy().point(lambda x: 255 if x >= 16 else x ** 2)).sum2) + 256 * sum(ImageStat.Stat(diff.point(lambda x: x ** 2 >> 8)).sum2) > treshold:
+        #if sum(ImageStat.Stat(diff.copy().point(lambda x: 255 if x >= 16 else x ** 2)).sum2) + 256 * sum(ImageStat.Stat(diff.point(lambda x: x ** 2 >> 8)).sum2) > treshold:
+        if sum(ImageStat.Stat(diff).sum2) > treshold:
             #print("%s %s" % (total, path))
             return (True, path[1:])
     except IOError:
@@ -43,6 +44,7 @@ def base64Char(i):
 def getBase64(number): #coordinate to 18 bit value (3 char base64)
     number = int(number) + 1000000/16 # IMAGES CURRENTLY CONTAIN 16 TILES. IF IMAGE SIZE CHANGES THIS WONT WORK ANYMORE. (It will for a long time until it wont)
     return base64Char(number % 64) + base64Char(int(number / 64) % 64) + base64Char(int(number / 64 / 64))
+
 
 
 
@@ -82,6 +84,7 @@ if __name__ == '__main__':
     compareList = []
     keepList = []
     removeList = []
+    cropList = {}
     newMap = data["maps"][new]
     allImageIndex = {}
     for surfaceName, surface in newMap["surfaces"].iteritems():
@@ -106,6 +109,14 @@ if __name__ == '__main__':
                                         removeList.append((surfaceName, daytime, str(z), x, y))
                             break
 
+                
+                    with open(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "crop.txt"), "r") as f:
+                        next(f)
+                        for line in f:
+                            split = line.rstrip("\n").split(" ", 5)
+                            cropList[(surfaceName, daytime, str(z), int(split[0]), int(os.path.splitext(split[1])[0]))] = int(split[4], 16)
+
+
                     oldImages = {}
                     for old in range(new - 1, -1, -1):
                         if surfaceName in data["maps"][old]["surfaces"] and daytime in surface and z == surface["zoom"]["max"]:
@@ -118,6 +129,7 @@ if __name__ == '__main__':
                     
 
                     path = os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, str(z))
+                    # TODO: READ ref.txt INSTEAD
                     for x in os.listdir(path):
                         for y in os.listdir(os.path.join(path, x)):
                             if (z, x, y) in oldImages:
@@ -129,14 +141,41 @@ if __name__ == '__main__':
     print("found %s new images" % len(keepList))
     print("comparing %s existing images" % len(compareList))
     if len(compareList) > 0:
-        resultList = pool.map(partial(compare, treshold=2000*Image.open(os.path.join(toppath, "Images", *compareList[0])).size[0] ** 2, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
-        newList = map(lambda x: x[1], filter(lambda x: x[0], resultList))
-        keepList += newList
-    print("deleting %s, keeping %s of %s existing images" % (len(compareList) - len(keepList) + len(removeList), len(keepList), len(compareList) + len(removeList)))
-    if len(compareList) > 0:
-        for x in resultList:
-            if not x[0]:
-                os.remove(os.path.join(toppath, "Images", newMap["path"], *x[1]))
+        resultList = pool.map(partial(compare, treshold=20*Image.open(os.path.join(toppath, "Images", *compareList[0])).size[0] ** 2, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
+        keepList += map(lambda x: x[1], filter(lambda x: x[0], resultList))
+    else:
+        resultList = []
+    print("matched %s of %s images" % (len(keepList), len(compareList)))
+    
+
+    neighbourList = []
+    for coord in map(lambda x: x[1], filter(lambda x: not x[0], resultList)):
+        """
+        x+ = UP, y+ = RIGHT
+        corners:
+        2   1
+        X
+        4   3 
+        """
+        surfaceName, daytime, z = coord[:3]
+        x, y = int(coord[3]), int(os.path.splitext(coord[4])[0])
+        if ((surfaceName, daytime, z, str(x+1), str(y+1)) in keepList and cropList.get((surfaceName, daytime, z, x+1, y+1), 0) & 0b1000) \
+        or ((surfaceName, daytime, z, str(x+1), str(y-1)) in keepList and cropList.get((surfaceName, daytime, z, x+1, y-1), 0) & 0b0100) \
+        or ((surfaceName, daytime, z, str(x-1), str(y+1)) in keepList and cropList.get((surfaceName, daytime, z, x-1, y+1), 0) & 0b0010) \
+        or ((surfaceName, daytime, z, str(x-1), str(y-1)) in keepList and cropList.get((surfaceName, daytime, z, x-1, y-1), 0) & 0b0001) \
+        or ((surfaceName, daytime, z, str(x+1), str(y  )) in keepList and cropList.get((surfaceName, daytime, z, x+1, y  ), 0) & 0b1100) \
+        or ((surfaceName, daytime, z, str(x-1), str(y  )) in keepList and cropList.get((surfaceName, daytime, z, x-1, y  ), 0) & 0b0011) \
+        or ((surfaceName, daytime, z, str(x  ), str(y+1)) in keepList and cropList.get((surfaceName, daytime, z, x  , y+1), 0) & 0b1010) \
+        or ((surfaceName, daytime, z, str(x  ), str(y-1)) in keepList and cropList.get((surfaceName, daytime, z, x  , y-1), 0) & 0b0101):
+            neighbourList.append(coord)
+        else:
+            removeList.append(coord)
+    print("keeping %s neighbouring images" % len(neighbourList))
+    print("deleting %s, keeping %s of %s existing images" % (len(removeList), len(keepList) + len(neighbourList), len(keepList) + len(neighbourList) + len(removeList)))
+
+    # TODO: CREATE ref.txt FROM KEEPLIST
+
+
     for x in removeList:
         os.remove(os.path.join(toppath, "Images", newMap["path"], *x))
 
