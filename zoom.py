@@ -79,7 +79,7 @@ if __name__ == '__main__':
     maxthreads = mp.cpu_count()
 
 
-    print(basepath)
+    #print(basepath)
 
 
     with open(datapath, "r") as f:
