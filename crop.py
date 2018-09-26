@@ -24,7 +24,7 @@ def work(line, imgsize, folder):
 
 if __name__ == '__main__':
 
-    psutil.Process(os.getpid()).nice(psutil.IDLE_PRIORITY_CLASS or -15)
+    psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS or -10)
 
     subname = "\\".join(sys.argv[2:5])
     toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
@@ -51,7 +51,7 @@ if __name__ == '__main__':
         print("left: %s" % len(files))
         files = filter(lambda x: x, pool.map(partial(work, imgsize=imgsize, folder=folder), files, 128))
         if len(files) > 0:
-            time.sleep(45 if len(files) > 1000 else (10 if len(files) > 250 else 1))
+            time.sleep(10 if len(files) > 1000 else 1)
 
     
     waitfilename = os.path.join(basepath, "done.txt")

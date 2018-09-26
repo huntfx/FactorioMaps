@@ -149,7 +149,6 @@ function fm.generateMap(data)
                     gridY = tonumber(gridY)
 
                     allGrid[s] = {x = gridX, y = gridY}
-                    game.print(s)
 
                     minX = math.min(minX, gridX)
                     minY = math.min(minY, gridY)
@@ -157,7 +156,6 @@ function fm.generateMap(data)
                     maxY = math.max(maxY, gridY)
                 end
                 if tonumber(mapTick) == fm.autorun.tick then
-                    game.print("SAME TICK FOUND YEA")
                     for i, map in pairs(fm.autorun.mapInfo.maps) do
                         if map.tick == mapTick then
                             mapIndex = i
@@ -227,6 +225,37 @@ function fm.generateMap(data)
                 end
             end
         end
+        
+    
+        -- smoothing
+        local cont = true
+        while cont do
+            cont = false
+            tmp = {}
+            for _, p in pairs(allGrid) do
+                for _, o in pairs({ {x=1, y=0}, {x=-1, y=0}, {x=0, y=1}, {x=0, y=-1} }) do
+                    if allGrid[(p.x+o.x) .. " " .. (p.y+o.y)] == nil then
+                        local count = 0
+                        for _, pos in pairs({ {x=p.x+2*o.x, y=p.y+2*o.y}, {x=p.x+o.x+o.y, y=p.y+o.y+o.x}, {x=p.x+o.x-o.y, y=p.y+o.y-o.x} }) do
+                            if allGrid[pos.x .. " " .. pos.y] ~= nil then
+                                count = count + 1
+                                if count >= 2 then
+                                    tmp[#tmp + 1] = {x=p.x+o.x, y=p.y+o.y}
+                                    cont = true
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            cont = #tmp > 0
+            for _, v in pairs(tmp) do
+                allGrid[v.x .. " " .. v.y] = v 
+                allGridString = allGridString .. v.x .. " " .. v.y .. "|"
+            end
+        end
+
+
         mapIndex = #fm.autorun.mapInfo.maps + 1
         fm.autorun.mapInfo.maps[mapIndex] = {
             tick = fm.autorun.tick,
@@ -236,6 +265,7 @@ function fm.generateMap(data)
             surfaces = {}
         }
     end
+
     
     local minZoom = (20 - math.max(0, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))))
     if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
@@ -261,8 +291,6 @@ function fm.generateMap(data)
 
 
     local cropText = ""
-
-    lamps = 0
     for _, chunk in pairs(allGrid) do   
         --game.print(chunk)
 
@@ -274,14 +302,12 @@ function fm.generateMap(data)
         
         local corners = {0, 0, 0, 0}
 
-        for _, t in pairs(surface.find_entities_filtered{area = area, name="big-electric-pole"}) do 
+        for _, t in pairs(surface.find_entities_filtered{area=area, name="big-electric-pole"}) do 
             adjustBox(t.position, box, initialBox, corners)
         end
-        for _, t in pairs(surface.find_entities_filtered{area = area, type="lamp"}) do 
+        for _, t in pairs(surface.find_entities_filtered{area=area, type="lamp"}) do 
             local control = t.get_control_behavior()
-            if t.energy > t.prototype.max_energy_usage and ((control and not control.disabled) or (not control and surface.darkness > 0.3)) then
-                t.energy = t.electric_buffer_size --supply all lamps that are turned on with max power. This helps the timelapse image referencing process.
-                lamps = lamps + 1
+            if t.energy > 1 and (control and not control.disabled) or (not control and surface.darkness > 0.3) then
                 adjustBox(t.position, box, initialBox, corners)
             end
         end

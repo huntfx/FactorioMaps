@@ -65,11 +65,13 @@ def changeModlist(newState):
 changeModlist(True)
 
 
+
+workfolder = os.path.join(basepath, foldername)
+datapath = os.path.join(workfolder, "latest.txt")
+print(workfolder)
+
 try:
     for savename in savenames:
-        workfolder = os.path.join(basepath, foldername)
-        datapath = os.path.join(workfolder, "latest.txt")
-        print(workfolder)
 
 
 
@@ -99,7 +101,7 @@ try:
 
 
         print("starting factorio")
-        p = subprocess.Popen(factorioPath + ' --load-game "' + savename + '" --disable-audio')
+        p = subprocess.Popen(factorioPath + ' --load-game "' + savename + '" --disable-audio --no-log-rotation')
 
         if not os.path.exists(datapath):
             while not os.path.exists(datapath):
@@ -134,10 +136,43 @@ try:
                     p.kill()
                 else:
                     os.system("taskkill /im factorio.exe")
-                workthread = threading.Thread(target=refZoom)
-                workthread.daemon = True
-                workthread.start()
-                time.sleep(2)
+                if savename == savenames[-1]:
+                    refZoom()
+                else:
+                    workthread = threading.Thread(target=refZoom)
+                    workthread.daemon = True
+                    workthread.start()
+
+
+
+
+    if workthread and workthread.isAlive():
+        print("waiting for workthread")
+        workthread.join()
+        
+
+    print("updating mapInfo.json")
+    with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
+        data = json.load(outf)
+        for mapIndex, mapStuff in json.load(inf)["maps"].iteritems():
+            for surfaceName, surfaceStuff in mapStuff["surfaces"].iteritems():
+                data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
+        outf.seek(0)
+        json.dump(data, outf)
+        outf.truncate()
+    os.remove(os.path.join(workfolder, "mapInfo.out.json"))
+
+
+    print("generating mapInfo.js")
+    with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
+        outf.write("window.mapInfo = JSON.parse('")
+        outf.write(inf.read())
+        outf.write("');")
+        
+        
+    print("copying index.html")
+    #copy("index.html", os.path.join(workfolder, "index.html"))
+
 
 
 except KeyboardInterrupt:
@@ -148,45 +183,14 @@ except KeyboardInterrupt:
         os.system("taskkill /im factorio.exe")
     raise
 
-
-if workthread.isAlive():
-    print("waiting for workthread")
-    workthread.join()
-    
-
-print("updating mapInfo.json")
-with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
-    data = json.load(outf)
-    for mapIndex, mapStuff in json.load(inf)["maps"].iteritems():
-        for surfaceName, surfaceStuff in mapStuff["surfaces"].iteritems():
-            data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
-    outf.seek(0)
-    json.dump(data, outf)
-    outf.truncate()
-os.remove(os.path.join(workfolder, "mapInfo.out.json"))
-
-
-print("generating mapInfo.js")
-with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
-    outf.write("window.mapInfo = JSON.parse('")
-    outf.write(inf.read())
-    outf.write("');")
-    
-    
-print("copying index.html")
-#copy("index.html", os.path.join(workfolder, "index.html"))
+finally:
+    print("disabling FactorioMaps mod")
+    changeModlist(False)
 
 
 
-
-
-print("enabling FactorioMaps mod")
-changeModlist(False)
-
-
-
-print("reverting autorun.lua")
-if os.path.isfile("autorun.lua"):
-    os.remove("autorun.lua")
-if os.path.isfile("autorun.lua.bak"):
-    os.rename("autorun.lua.bak", "autorun.lua")
+    print("reverting autorun.lua")
+    if os.path.isfile("autorun.lua"):
+        os.remove("autorun.lua")
+    if os.path.isfile("autorun.lua.bak"):
+        os.rename("autorun.lua.bak", "autorun.lua")

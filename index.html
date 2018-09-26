@@ -1,0 +1,442 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Nilaus Final Factory - FactorioMaps</title>
+    <meta name="og:image" content="https://i.factoriomaps.com/t92kw.png" />
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.css" integrity="sha256-iYUgmrapfDGvBrePJPrMWQZDcObdAcStKBpjP3Az+3s="
+        crossorigin="anonymous" />
+
+    <style type="text/css">
+        html {
+            height: 100%
+        }
+
+        body {
+            height: 100%;
+            margin: 0px;
+            padding: 0px
+        }
+
+        #map {
+            height: 100%;
+            z-index: 0;
+            background-color: rgb(27, 44, 51) !important;
+        }
+
+        #gmnoprint {
+            width: auto;
+        }
+
+        /* DOWN BUTTON CSS */
+        #downBtn {
+            position: fixed;
+            /* Fixed/sticky position */
+            bottom: 0px;
+            /* Place the button at the bottom of the page */
+            right: 50%;
+            transform: translate(50%, 0);
+            z-index: 99;
+            /* Make sure it does not overlap */
+            border: none;
+            /* Remove borders */
+            outline: none;
+            /* Remove outline */
+            background-color: chocolate;
+            /* Set a background color */
+            color: white;
+            /* Text color */
+            cursor: pointer;
+            /* Add a mouse pointer on hover */
+            padding: 5px;
+            /* Some padding */
+            border-radius: 7px;
+            /* Rounded corners */
+            font-size: 18px;
+            /* Increase font size */
+        }
+
+        #downBtn:hover {
+            background-color: #555;
+            /* Add a dark-grey background on hover */
+        }
+
+        /* FANCY DOWNLOAD CSS */
+        #modal {
+            display: none;
+            position: absolute;
+            top: 150px;
+            bottom: 30px;
+            background-color: rgb(27, 45, 51);
+            padding: 20px;
+            z-index: 100;
+            width: 400px;
+            right: 50%;
+            margin-right: -200px;
+            border: none;
+            border-radius: 5px;
+            color: #C6FFFD;
+        }
+
+        #modal.open {
+            display: block;
+        }
+
+        #modal ul li {
+            list-style-type: none;
+            margin-bottom: 5px;
+        }
+
+        #modal .close {
+            cursor: pointer;
+            float: right;
+            margin-top: -20px;
+        }
+
+        #modal .title {
+            font-size: 2em;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        #modal .mapLayerLink {
+            float: right;
+            padding: 0px 25px;
+            background-color: chocolate;
+            color: #CFFFFD;
+            border-radius: 8px;
+            line-height: 35px;
+        }
+
+        #modal .mapLayerLink.disabled {
+            background-color: grey;
+            cursor: not-allowed;
+        }
+
+        #modal .mapLayerLink:hover {
+            background-color: #555;
+        }
+
+        hr.clear {
+            clear: both;
+            float: none;
+            border: 0;
+            width: 0;
+            height: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        #modal .body {
+            overflow-y: auto;
+            max-height: 92%;
+        }
+
+        /* END FANCY DOWNLOAD CSS */
+        #nextBtn {
+            position: fixed; /* Fixed/sticky position */
+            top: 50%; /* Place the button at the bottom of the page */
+            right: -38px; /* Place the button 30px from the right */
+            z-index: 99; /* Make sure it does not overlap */
+            border: none; /* Remove borders */
+            outline: none; /* Remove outline */
+            background-color: chocolate; /* Set a background color */
+            color: white; /* Text color */
+            cursor: pointer; /* Add a mouse pointer on hover */
+            padding: 6px; /* Some padding */
+            border-radius: 6px; /* Rounded corners */
+            font-size: 18px; /* Increase font size */
+            transform: rotate(90deg);
+        }
+
+        #nextBtn:hover {
+            background-color: #555; /* Add a dark-grey background on hover */
+        }
+        #prevBtn {
+            position: fixed; /* Fixed/sticky position */
+            top: 50%; /* Place the button at the bottom of the page */
+            left: -35px; /* Place the button 30px from the right */
+            z-index: 99; /* Make sure it does not overlap */
+            border: none; /* Remove borders */
+            outline: none; /* Remove outline */
+            background-color: chocolate; /* Set a background color */
+            color: white; /* Text color */
+            cursor: pointer; /* Add a mouse pointer on hover */
+            padding: 6px; /* Some padding */
+            border-radius: 6px; /* Rounded corners */
+            font-size: 18px; /* Increase font size */
+            transform: rotate(-90deg);
+        }
+
+        #prevBtn:hover {
+            background-color: #555; /* Add a dark-grey background on hover */
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.js" integrity="sha256-lwWHyfIX653fxmxYjZUYOSM7ufWv6dMT8ISVuTWwoOY="
+        crossorigin="anonymous"></script>
+    <link href='https://factoriomaps.com/assets/js/leaflet/plugins/leaflet-fullscreen/1.0.1/leaflet.fullscreen.css' rel='stylesheet'
+    />
+    <script src='https://factoriomaps.com/assets/js/leaflet/plugins/leaflet-fullscreen/1.0.1/Leaflet.fullscreen.min.js'></script>
+
+
+
+
+
+    <!-- HERE: DONT FORGET TO FIX THIS -->
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+    <!-- HERE: ESPECIALLY THESE TWO -->
+    <link rel="stylesheet" href="C:\Users\L0laapk3\Documents\coding\Leaflet.OpacityControls/lib/opacity/Control.Opacity.css" />
+    <script src="C:\Users\L0laapk3\Documents\coding\Leaflet.OpacityControls/lib/opacity/Control.Opacity.js" ></script>
+
+
+    <script src="mapInfo.js"></script>
+</head>
+
+<body>
+    <!-- FANCY DOWNLOAD -->
+    <div id="buttonAnchor"></div>
+    <div id="modal">
+        <div class="title">
+            Download the world saves <span class="close" title="Close">x</span>
+        </div>
+        <div class="body">
+            This maps has multiple layers available, which means there can be multiple saves available. Please select the one you wish
+            to download :
+            <ul id="save-download-container"></ul>
+        </div>
+    </div>
+    <!-- END FANCY DOWNLOAD -->
+    <button onclick="window.location = '/user/Nilaus/Nilaus-Final-Factory/2018-08-27-E39/index.html' + window.location.hash" id="prevBtn" title="Episode 39">Episode 39</button>
+    <div id="map" style="background: #1B2D33;"></div>
+    <script>
+        "use strict";
+        
+
+        //var _getTileUrl = L.TileLayer.prototype.getTileUrl;
+        //L.TileLayer.prototype.getTileUrl = function(coords) { return _getTileUrl.call(this, {x: coords.x - 1 * Math.pow(2, coords.z - 2), y: coords.y, z: coords.z}); };
+
+        L.TileLayer.prototype.getTileUrl = function(c) {
+            return "Images/" + mapInfo.maps[this.tileIndex[c.z] && this.tileIndex[c.z][c.y] && this.tileIndex[c.z][c.y][c.x] || this.tileIndex.fallback].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
+        }
+
+        var surface = "nauvis";
+        var layers = [], saves = [], countAvailableSaves = 0;
+        var globalTileIndex = {}
+        for (var i = 0; i < mapInfo.maps.length; i++) {
+            var map = mapInfo.maps[i];
+            var layer = map.surfaces[surface];
+            if (!globalTileIndex[surface])
+                globalTileIndex[surface] = {fallback: i}
+            else {
+                var z = layer.zoom.min;
+                layer.chunks.split(' ').forEach(function(zTileIndex) {
+                    if (!globalTileIndex[surface][z])
+                        globalTileIndex[surface][z] = {}
+                    zTileIndex.split('|').forEach(function(row) {
+                        function B64Parse(offset) {
+                            return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset])
+                            + 64 * "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+1])
+                            +64*64*"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+2])
+                            - 1000000/16;
+                        }
+
+                        console.assert(row.length % 6 == 3); //corrupted data, prevent infinite loop
+                        var j = 3, y = B64Parse(0);
+                        
+                        if (!globalTileIndex[surface][z][y])
+                            globalTileIndex[surface][z][y] = {}
+
+                        while (j < row.length) {
+                            var stop = B64Parse(j + 3)
+                            for (var x = B64Parse(j); x < stop; x++)
+                                globalTileIndex[surface][z][y][x] = i;
+                            j += 6;
+                        }
+                    });
+                    z++;
+                });
+            }
+            var tileIndex = { fallback: globalTileIndex[surface].fallback };
+            for (var z in globalTileIndex[surface]) {
+                if (z == "fallback")
+                    continue;
+                tileIndex[z] = {};
+                for (var y in globalTileIndex[surface][z]) {
+                    tileIndex[z][y] = {};
+                    for (var x in globalTileIndex[surface][z][y])
+                        tileIndex[z][y][x] = globalTileIndex[surface][z][y][x];
+                }
+            }
+
+
+            layers[i] = {};
+            ["day", "night"].forEach(function(daytime) {
+                var LLayer = L.tileLayer(undefined, {
+                    id: layer.path,
+                    attribution: '<a href="https://github.com/L0laapk3/FactorioMods_FactorioMaps">FactorioMaps</a>',
+                    minNativeZoom: layer.zoom.min,
+                    maxNativeZoom: layer.zoom.max,
+                    minZoom: layer.zoom.min >= 3 ? layer.zoom.min - 3 : 1,
+                    maxZoom: layer.zoom.max,
+                    noWrap: true,
+                    tileSize: 512,
+                    keepBuffer: 3
+                });
+                LLayer.surface = surface;
+                LLayer.daytime = daytime;
+                LLayer.path = map.path;
+                LLayer.tileIndex = tileIndex;
+
+
+                layers[i][daytime] = LLayer;
+            });
+
+
+
+            /* EDIT */
+            if (layer.save && layer.save.download) {
+                saves.push({
+                    layer: layer.save.name || layer.name,
+                    url: layer.save.url
+                });
+                if (layer.save.url) {
+                    countAvailableSaves++;
+                }
+            }
+            /* END EDIT */
+        }
+        /* EDIT */
+        if (countAvailableSaves > 0 || mapInfo.links && mapInfo.links.save) {
+            var btn = document.createElement("a"), modal = document.getElementById("modal"), ulContainer = document.getElementById("save-download-container"), modalClose = modal.getElementsByClassName("close")[0], opened = false, built = false;
+            btn.id = 'downBtn';
+            btn.appendChild(document.createTextNode("Download Save"))
+            if (saves.length <= 1) {
+                //Act like a download link
+                btn.href = saves.length === 1 ? saves[0].url : m.links.save;
+                btn.target = '_blank';
+            } else {
+                btn.addEventListener('click', function () {
+                    if (!opened) {
+                        if (!built) {
+                            //Empty the modal, re-create modal content and display it
+                            while (ulContainer.lastChild) {
+                                ulContainer.removeChild(ulContainer.lastChild);
+                            }
+                            for (var i in saves) {
+                                if (saves.hasOwnProperty(i)) {
+                                    var saveObj = saves[i];
+                                    var li = document.createElement("li"), a = document.createElement("a"), span = document.createElement("span"), hr = document.createElement("hr");
+                                    hr.classList.add("clear");
+                                    a.classList.add("mapLayerLink");
+                                    li.classList.add("mapLayer");
+                                    a.appendChild(document.createTextNode("Download"));
+
+                                    a.target = "_blank";
+                                    if (!saveObj.url) {
+                                        a.setAttribute("disabled", "disabled");
+                                        a.classList.add("disabled");
+                                    } else {
+                                        a.href = saveObj.url;
+                                    }
+                                    span.classList.add("mapLayerName")
+                                    span.appendChild(document.createTextNode(saveObj.layer));
+                                    li.appendChild(span);
+                                    li.appendChild(a);
+                                    li.appendChild(hr);
+                                    ulContainer.appendChild(li);
+                                }
+                            }
+                            modal.classList.add("open");
+                            opened = true;
+                        }
+                    }
+                });
+                modalClose.addEventListener("click", function () {
+                    if (opened) {
+                        modal.classList.remove("open");
+                        opened = false;
+                    }
+                });
+            }
+            document.getElementById("buttonAnchor").appendChild(btn);
+        }
+
+        var nightOpacity = 100;       //HERE: EXTRACT FROM URL
+
+        /* END EDIT */
+        var leafletLayers = [];
+        var map = L.map('map', {
+            layers: [],
+            fadeAnimation: false,
+            zoomAnimation: true,
+            crs: L.CRS.Simple // the map is 2D by nature
+        }).setView([0, 0], 19);
+        for (var layer in layers) {
+            if (layer.day)
+                map.addLayer(layer.day);
+            if (layer.night)
+                map.addLayer(layer.night);
+        }
+        //if (nightOpacity < 99) map.addLayer(layers.Day);
+        //if (nightOpacity > 1) map.addLayer(layers.Night);
+        var opacitySlider, timeSlider;
+        if (layers.some(function(layer) { return layer.day; }) && layers.some(function(layer) { return layer.night; })) {
+            //L.control.layers({Day: layers.Day}, {Night: layers.Night}, { collapsed: m.meta.map.options.collapseLayerList }).addTo(map).setPosition('bottomright');
+            opacitySlider = new L.Control.opacitySlider({
+                position: "bottomright",
+                orientation: "horizontal",
+                initial: nightOpacity,
+                length: 135,
+                gravitate: 7,
+                labels: [ {name: "Day", position: 0, layers: layers.map(l => l.day)}, {name: "Nightvision", position: .42, gravitate: 5}, {name: "Night", position: 1, layers: layers.map(l => l.night)} ],
+                onChange: function(value) {
+                    //HERE: UPDATE THE URL TO REFLECT DARKNESS VALUE
+                }
+            });
+            map.addControl(opacitySlider);
+        }
+        if (layers.length > 1 && true) {
+            var min = Math.min.apply(undefined, mapInfo.maps.map(l => parseInt(l.path)));
+            var max = Math.max.apply(undefined, mapInfo.maps.map(l => parseInt(l.path)));
+            var len = Math.max(95, 45 * (layers.length - 1));
+            timeSlider = new L.Control.opacitySlider({
+                position: "bottomright",
+                orientation: "vertical",
+                initial: nightOpacity,
+                length: len,
+                evenSpacing: true,
+                gravitate: 4,
+                backdrop: false,
+                labels: layers.map(function(layer, i) {
+                    return {
+                        name: mapInfo.maps[i].path + "h",
+                        position: i * 30/len + (parseInt(mapInfo.maps[i].path) - min) / (max - min) * (1 - (layers.length - 1) * 30/len),
+                        layers: ["day", "night"].map(n => layer[n]).filter(l => l)
+                    }
+                }),
+                onChange: function(value) {
+                    //HERE: UPDATE THE URL TO REFLECT DARKNESS VALUE
+                }
+            });
+            map.addControl(timeSlider);
+        }
+        map.addControl(new L.Control.Fullscreen().setPosition('bottomright'));
+        map.zoomControl.setPosition('bottomleft')
+        /*if (m.meta.map.markers !== null && m.meta.map.markers !== undefined) {
+            for (i = 0; i < m.meta.map.markers.length; i++) {
+                var markerData = m.meta.map.markers[i], div = document.createElement('div'), title = document.createElement('h3');
+                div.innerHTML = '<h3>' + markerData.title + '</h3>' + markerData.text;
+                L.marker(markerData.coords, { title: markerData.title }).addTo(map).bindPopup(div);
+            }
+        }*/
+    </script>
+</body>
+
+</html>
