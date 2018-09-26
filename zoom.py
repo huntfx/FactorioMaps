@@ -32,8 +32,8 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, chunk):
 
                     for m in range(len(coords)):
                         if not os.path.isfile(paths[m]):
-                            for path in pathList:
-                                paths[m] = os.path.join(basepath, path, surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + ext)
+                            for n in range(1, len(pathList)):
+                                paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + ext)
                                 if os.path.isfile(paths[m]):
                                     break
 
@@ -70,7 +70,7 @@ def thread(basepath, pathList, surfaceName, daytime, start, stop, allChunks, que
 
 if __name__ == '__main__':
 
-    psutil.Process(os.getpid()).nice(psutil.IDLE_PRIORITY_CLASS or -15)
+    psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS or -10)
 
 
     toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
@@ -103,34 +103,10 @@ if __name__ == '__main__':
                             if not os.path.isdir(os.path.join(toppath, "Images", str(map["path"]), surfaceName, daytime, str(start - 1))):
 
                                 allBigChunks = {}
-                                for x in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, "20")):
-                                    for y in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, "20", x)):
+                                for x in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(surface["zoom"]["max"]))):
+                                    for y in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(surface["zoom"]["max"]), x)):
                                         allBigChunks[(int(x) >> start - stop, int(y.split('.', 2)[0]) >> start - stop)] = True
 
-                                '''
-                                allSmallChunks = []
-                                for x in os.listdir(folder + "20/"):
-                                    for y in os.listdir(folder + "20/" + x):
-                                        allSmallChunks.append((int(x), int(y.split('.', 2)[0])))
-
-                                minX = minY = float("inf")
-                                maxX = maxY = float("-inf")
-                                for pos in allSmallChunks:
-                                    minX = min(minX, pos[0])
-                                    maxX = max(maxX, pos[0])
-                                    minY = min(minY, pos[1])
-                                    maxY = max(maxY, pos[1])
-
-                                print(minX, maxX, minY, maxY)
-                                start = 20
-                                desiredTopLevelImages = 4
-                                stop = start - int(math.ceil(min(math.log(maxX - minX, 2), math.log(maxY - minY, 2)) - math.log(desiredTopLevelImages, 2)) + 0.1)
-                                print(start, stop)
-
-                                allBigChunks = {}
-                                for pos in allSmallChunks:
-                                    allBigChunks[(pos[0] >> start - stop, pos[1] >> start - stop)] = True
-                                '''
                                 pathList = []
                                 for otherMapIndex in range(mapIndex, -1, -1):
                                     pathList.append(str(data["maps"][otherMapIndex]["path"]))
@@ -150,6 +126,7 @@ if __name__ == '__main__':
                                 threads = min(len(allChunks), maxthreads)
                                 processes = []
                                 
+                                print("%s %s %s %s" % (pathList[0], str(surfaceName), daytime, pathList))
                                 print("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks)))
                                 originalSize = queue.qsize()
                                 print("0%")
@@ -172,7 +149,7 @@ if __name__ == '__main__':
                                     
 
                                 
-                                print("%s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks)))
+                                print("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks)))
                                 processes = []
                                 i = len(allBigChunks) - 1
                                 for chunk in list(allBigChunks):

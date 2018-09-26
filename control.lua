@@ -93,6 +93,26 @@ script.on_event(defines.events.on_tick, function(event)
                     i = i + 1
                 end
             end
+
+
+            
+            -- remove no path sign and ghost entities
+            for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
+                entity.destroy()
+            end
+
+            --spawn a bunch of hidden energy sources on lamps
+            for _, t in pairs(game.players[event.player_index].surface.find_entities_filtered{type="lamp"}) do
+                local control = t.get_control_behavior()
+                if t.energy > 1 and (control and not control.disabled) or (not control) then
+                    game.players[event.player_index].surface.create_entity{name="hidden-electric-energy-interface", position=t.position}
+                end
+            end
+
+            -- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
+            for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
+                entity.active = false
+            end
             
             
             latest = ""
@@ -104,18 +124,6 @@ script.on_event(defines.events.on_tick, function(event)
             end
             game.write_file(fm._topfolder .. "latest.txt", latest, false, event.player_index)
 
-
-            
-            -- remove no path sign and ghost entities
-            for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
-                entity.destroy()
-            end
-
-            
-            -- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-            for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({})) do
-                entity.active = false
-            end
 
             if fm.autorun.day then
                 game.players[event.player_index].surface.daytime = 0
