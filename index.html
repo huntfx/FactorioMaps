@@ -200,20 +200,6 @@
 </head>
 
 <body>
-    <!-- FANCY DOWNLOAD -->
-    <div id="buttonAnchor"></div>
-    <div id="modal">
-        <div class="title">
-            Download the world saves <span class="close" title="Close">x</span>
-        </div>
-        <div class="body">
-            This maps has multiple layers available, which means there can be multiple saves available. Please select the one you wish
-            to download :
-            <ul id="save-download-container"></ul>
-        </div>
-    </div>
-    <!-- END FANCY DOWNLOAD -->
-    <button onclick="window.location = '/user/Nilaus/Nilaus-Final-Factory/2018-08-27-E39/index.html' + window.location.hash" id="prevBtn" title="Episode 39">Episode 39</button>
     <div id="map" style="background: #1B2D33;"></div>
     <script>
         "use strict";
@@ -228,41 +214,60 @@
 
         var surface = "nauvis";
         var layers = [], saves = [], countAvailableSaves = 0;
-        var globalTileIndex = {}
+        var globalTileIndex = {};
+        var globalTileNightIndex = {};
         for (var i = 0; i < mapInfo.maps.length; i++) {
             var map = mapInfo.maps[i];
             var layer = map.surfaces[surface];
-            if (!globalTileIndex[surface])
-                globalTileIndex[surface] = {fallback: i}
-            else {
-                var z = layer.zoom.min;
-                layer.chunks.split(' ').forEach(function(zTileIndex) {
-                    if (!globalTileIndex[surface][z])
-                        globalTileIndex[surface][z] = {}
-                    zTileIndex.split('|').forEach(function(row) {
-                        function B64Parse(offset) {
-                            return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset])
-                            + 64 * "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+1])
-                            +64*64*"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+2])
-                            - 1000000/16;
-                        }
+            if (!globalTileNightIndex[surface]) {
+                globalTileNightIndex[surface] = {fallback: i};
+                globalTileIndex[surface] = {fallback: i};
+            } else {
+                for (var z = layer.zoom.min; z <= layer.zoom.max; z++)
+                    if (!globalTileNightIndex[surface][z]) {
+                        globalTileNightIndex[surface][z] = {};
+                        globalTileIndex[surface][z] = {};
+                    }
+                layer.chunks.split('=').forEach(function(row) {
+                    function B64Parse(offset) {
+                        return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset])
+                        + 64 * "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+1])
+                        +64*64*"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+2])
+                        - 2**16;
+                    }
 
-                        console.assert(row.length % 6 == 3); //corrupted data, prevent infinite loop
-                        var j = 3, y = B64Parse(0);
-                        
-                        if (!globalTileIndex[surface][z][y])
-                            globalTileIndex[surface][z][y] = {}
-
-                        while (j < row.length) {
-                            var stop = B64Parse(j + 3)
-                            for (var x = B64Parse(j); x < stop; x++)
-                                globalTileIndex[surface][z][y][x] = i;
-                            j += 6;
+                    console.assert(row.length % 3 == 0); //corrupted data, prevent infinite loop
+                    var j = 3, y = B64Parse(0) - 2**17;
+                    
+                    if (!globalTileNightIndex[surface][layer.zoom.max][y]){
+                        globalTileNightIndex[surface][layer.zoom.max][y] = {};
+                        globalTileIndex[surface][layer.zoom.max][y] = {};
+                    }
+                    while (j < row.length) {
+                        var stop = B64Parse(j + 3)
+                        var start = B64Parse(j);
+                        var mode = start > 2**16;
+                        for (var x = start - mode*2**17; x < (stop - (stop>2**16)*2**17); x++) {
+                            globalTileNightIndex[surface][layer.zoom.max][y][x] = i;
+                            if (mode)
+                                globalTileIndex[surface][layer.zoom.max][y][x] = i;
+                            for (var z = 1; z <= layer.zoom.max - layer.zoom.min; z++)  {
+                                if (!globalTileNightIndex[surface][layer.zoom.max-z][y >> z]) {
+                                    globalTileNightIndex[surface][layer.zoom.max-z][y >> z] = {};
+                                    globalTileIndex[surface][layer.zoom.max-z][y >> z] = {};
+                                }
+                                if ((mode ? globalTileIndex : globalTileNightIndex)[surface][layer.zoom.max-z][y >> z][x >> z] == i)
+                                    break;
+                                globalTileNightIndex[surface][layer.zoom.max-z][y >> z][x >> z] = i;
+                                if (mode)
+                                    globalTileIndex[surface][layer.zoom.max-z][y >> z][x >> z] = i;
+                            }
                         }
-                    });
-                    z++;
+                        j += mode == stop > 2**16 ? 6 : 3;
+                    }
                 });
             }
+
             var tileIndex = { fallback: globalTileIndex[surface].fallback };
             for (var z in globalTileIndex[surface]) {
                 if (z == "fallback")
@@ -272,6 +277,17 @@
                     tileIndex[z][y] = {};
                     for (var x in globalTileIndex[surface][z][y])
                         tileIndex[z][y][x] = globalTileIndex[surface][z][y][x];
+                }
+            }
+            var tileNightIndex = { fallback: globalTileNightIndex[surface].fallback };
+            for (var z in globalTileNightIndex[surface]) {
+                if (z == "fallback")
+                    continue;
+                tileNightIndex[z] = {};
+                for (var y in globalTileNightIndex[surface][z]) {
+                    tileNightIndex[z][y] = {};
+                    for (var x in globalTileNightIndex[surface][z][y])
+                        tileNightIndex[z][y][x] = globalTileNightIndex[surface][z][y][x];
                 }
             }
 
@@ -292,7 +308,7 @@
                 LLayer.surface = surface;
                 LLayer.daytime = daytime;
                 LLayer.path = map.path;
-                LLayer.tileIndex = tileIndex;
+                LLayer.tileIndex = daytime == "day" ? tileIndex : tileNightIndex;
 
 
                 layers[i][daytime] = LLayer;
@@ -368,7 +384,7 @@
             document.getElementById("buttonAnchor").appendChild(btn);
         }
 
-        var nightOpacity = 100;       //HERE: EXTRACT FROM URL
+        var nightOpacity = 0;       //HERE: EXTRACT FROM URL
 
         /* END EDIT */
         var leafletLayers = [];
@@ -378,14 +394,8 @@
             zoomAnimation: true,
             crs: L.CRS.Simple // the map is 2D by nature
         }).setView([0, 0], 19);
-        for (var layer in layers) {
-            if (layer.day)
-                map.addLayer(layer.day);
-            if (layer.night)
-                map.addLayer(layer.night);
-        }
-        //if (nightOpacity < 99) map.addLayer(layers.Day);
-        //if (nightOpacity > 1) map.addLayer(layers.Night);
+
+        
         var opacitySlider, timeSlider;
         if (layers.some(function(layer) { return layer.day; }) && layers.some(function(layer) { return layer.night; })) {
             //L.control.layers({Day: layers.Day}, {Night: layers.Night}, { collapsed: m.meta.map.options.collapseLayerList }).addTo(map).setPosition('bottomright');
@@ -412,7 +422,7 @@
                 initial: nightOpacity,
                 length: len,
                 evenSpacing: true,
-                gravitate: 4,
+                gravitate: 5,
                 backdrop: false,
                 labels: layers.map(function(layer, i) {
                     return {
