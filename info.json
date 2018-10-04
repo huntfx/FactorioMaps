@@ -4,9 +4,9 @@
     "title": "FactorioMaps",
     "author": "L0laapk3",
     "contact": "https://github.com/L0laapk3/",
-    "homepage": "https://github.com/L0laapk3/FactorioMods_FactorioMaps",
-    "description": "Generate timelapses of your base to view in browsers!",
-    "license": "CC BY-NC 4.0",
+    "homepage": "https://github.com/L0laapk3/FactorioMaps",
+    "description": "Generate timelapses of your base to view in browsers! Please read the instructions over at https://github.com/L0laapk3/FactorioMaps",
+    "license": "CC BY-NC-SA 4.0",
     "factorio_version": "0.16",
     "dependencies": []
 }
