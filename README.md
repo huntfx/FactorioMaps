@@ -12,6 +12,7 @@ Demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
 1. Install the following pip packages: `pip install Pillow psutil`.
 
 # How to Use
+1. Make sure you close factorio before starting the process.
 1. Navigate to the FactorioMaps folder (`%appdata%\Factorio\mods\FactorioMaps_1.0.0`)
 1. Open a command line by typing cmd in the address bar and pressing enter. ![opening cmd](https://user-images.githubusercontent.com/6313423/46446227-6ab5bc00-c77b-11e8-982e-b040f964a778.png)
 1. Run `python auto.py`. Some syntax examples:
