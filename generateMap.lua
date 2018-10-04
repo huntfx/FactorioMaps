@@ -1,6 +1,4 @@
 
-require "stdlib/area/area"
-require "stdlib/area/chunk"
 
 math.log2 = function(x) return math.log(x) / math.log(2) end
 
@@ -75,15 +73,15 @@ function fm.generateMap(data)
 
 
     -- delete folder (if it already exists)
-    local basePath = data.folderName
-    local subPath = basePath .. "/Images/" .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. data.subfolder .. "/"
+    local basePath = fm.topfolder
+    local subPath = basePath .. "/Images/" .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. fm.subfolder .. "/"
     game.remove_path(subPath)
 
 
     
     -- Number of pixels in an image     -- CHANGE THIS AND REF.PY WILL NEED TO BE CHANGED
     local gridSizes = {256, 512, 1024} -- cant have 2048 anymore. code now relies on it being smaller than one game chunk (32 tiles * 32 pixels)
-    local gridSize = gridSizes[data.gridSizeIndex]
+    local gridSize = gridSizes[1]
 
     -- These are the number of tiles per grid section
     local gridPixelSize = gridSize / 32 -- 32 is a hardcoded Factorio value for pixels per tile.
@@ -281,7 +279,7 @@ function fm.generateMap(data)
         game.write_file(basePath .. "/chunkCache.json", prettyjson(fm.autorun.chunkCache), false, data.player_index)
     
     end
-    fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][data.subfolder] = true
+    fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][fm.subfolder] = true
 
    
     local extension = "jpg"

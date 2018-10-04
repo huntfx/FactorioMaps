@@ -215,7 +215,6 @@ if __name__ == '__main__':
             for coord in aList:
                 x = int(coord[3])
                 y = int(os.path.splitext(coord[4])[0])
-                if (y == 6 and x == 5): print("its here")
                 if coord[0] in allImageIndex: #only save surfaces that have had older maps of the same surface
                     if coord[1] not in allImageIndex[coord[0]]:
                         allImageIndex[coord[0]][coord[1]] = {}
@@ -240,17 +239,11 @@ if __name__ == '__main__':
             string = getBase64(y, False)
             isLastChangedImage = False
             isLastNightImage = False
-            #if y == 6:
-            #    print(xList)
             
             for x in range(min(xList), max(xList) + 2):
                 isChangedImage = x in xList                                                             #does the image exist at all? 
                 isNightImage = daytime == "night" and (str(x), str(y)) not in allDayImages[surfaceName] #is this image only in night?
-                #if y == 6:
-                #    print(x, isChangedImage, isNightImage)
                 if isLastChangedImage != isChangedImage or (isChangedImage and isLastNightImage != isNightImage): #differential encoding
-                    #if y == 6:
-                    #    print("str", x, isNightImage if isChangedImage else isLastNightImage)
                     string += getBase64(x, isNightImage if isChangedImage else isLastNightImage)
                     isLastChangedImage = isChangedImage
                     isLastNightImage = isNightImage

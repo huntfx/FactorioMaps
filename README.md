@@ -1,18 +1,32 @@
 # Factorio Maps
-This [Factorio](http://www.factorio.com/) mod makes a Google Map of your factory! You can view the map locally or upload it to a web server.
+This [Factorio](http://www.factorio.com/) mod turns your factory into a timeline! You can view the map locally or upload it to a web server.
 
 # How to Install
 1. Open Factorio and open the "Mod" menu
-1. Search for and install the "Google Maps Factorio Style" mod.
+1. Search for and install the "FactorioMaps" mod. (The mod does not need to be enabled. Only installed.)
+1. Install the latest version of [python 2.7](https://www.python.org/downloads/). (Do not install python 3.)
+1. Recommended: [Add python to your environment variables](https://stackoverflow.com/a/4855685/3185280).
+1. Install pip: Download the latest [get-pip.py](https://bootstrap.pypa.io/get-pip.py), and run it (`python get-pip.py` in the command line).
+1. Install the following pip packages: `pip install Pillow psutil`.
 
 # How to Use
-1. Open your save then click the FactorioMaps button in the upper left-hand side.
-1. Configure settings
-   * If planning to upload to a server add the Google API key to the new MOD Settings menu of Factorio.
-   * Obtain a key from: https://developers.google.com/maps/documentation/javascript/get-api-key
-1. Generate your map.
-1. Open the Factorio script-output directory and open the FactorioMaps folder.
-1. Upload your map to a server or use it locally!
+1. Navigate to the FactorioMaps folder (`%appdata%\Factorio\mods\FactorioMaps_1.0.0`)
+1. Open a command line by typing cmd in the address bar and pressing enter. ![opening cmd](https://user-images.githubusercontent.com/6313423/46446227-6ab5bc00-c77b-11e8-982e-b040f964a778.png)
+1. Run `python auto.py`. Some syntax examples:
+    * `python auto.py` Generate a snapshot of the latest modified map (autosaves are excluded) and store it to a folder with the same name. If the folder already exists, the snapshot will be appended to the timeline.
+    * `python auto.py savename` Generate a snapshot of *savename* and store it to folder *savename*.
+    * `python auto.py outfolder savename` Generate a snapshot of *savename* and store it to folder *outfolder*.
+    * `python auto.py outfolder savename1 savename2 savename3` Generate timeline snapshots of *savename1*, *savename2*, *savename3* in that order, and store it to folder *outfolder*.
+    * `python auto.py --factorio=PATH` Same as `python auto.py`, but will use `factorio.exe` from *PATH* instead of attempting to find it in common locations.
+    * `python auto.py --basepath=PATH` Same as `python auto.py`, but will output to *PATH* instead of `script-output\FactorioMaps`. Not recommended to use.
 
-# Known Limitations
-Factorio Mods can not take screenshots on a headless server. This is an unfortunate limitation of Factorio itself.
+1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
+
+# Hosting this to a server
+If you wish to host your map for other people to a server, you need to take into account the following considerations:
+1. All references to `https://rawgit.com/L0laapk3/Leaflet.OpacityControls` *must* be removed and selfhosted.
+1. Of the files that this program generates, the files required to be hosted are:
+    * `index.html`
+    * `index.mapInfo.js`
+    * All __images__ in `Images\`.
+    The other files, txt files in images do not matter. Some of them are used to save states for future timeline snapshots.

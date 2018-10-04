@@ -1,5 +1,5 @@
 fm.autorun = {
-    path = "%%PATH%%", --you can specify the image path name like this if you don't want to use the save name.
+    name = "%%NAME%%", --you can specify the image folder name like this if you don't want to use the save name.
     day = true,
     night = true,
     around_build_range = 5.2,
