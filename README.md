@@ -22,11 +22,11 @@ This [Factorio](http://www.factorio.com/) mod turns your factory into a timeline
 
 1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
 
-# Hosting this to a server
+# Hosting this on a server
 If you wish to host your map for other people to a server, you need to take into account the following considerations:
 1. All references to `https://rawgit.com/L0laapk3/Leaflet.OpacityControls` *must* be removed and selfhosted.
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
     * `index.mapInfo.js`
-    * All __images__ in `Images\`.
+    * All _images_ in `Images\`.
     The other files, txt files in images do not matter. Some of them are used to save states for future timeline snapshots.

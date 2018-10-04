@@ -81,7 +81,7 @@ function fm.generateMap(data)
     
     -- Number of pixels in an image     -- CHANGE THIS AND REF.PY WILL NEED TO BE CHANGED
     local gridSizes = {256, 512, 1024} -- cant have 2048 anymore. code now relies on it being smaller than one game chunk (32 tiles * 32 pixels)
-    local gridSize = gridSizes[1]
+    local gridSize = gridSizes[2]
 
     -- These are the number of tiles per grid section
     local gridPixelSize = gridSize / 32 -- 32 is a hardcoded Factorio value for pixels per tile.
