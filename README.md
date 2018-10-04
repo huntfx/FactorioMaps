@@ -1,10 +1,12 @@
 # Factorio Maps
 ![image](https://user-images.githubusercontent.com/6313423/46447780-0d723880-c784-11e8-8e6f-2b35d24f25b9.png)
-This [Factorio](http://www.factorio.com/) mod turns your factory into a timeline! You can view the map locally or upload it to a web server.  
-Demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
+This [Factorio](http://www.factorio.com/) mod turns your factory into a timeline! You can view the map locally or upload it to a web server.
+
+Live demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
+
+Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # How to Install
-1. Open Factorio and open the "Mod" menu
 1. Search for and install the "FactorioMaps" mod. (The mod does not need to be enabled. Only installed.)
 1. Install the latest version of [python 2.7](https://www.python.org/downloads/). (Do not install python 3.)
 1. Recommended: [Add python to your environment variables](https://stackoverflow.com/a/4855685/3185280).
@@ -33,3 +35,7 @@ If you wish to host your map for other people to a server, you need to take into
     * `index.mapInfo.js`
     * All _images_ in `Images\`.
     The other files, txt files in images do not matter. Some of them are used to save states for future timeline snapshots.
+
+# Issues
+
+Issues can be submitted to the [Issue tracker](https://github.com/L0laapk3/FactorioMaps/issues).
