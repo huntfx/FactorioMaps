@@ -20,7 +20,7 @@ args = sys.argv[1:]
 kwargs = {}
 args = filter(parseArg, args)
 foldername = args[0] if len(args) > 0 else os.path.splitext(os.path.basename(max([os.path.join("..\\..\\saves", basename) for basename in os.listdir("..\\..\\saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
-savenames = args[1:] or foldername
+savenames = args[1:] or [ foldername ]
 
 possiblePaths = [
     "C:\\Program Files\\Factorio\\bin\\x64\\factorio.exe",
@@ -97,7 +97,7 @@ try:
         with open("autorun.lua", "w") as target:
             with open("autorun.template.lua", "r") as template:
                 for line in template:
-                    target.write(line.replace("%%PATH%%", foldername + "/").replace("%%CHUNKCACHE%%", chunkCache.replace("\n", "\n\t")).replace("%%MAPINFO%%", mapInfoLua.replace("\n", "\n\t")).replace("%%DATE%%", datetime.date.today().strftime('%d/%m/%y')))
+                    target.write(line.replace("%%NAME%%", foldername + "/").replace("%%CHUNKCACHE%%", chunkCache.replace("\n", "\n\t")).replace("%%MAPINFO%%", mapInfoLua.replace("\n", "\n\t")).replace("%%DATE%%", datetime.date.today().strftime('%d/%m/%y')))
 
 
         print("starting factorio")
@@ -151,16 +151,17 @@ try:
         workthread.join()
         
 
-    print("updating mapInfo.json")
-    with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
-        data = json.load(outf)
-        for mapIndex, mapStuff in json.load(inf)["maps"].iteritems():
-            for surfaceName, surfaceStuff in mapStuff["surfaces"].iteritems():
-                data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
-        outf.seek(0)
-        json.dump(data, outf)
-        outf.truncate()
-    os.remove(os.path.join(workfolder, "mapInfo.out.json"))
+    if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
+        print("updating mapInfo.json")
+        with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
+            data = json.load(outf)
+            for mapIndex, mapStuff in json.load(inf)["maps"].iteritems():
+                for surfaceName, surfaceStuff in mapStuff["surfaces"].iteritems():
+                    data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
+            outf.seek(0)
+            json.dump(data, outf)
+            outf.truncate()
+        os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 
     print("generating mapInfo.js")

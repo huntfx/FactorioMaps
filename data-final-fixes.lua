@@ -15,13 +15,6 @@ data.raw["utility-sprites"].default["warning_icon"]["filename"] = "__FactorioMap
 data.raw["item-request-proxy"]["item-request-proxy"].picture.filename = "__FactorioMaps__/graphics/empty64.png"
 
 
---[[
-for name, item in pairs(data.raw["electric-pole"]) do 
-	item.supply_area_distance = 0
-end
-]]--
-
-
 
 
 data:extend({
