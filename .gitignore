@@ -1,3 +1,2 @@
 *.pyc
-#Ignore release builds
-/build/
+FactorioMaps_*.zip
