@@ -54,11 +54,11 @@ def changeModlist(newState):
     with open("..\\mod-list.json", "r") as f:
         modlist = json.load(f)
     for mod in modlist["mods"]:
-        if mod["name"] == "FactorioMaps":
+        if mod["name"] == "L0laapk3_FactorioMaps":
             mod["enabled"] = newState
             done = True
     if not done:
-        modlist["mods"].append({"name": "FactorioMaps", "enabled": newState})
+        modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
     with open("..\\mod-list.json", "w") as f:
         json.dump(modlist, f, indent=2)
 

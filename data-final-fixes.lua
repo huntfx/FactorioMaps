@@ -1,18 +1,18 @@
-data.raw["utility-sprites"].default["ammo_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["danger_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["destroyed_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["electricity_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["electricity_icon_unplugged"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["fluid_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["fuel_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["no_building_material_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["no_storage_space_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["not_enough_construction_robots_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["not_enough_repair_packs_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["recharge_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["too_far_from_roboport_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["utility-sprites"].default["warning_icon"]["filename"] = "__FactorioMaps__/graphics/empty64.png"
-data.raw["item-request-proxy"]["item-request-proxy"].picture.filename = "__FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["ammo_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["danger_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["destroyed_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["electricity_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["electricity_icon_unplugged"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["fluid_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["fuel_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["no_building_material_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["no_storage_space_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["not_enough_construction_robots_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["not_enough_repair_packs_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["recharge_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["too_far_from_roboport_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["utility-sprites"].default["warning_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
+data.raw["item-request-proxy"]["item-request-proxy"].picture.filename = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
 
 
 
@@ -22,7 +22,7 @@ data:extend({
 		type = "electric-pole",
 		name = "fakepoleforlamps",
 		order = "fakepoleforlamps",
-		icon = "__FactorioMaps__/graphics/empty64.png",
+		icon = "__L0laapk3_FactorioMaps__/graphics/empty64.png",
 		icon_size = 64,
 		flags = {"placeable-neutral", "player-creation", "placeable-off-grid", "not-on-map"},
 		minable = {hardness = 0.2, mining_time = 0.5, result = "small-lamp"},
@@ -43,7 +43,7 @@ data:extend({
 		supply_area_distance = 0.5,
 		pictures =
 		{
-			filename = "__FactorioMaps__/graphics/empty64.png",
+			filename = "__L0laapk3_FactorioMaps__/graphics/empty64.png",
 			priority = "extra-high",
 			width = 12,
 			height = 12,
@@ -126,7 +126,7 @@ data:extend({
 		},
 		radius_visualisation_picture =
 		{
-			filename = "__FactorioMaps__/graphics/empty64.png",
+			filename = "__L0laapk3_FactorioMaps__/graphics/empty64.png",
 			width = 12,
 			height = 12
 		},
