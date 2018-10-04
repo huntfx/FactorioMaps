@@ -172,7 +172,7 @@ try:
         
         
     print("copying index.html")
-    copy("index.html", os.path.join(workfolder, "index.html"))
+    copy("index.html.template", os.path.join(workfolder, "index.html"))
 
 
 
