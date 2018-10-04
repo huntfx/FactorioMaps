@@ -303,7 +303,7 @@
                     minZoom: layer.zoom.min >= 3 ? layer.zoom.min - 3 : 1,
                     maxZoom: layer.zoom.max,
                     noWrap: true,
-                    tileSize: 512,
+                    tileSize: 512 / window.devicePixelRatio,
                     keepBuffer: 3
                 });
                 LLayer.surface = surface;
