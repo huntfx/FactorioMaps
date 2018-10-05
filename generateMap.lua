@@ -35,24 +35,24 @@ corners:
 4   3 
 ]]--
 
-function adjustBox(pos, box, initBox, corners)
-    if pos.x < box[1] then
-        box[1] = pos.x + 8/32  --8 pixel remains of the lamp, 8 pixels because dont wanna mess with jpg
-    elseif pos.x > box[3] then
-        box[3] = pos.x - 8/32
+function adjustBox(entity, box, initBox, corners)
+    if entity.bounding_box.right_bottom.x < box[1] then
+        box[1] = math.ceil(entity.bounding_box.right_bottom.x) - 8/32  --8 pixel remains of the lamp, 8 pixels because dont wanna mess with jpg
+    elseif entity.bounding_box.left_top.x > box[3] then
+        box[3] = math.floor(entity.bounding_box.left_top.x) + 8/32
     end
-    if pos.y < box[2] then
-        box[2] = pos.y + 8/32
-    elseif pos.y > box[4] then
-        box[4] = pos.y - 8/32
+    if entity.bounding_box.right_bottom.y < box[2] then
+        box[2] = math.ceil(entity.bounding_box.right_bottom.y) - 8/32
+    elseif entity.bounding_box.left_top.y > box[4] then
+        box[4] = math.floor(entity.bounding_box.left_top.y) + 8/32
     end
 
-    if pos.x > initBox[3] then
-        if not (pos.y < initBox[2]) then corners[1] = 1 end
-        if not (pos.y > initBox[4]) then corners[2] = 1 end
-    elseif pos.x < initBox[1] then
-        if not (pos.y < initBox[2]) then corners[3] = 1 end
-        if not (pos.y > initBox[4]) then corners[4] = 1 end
+    if entity.bounding_box.left_top.x > initBox[3] then
+        if not (entity.bounding_box.left_top.y < initBox[2]) then corners[1] = 1 end
+        if not (entity.bounding_box.right_bottom.y > initBox[4]) then corners[2] = 1 end
+    elseif entity.bounding_box.right_bottom.x < initBox[1] then
+        if not (entity.bounding_box.left_top.y < initBox[2]) then corners[3] = 1 end
+        if not (entity.bounding_box.right_bottom.y > initBox[4]) then corners[4] = 1 end
     end
 end
 
@@ -301,12 +301,12 @@ function fm.generateMap(data)
         local corners = {0, 0, 0, 0}
 
         for _, t in pairs(surface.find_entities_filtered{area=area, name="big-electric-pole"}) do 
-            adjustBox(t.position, box, initialBox, corners)
+            adjustBox(t, box, initialBox, corners)
         end
         for _, t in pairs(surface.find_entities_filtered{area=area, type="lamp"}) do 
             local control = t.get_control_behavior()
             if t.energy > 1 and (control and not control.disabled) or (not control and surface.darkness > 0.3) then
-                adjustBox(t.position, box, initialBox, corners)
+                adjustBox(t, box, initialBox, corners)
             end
         end
         if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridPixelSize or box[4] > positionTable[2] + gridPixelSize then

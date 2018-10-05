@@ -27,8 +27,11 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
 
+# Configuration
+You can change a few settings, such as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`.
+
 # Hosting this on a server
-If you wish to host your map for other people to a server, you need to take into account the following considerations:
+If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
 1. All references to `https://rawgit.com/L0laapk3/Leaflet.OpacityControls` *must* be removed and selfhosted.
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
