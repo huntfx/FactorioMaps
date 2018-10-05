@@ -32,10 +32,14 @@ If you wish to host your map for other people to a server, you need to take into
 1. All references to `https://rawgit.com/L0laapk3/Leaflet.OpacityControls` *must* be removed and selfhosted.
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
-    * `index.mapInfo.js`
-    * All _images_ in `Images\`.
+    * `mapInfo.js`
+    * All __images__ in `Images\`.
     The other files, txt files in images do not matter. Some of them are used to save states for future timeline snapshots.
 
-# Issues
+# Known limitations
+* If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. To get around this, install the standalone version of factorio.
+* If the program crashes while making a snapshot, it may leave behind existing timelapses in a state it can not automatically recover from. Please contact me on discord (L0laapk3#2010) or create an Issue, I will guide you trough the fixing process.
 
-Issues can be submitted to the [Issue tracker](https://github.com/L0laapk3/FactorioMaps/issues).
+# Issues
+If you have problems or questions setting things up, feel free to reach out to me on discord at L0laapk3#2010.
+If you believe you have found a bug, inconsistency, something unclear or anything else, please try generating a map to a new empty output folder (If you need help recovering bricked timelapses, please reach out to me). If the problem persists, please submit an issue to the [Issue tracker](https://github.com/L0laapk3/FactorioMaps/issues).
