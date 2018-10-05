@@ -314,7 +314,7 @@ function fm.generateMap(data)
         end
 
         local pathText = subPath .. "20/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
-        game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = data.altInfo})                        
+        game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = true})                        
     end 
     
     
