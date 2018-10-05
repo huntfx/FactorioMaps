@@ -7,13 +7,14 @@ from shutil import copy
 import re
 from subprocess import call
 import datetime
+import urllib2
 
 
 
 def parseArg(arg):
     if arg[0:2] != "--":
         return True
-    kwargs[arg[2:].split("=",2)[0]] = (arg[2:].split("=",2)[1] or "")
+    kwargs[arg[2:].split("=",2)[0]] = arg[2:].split("=",2)[1] if len(arg[2:].split("=",2)) > 1 else True
     return False
 
 args = sys.argv[1:]
@@ -41,6 +42,30 @@ psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS or 5)
 
 basepath = kwargs["basepath"] if "basepath" in kwargs else "..\\..\\script-output\\FactorioMaps"
 workthread = None
+
+
+if "noupdate" not in kwargs:
+    try:
+        print("Checking for updates")
+        latestVersion = json.loads(urllib2.urlopen('https://rawgit.com/L0laapk3/FactorioMaps/master/info.json').read())["version"].split(".")
+        with open("info.json", "r") as f:
+            thisVersion = json.load(f)["version"].split(".")
+
+        for i, num in enumerate(latestVersion):
+            if len(thisVersion) <= i or num > thisVersion[i]:
+                print("======================================================")
+                print("||                                                  ||")
+                print("||     FactorioMaps is outdated, please update:     ||")
+                print("||     https://github.com/L0laapk3/FactorioMaps     ||")
+                print("||     To disable this, start with --noupdate       ||")
+                print("||                                                  ||")
+                print("======================================================")
+                sys.exit(1)
+
+    except Exception as e:
+        print("Faled to check for updates:")
+        print(e)
+
 
 print("backing up autorun.lua")
 if (os.path.isfile("autorun.lua")):

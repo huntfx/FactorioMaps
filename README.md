@@ -23,6 +23,7 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
     * `python auto.py outfolder savename` Generate a snapshot of *savename* and store it to folder *outfolder*.
     * `python auto.py outfolder savename1 savename2 savename3` Generate timeline snapshots of *savename1*, *savename2*, *savename3* in that order, and store it to folder *outfolder*.
     * `python auto.py --factorio=PATH` Same as `python auto.py`, but will use `factorio.exe` from *PATH* instead of attempting to find it in common locations.
+    * `python auto.py --noupdate` Run the mod without checking for updates.
     * `python auto.py --basepath=PATH` Same as `python auto.py`, but will output to *PATH* instead of `script-output\FactorioMaps`. Not recommended to use.
 
 1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
