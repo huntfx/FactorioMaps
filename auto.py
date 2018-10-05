@@ -67,10 +67,8 @@ if "noupdate" not in kwargs:
         print(e)
 
 
-print("backing up autorun.lua")
-if (os.path.isfile("autorun.lua")):
-    if not os.path.isfile("autorun.lua.bak"):
-        os.rename("autorun.lua", "autorun.lua.bak")
+if os.path.isfile("autorun.lua"):
+    os.remove("autorun.lua")
 
 
 print("enabling FactorioMaps mod")
@@ -216,7 +214,4 @@ finally:
 
 
     print("reverting autorun.lua")
-    if os.path.isfile("autorun.lua"):
-        os.remove("autorun.lua")
-    if os.path.isfile("autorun.lua.bak"):
-        os.rename("autorun.lua.bak", "autorun.lua")
+    open("autorun.lua", 'w').close()
