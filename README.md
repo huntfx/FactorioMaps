@@ -43,6 +43,7 @@ If you wish to host your map for other people to a server, you need to take into
 # Known limitations
 * If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. To get around this, install the standalone version of factorio.
 * If the program crashes while making a snapshot, it may leave behind existing timelapses in a state it can not automatically recover from. Please contact me on discord (L0laapk3#2010) or create an Issue, I will guide you trough the fixing process.
+* Running this on headless servers is not possible due to factorio limitations.
 
 # Issues
 If you have problems or questions setting things up, feel free to reach out to me on discord at L0laapk3#2010.

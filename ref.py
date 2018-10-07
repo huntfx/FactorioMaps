@@ -110,9 +110,11 @@ if __name__ == '__main__':
         keepList = []
         firstRemoveList = []
         cropList = {}
+        didAnything = False
         if len(sys.argv) <= 4 or daytime == sys.argv[4]:
             for surfaceName, surface in newMap["surfaces"].iteritems():
-                if len(sys.argv) <= 3 or surfaceName == sys.argv[3] and daytime in surface and str(surface[daytime]) == "true" and len(sys.argv) <= 4 or daytime == sys.argv[4]:
+                if (len(sys.argv) <= 3 or surfaceName == sys.argv[3]) and daytime in surface and str(surface[daytime]) == "true" and (len(sys.argv) <= 4 or daytime == sys.argv[4]):
+                    didAnything = True
                     z = surface["zoom"]["max"]
 
                     dayImages = []
@@ -171,6 +173,9 @@ if __name__ == '__main__':
 
                
 
+
+        if not didAnything:
+            continue
 
 
         print("found %s new images" % len(keepList))
