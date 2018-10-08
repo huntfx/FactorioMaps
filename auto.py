@@ -47,20 +47,44 @@ workthread = None
 if "noupdate" not in kwargs:
     try:
         print("Checking for updates")
-        latestVersion = json.loads(urllib2.urlopen('https://rawgit.com/L0laapk3/FactorioMaps/master/info.json').read())["version"].split(".")
-        with open("info.json", "r") as f:
-            thisVersion = json.load(f)["version"].split(".")
+        latestUpdates = json.loads(urllib2.urlopen('https://rawgit.com/L0laapk3/FactorioMaps/master/updates.json').read())
+        with open("updates.json", "r") as f:
+            currentUpdates = json.load(f)
 
-        for i, num in enumerate(latestVersion):
-            if len(thisVersion) <= i or num > thisVersion[i]:
-                print("======================================================")
-                print("||                                                  ||")
-                print("||     FactorioMaps is outdated, please update:     ||")
-                print("||     https://github.com/L0laapk3/FactorioMaps     ||")
-                print("||     To disable this, start with --noupdate       ||")
-                print("||                                                  ||")
-                print("======================================================")
+        updates = []
+        majorUpdate = False
+        currentVersion = (0, 0, 0)
+        for ver, changes in currentUpdates.iteritems():
+            ver = ver.split(".")
+            if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
+                currentVersion = ver
+        for ver, changes in latestUpdates.iteritems():
+            if ver not in currentUpdates: #here
+                ver = tuple(ver.split("."))
+                updates.append((ver, changes))
+                if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
+                    majorUpdate = True
+        updates.sort(key = lambda u: u[0])
+        if len(updates) > 0:
+            print("")
+            print("")
+            print("================================================================================")
+            print("")
+            print("an " + ("important" if majorUpdate else "incremental") + " update has been found!")
+            print("heres what changed:")
+            for update in updates:
+                print("%s: %s" % (str(".".join(update[0])), str(update[1])))
+            print("")
+            print("Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps, https://github.com/L0laapk3/FactorioMaps")
+            if majorUpdate:
+                print("You can dismiss this by using --noupdate (not recommended)")
+            print("")
+            print("================================================================================")
+            print("")
+            print("")
+            if majorUpdate:
                 sys.exit(1)
+
 
     except Exception as e:
         print("Faled to check for updates:")
@@ -108,12 +132,12 @@ try:
         print("creating autorun.lua from autorun.template.lua")
         if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
             with open(os.path.join(workfolder, "mapInfo.json"), "r") as f:
-                mapInfoLua = re.sub(r'"([\d\w]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
+                mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
         else:
             mapInfoLua = "{}"
         if (os.path.isfile(os.path.join(workfolder, "chunkCache.json"))):
             with open(os.path.join(workfolder, "chunkCache.json"), "r") as f:
-                chunkCache = re.sub(r'"([\d\w]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
+                chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
         else:
             chunkCache = "{}"
 
