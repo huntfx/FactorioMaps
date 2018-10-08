@@ -132,12 +132,12 @@ try:
         print("creating autorun.lua from autorun.template.lua")
         if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
             with open(os.path.join(workfolder, "mapInfo.json"), "r") as f:
-                mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
+                mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
         else:
             mapInfoLua = "{}"
         if (os.path.isfile(os.path.join(workfolder, "chunkCache.json"))):
             with open(os.path.join(workfolder, "chunkCache.json"), "r") as f:
-                chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] =' if m.group(1)[0].isdigit() else m.group(1)+' =', f.read().replace("[", "{").replace("]", "}"))
+                chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
         else:
             chunkCache = "{}"
 
