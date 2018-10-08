@@ -7,7 +7,7 @@ Live demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
 Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # How to Install
-1. Download FactorioMaps to `%appdata%\mods\`, either from the mod portal (The mod does not need to be enabled to work) and then unzipping it, or downloading the git repo. 
+1. Download FactorioMaps to `%appdata%\mods\`, either from the [mod portal](https://mods.factorio.com/mod/L0laapk3_FactorioMaps) (The mod does not need to be enabled to work) and then unzipping it, or [downloading the git repo](https://github.com/L0laapk3/FactorioMaps/releases). 
 1. Install the latest version of [python 2.7](https://www.python.org/downloads/). (Do not install python 3.)
 1. Recommended: [Add python to your environment variables](https://stackoverflow.com/a/4855685/3185280).
 1. Install pip: Download the latest [get-pip.py](https://bootstrap.pypa.io/get-pip.py), and run it (`python get-pip.py` in the command line).
