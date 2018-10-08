@@ -1,6 +1,7 @@
 {
     "1.0.0": "Initial Release",
-    "1.1.0": "Fixed Lightorio Incompability, update checker",
+    "1.1.0": "Fixed Lightorio Incompability, added update checker",
     "1.1.1": "Fixed minor problems",
-    "1.1.2": "Fixed problem with save files with spaces in the names"
+    "1.1.2": "Fixed problem with save files with spaces in the names",
+    "1.2.0": "Fixed problem with mod names with symbols, added changelog"
 }
