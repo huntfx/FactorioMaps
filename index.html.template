@@ -224,8 +224,8 @@
 			var map = mapInfo.maps[i];
 			var layer = map.surfaces[surface];
 			if (!globalTileNightIndex[surface]) {
-				globalTileNightIndex[surface] = {fallback: i};
-				globalTileIndex[surface] = {fallback: i};
+				globalTileNightIndex[surface] = layer.chunks ? {} : {fallback: i};
+				globalTileIndex[surface] = layer.chunks ? {} : {fallback: i};
 			}
 			for (var z = layer.zoom.min; z <= layer.zoom.max; z++)
 				if (!globalTileNightIndex[surface][z]) {
@@ -393,23 +393,28 @@
 		var startZ = 16, startX = 0, startY = 0;
 		var coordScale = 2**19 / 16 * window.devicePixelRatio;
 		try {
-			if (window.location.hash[0] == '#') {
-				var split = window.location.hash.substr(1).split('/');
-				if (!isNaN(parseInt(split[0]))) startZ = parseInt(split[0]);
-				startX = parseInt(split[1]) / coordScale || startX;
-				startY = parseInt(split[2]) / coordScale || startY;
-				nightOpacity = parseFloat(split[3]) || nightOpacity;
-				if (!isNaN(parseInt(split[4]))) {
-					timestamp = split[4];
-					if (!isNaN(parseInt(split[5])))
-						timestamp += "-" + split[5];
+			var split = window.location.hash.substr(1).split('/');
+			if (window.location.hash[0] == '#' && split[0] == "1" && split[1] == "nauvis") {
+				if (!isNaN(parseInt(split[2]))) startZ = parseInt(split[2]);
+				startX = parseInt(split[3]) / coordScale || startX;
+				startY = parseInt(split[4]) / coordScale || startY;
+				nightOpacity = parseFloat(split[5]) || nightOpacity;
+				if (!isNaN(parseInt(split[6]))) {
+					timestamp = split[6];
+					if (!isNaN(parseInt(split[7])))
+						timestamp += "-" + split[7];
 				}
 			}
 		} catch (_) {}
-
+		
+		var lastHash = "";
 		function updateHash() {
 			//console.log(map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp);
-			window.location.hash = "#" + [1, surface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')].join("/");
+			var hash = "#" + [1, surface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')].join("/");
+			if (hash != lastHash) {
+				window.location.replace(hash);
+				lastHash = hash;
+			}
 		}
 
 		/* END EDIT */
@@ -422,7 +427,7 @@
 			zoomAnimation: true,
 			crs: L.CRS.Simple // the map is 2D by nature
 		});
-		map.on("zoom move", updateHash);
+		map.on("zoomend moveend", updateHash);
 
 		
 		var opacitySlider, timeSlider;
