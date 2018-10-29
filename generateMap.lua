@@ -282,7 +282,7 @@ function fm.generateMap(data)
     fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][fm.subfolder] = true
 
    
-    local extension = "jpg"
+    local extension = "png"
 
     
     game.write_file(basePath .. "/mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)

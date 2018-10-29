@@ -47,7 +47,7 @@ workthread = None
 if "noupdate" not in kwargs:
     try:
         print("Checking for updates")
-        latestUpdates = json.loads(urllib2.urlopen('https://rawgit.com/L0laapk3/FactorioMaps/master/updates.json').read())
+        latestUpdates = json.loads(urllib2.urlopen('https://rawgit.com/L0laapk3/FactorioMaps/master/updates.json', timeout=10).read())
         with open("updates.json", "r") as f:
             currentUpdates = json.load(f)
 
