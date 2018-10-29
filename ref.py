@@ -9,7 +9,7 @@ from functools import partial
 def compare(path, basePath, new, treshold):
     
     try:
-        #test = path[1:-1] + (path[-1].split(".")[0] + "dub.jpg",)
+        #test = path[1:-1] + (path[-1].split(".")[0] + "dub.png",)
         #print(test)
         #diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))
         #Image.open(os.path.join(basePath, *path)).save(os.path.join(basePath, new, *test))
@@ -35,14 +35,14 @@ def neighbourScan(coord, keepList, cropList):
         """
         surfaceName, daytime, z = coord[:3]
         x, y = int(coord[3]), int(os.path.splitext(coord[4])[0])
-        return (((surfaceName, daytime, z, str(x+1), str(y+1) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x+1, y+1), 0) & 0b1000) \
-            or ((surfaceName, daytime, z, str(x+1), str(y-1) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x+1, y-1), 0) & 0b0100) \
-            or ((surfaceName, daytime, z, str(x-1), str(y+1) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x-1, y+1), 0) & 0b0010) \
-            or ((surfaceName, daytime, z, str(x-1), str(y-1) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x-1, y-1), 0) & 0b0001) \
-            or ((surfaceName, daytime, z, str(x+1), str(y  ) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x+1, y  ), 0) & 0b1100) \
-            or ((surfaceName, daytime, z, str(x-1), str(y  ) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x-1, y  ), 0) & 0b0011) \
-            or ((surfaceName, daytime, z, str(x  ), str(y+1) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x  , y+1), 0) & 0b1010) \
-            or ((surfaceName, daytime, z, str(x  ), str(y-1) + ".jpg") in keepList and cropList.get((surfaceName, daytime, z, x  , y-1), 0) & 0b0101), coord)
+        return (((surfaceName, daytime, z, str(x+1), str(y+1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x+1, y+1), 0) & 0b1000) \
+            or ((surfaceName, daytime, z, str(x+1), str(y-1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x+1, y-1), 0) & 0b0100) \
+            or ((surfaceName, daytime, z, str(x-1), str(y+1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x-1, y+1), 0) & 0b0010) \
+            or ((surfaceName, daytime, z, str(x-1), str(y-1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x-1, y-1), 0) & 0b0001) \
+            or ((surfaceName, daytime, z, str(x+1), str(y  ) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x+1, y  ), 0) & 0b1100) \
+            or ((surfaceName, daytime, z, str(x-1), str(y  ) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x-1, y  ), 0) & 0b0011) \
+            or ((surfaceName, daytime, z, str(x  ), str(y+1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x  , y+1), 0) & 0b1010) \
+            or ((surfaceName, daytime, z, str(x  ), str(y-1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x  , y-1), 0) & 0b0101), coord)
 
 
 
@@ -165,7 +165,7 @@ if __name__ == '__main__':
                     path = os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, str(z))
                     for x in os.listdir(path):
                         for y in os.listdir(os.path.join(path, x)):
-                            #if (y == "6.jpg"): print("hoi", x)
+                            #if (y == "6.png"): print("hoi", x)
                             if (x, os.path.splitext(y)[0]) in dayImages or (x, y) not in oldImages:
                                 keepList.append((surfaceName, daytime, str(z), x, y))
                             elif (x, y) in oldImages:

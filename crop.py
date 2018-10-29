@@ -6,7 +6,7 @@ from functools import partial
 
 
     
-ext = ".jpg"
+ext = ".png"
 
 def work(line, imgsize, folder):
     arg = line.rstrip('\n').split(" ")
@@ -14,7 +14,7 @@ def work(line, imgsize, folder):
     top = int(arg[2])
     left = int(arg[3])
     try:
-        Image.open(path).crop((top, left, top + imgsize, left + imgsize)).save(path, format='JPEG', subsampling=0, quality=100)
+        Image.open(path).convert("RGB").crop((top, left, top + imgsize, left + imgsize)).save(path)
     except IOError:
         return line
     return False

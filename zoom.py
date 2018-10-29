@@ -5,10 +5,13 @@ import os, math, sys, time, math, json, psutil
 
 
     
-ext = ".jpg"
+ext = ".png"
+outext = ".jpg"
+
+quality = 100
 
 
-def work(basepath, pathList, surfaceName, daytime, start, stop, chunk):
+def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
     chunksize = 2**(start-stop)
     for k in range(start, stop, -1):
         x = chunksize*chunk[0]
@@ -38,28 +41,34 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, chunk):
                                     break
 
 
+                    result = None
                     size = 0
-                    for path in paths:
-                        if os.path.isfile(path):
-                            size = Image.open(path, mode='r').size[0]
-                            break
-
-                    result = Image.new('RGB', (size, size), (27, 45, 51))
 
                     for m in range(4):
                         if (os.path.isfile(paths[m])):
-                            result.paste(box=(coords[m][0]*size/2, coords[m][1]*size/2), im=Image.open(paths[m], mode='r').resize((size/2, size/2), Image.BILINEAR))
+                            img = Image.open(paths[m], mode='r').convert("RGB")
+                            if size == 0:
+                                size = img.size[0]
+                                result = Image.new('RGB', (size, size), (27, 45, 51))
+                            result.paste(box=(coords[m][0]*size/2, coords[m][1]*size/2), im=img.resize((size/2, size/2), Image.ANTIALIAS))
 
-                    result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2), str(j/2) + ext), format='JPEG', subsampling=0, quality=100)     
+                            img.save(paths[m].replace(ext, outext), format='JPEG', subsampling=0, quality=quality)
+                            os.remove(paths[m])
+
+
+                    if outext != ext and k == last+1:
+                        result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2), str(j/2) + outext), format='JPEG', subsampling=0, quality=quality)
+                    else:
+                        result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2), str(j/2) + ext))     
 
 
         chunksize = chunksize / 2
 
-def thread(basepath, pathList, surfaceName, daytime, start, stop, allChunks, queue):
+def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks, queue):
     #print(start, stop, chunks)
     try:
         while not queue.empty():
-            work(basepath, pathList, surfaceName, daytime, start, stop, allChunks[queue.get(True)])
+            work(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks[queue.get(True)])
     except mp.queues.Empty:
         pass
 
@@ -131,7 +140,7 @@ if __name__ == '__main__':
                                 originalSize = queue.qsize()
                                 print("0%")
                                 for t in range(0, threads):
-                                    p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, start, stop + threadsplit, allChunks, queue))
+                                    p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, start, stop + threadsplit, stop, allChunks, queue))
                                     p.start()
                                     processes.append(p)
                                 
@@ -153,7 +162,7 @@ if __name__ == '__main__':
                                 processes = []
                                 i = len(allBigChunks) - 1
                                 for chunk in list(allBigChunks):
-                                    p = mp.Process(target=work, args=(basepath, pathList, surfaceName, daytime, stop + threadsplit, stop, chunk))
+                                    p = mp.Process(target=work, args=(basepath, pathList, surfaceName, daytime, stop + threadsplit, stop, stop, chunk))
                                     i = i - 1
                                     p.start()
                                 for p in processes:
