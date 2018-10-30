@@ -83,8 +83,14 @@ function fm.generateMap(data)
     local gridSizes = {256, 512, 1024} -- cant have 2048 anymore. code now relies on it being smaller than one game chunk (32 tiles * 32 pixels)
     local gridSize = gridSizes[2]
 
+    local tilesPerChunk = 32    --hardcoded
+
+    local pixelsPerTile = 32
+    if fm.autorun.HD == true then
+        pixelsPerTile = 64   -- HD textures have 64 pixels/tile
+    end
     -- These are the number of tiles per grid section
-    local gridPixelSize = gridSize / 32 -- 32 is a hardcoded Factorio value for pixels per tile.
+    local gridPixelSize = gridSize / pixelsPerTile
 
 
 
@@ -170,8 +176,8 @@ function fm.generateMap(data)
     if mapIndex == 0 then
         for chunk in surface.get_chunks() do
             if force.is_chunk_charted(surface, chunk) then
-                for gridX = chunk.x * 32 / gridPixelSize, (chunk.x + 1) * 32 / gridPixelSize - 1 do
-                    for gridY = chunk.y * 32 / gridPixelSize, (chunk.y + 1) * 32 / gridPixelSize - 1 do
+                for gridX = chunk.x * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
+                    for gridY = chunk.y * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
                         if allGrid[gridX .. " " .. gridY] == nil then
                             for k = 0, fm.autorun.around_build_range, 1 do
                                 for l = 0, fm.autorun.around_build_range, 1 do
@@ -180,8 +186,8 @@ function fm.generateMap(data)
                                             local i = k * m
                                             local j = l * n
                                             if math.pow(i, 2) + math.pow(j, 2) <= math.pow(fm.autorun.around_build_range + 0.5, 2) then
-                                                local x = gridX + i + (32 / gridPixelSize - 1) / 2
-                                                local y = gridY + j + (32 / gridPixelSize - 1) / 2
+                                                local x = gridX + i + (tilesPerChunk / gridPixelSize - 1) / 2
+                                                local y = gridY + j + (tilesPerChunk / gridPixelSize - 1) / 2
                                                 local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
                                                 if buildChunks[x .. " " .. y] == nil then
                                                     local powerCount = 0
@@ -201,8 +207,8 @@ function fm.generateMap(data)
                                                     allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
                                                     allGridString = allGridString .. gridX .. " " .. gridY .. "|"
                                                     
-                                                    local x = gridX + (32 / gridPixelSize - 1) / 2
-                                                    local y = gridY + (32 / gridPixelSize - 1) / 2
+                                                    local x = gridX + (tilesPerChunk / gridPixelSize - 1) / 2
+                                                    local y = gridY + (tilesPerChunk / gridPixelSize - 1) / 2
                                                     local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
 
                                                     minX = math.min(minX, gridX)
@@ -264,12 +270,15 @@ function fm.generateMap(data)
         }
     end
 
-    
-    local minZoom = (20 - math.max(0, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))))
+    local maxZoom = 20
+    if fm.autorun.HD == true then
+        maxZoom = 21
+    end
+    local minZoom = (maxZoom - math.max(0, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))))
     if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
         fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
             spawn = spawn,
-            zoom = { min = minZoom, max = 20 },
+            zoom = { min = minZoom, max = maxZoom },
             playerPosition = player.position
         }
         if fm.autorun.chunkCache[fm.autorun.tick] == nil then
@@ -310,11 +319,11 @@ function fm.generateMap(data)
             end
         end
         if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridPixelSize or box[4] > positionTable[2] + gridPixelSize then
-            cropText = cropText .. "\n" .. chunk.x .. " " .. chunk.y .. " " .. (positionTable[1] - box[1])*32 .. " " .. (positionTable[2] - box[2])*32 .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4])
+            cropText = cropText .. "\n" .. chunk.x .. " " .. chunk.y .. " " .. (positionTable[1] - box[1])*pixelsPerTile .. " " .. (positionTable[2] - box[2])*pixelsPerTile .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4])
         end
 
-        local pathText = subPath .. "20/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
-        game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*32, (box[4] - box[2])*32}, zoom = 1, path = pathText, show_entity_info = true})                        
+        local pathText = subPath .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
+        game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile}, zoom = fm.autorun.HD and 2 or 1, path = pathText, show_entity_info = true})                        
     end 
     
     
