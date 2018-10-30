@@ -8,17 +8,20 @@ useBetterEncoder = True 	# Slower encoder that generates smaller images.
 
 quality = 80
 	
-ext = ".png"
+ext = ".bmp"
 outext = ".jpg"     		# format='JPEG' is hardcoded in places, meed to modify those, too. Most parameters are not supported outside jpeg.
 
 
-def saveCompress(img, path):
+def saveCompress(img, path, inpath=None):
 	if maxQuality:  # do not waste any time compressing the image
 		img.save(path, subsampling=0, quality=100)
 
 	elif os.name == 'nt' and useBetterEncoder: #mozjpeg only supported on windows for now, feel free to make a pull request
-		tmp = img._dump()
-		subprocess.check_call(["cjpeg", "-quality", str(quality), "-optimize", "-progressive", "-sample", "1x1", "-outfile", path, tmp]) #mozjpeg version used is 3.3.1
+		if not inpath:
+			tmp = img._dump()
+		subprocess.check_call(["cjpeg", "-quality", str(quality), "-optimize", "-progressive", "-sample", "1x1", "-outfile", path, inpath if inpath else tmp]) #mozjpeg version used is 3.3.1
+		if not inpath:
+			os.remove(tmp)
 	else:
 		img.save(path, format='JPEG', optimize=True, subsampling=0, quality=quality, progressive=True)
 
@@ -76,7 +79,7 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 					
 					if outext != ext:
 						for img, path in imgs:
-							saveCompress(img, path.replace(ext, outext))
+							saveCompress(img, path.replace(ext, outext), path)
 							os.remove(path)   
 
 

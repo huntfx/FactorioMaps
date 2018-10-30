@@ -6,6 +6,9 @@ from functools import partial
 
 
 
+ext = ".bmp"
+
+
 def compare(path, basePath, new, treshold):
     
     try:
@@ -35,14 +38,14 @@ def neighbourScan(coord, keepList, cropList):
         """
         surfaceName, daytime, z = coord[:3]
         x, y = int(coord[3]), int(os.path.splitext(coord[4])[0])
-        return (((surfaceName, daytime, z, str(x+1), str(y+1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x+1, y+1), 0) & 0b1000) \
-            or ((surfaceName, daytime, z, str(x+1), str(y-1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x+1, y-1), 0) & 0b0100) \
-            or ((surfaceName, daytime, z, str(x-1), str(y+1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x-1, y+1), 0) & 0b0010) \
-            or ((surfaceName, daytime, z, str(x-1), str(y-1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x-1, y-1), 0) & 0b0001) \
-            or ((surfaceName, daytime, z, str(x+1), str(y  ) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x+1, y  ), 0) & 0b1100) \
-            or ((surfaceName, daytime, z, str(x-1), str(y  ) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x-1, y  ), 0) & 0b0011) \
-            or ((surfaceName, daytime, z, str(x  ), str(y+1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x  , y+1), 0) & 0b1010) \
-            or ((surfaceName, daytime, z, str(x  ), str(y-1) + ".png") in keepList and cropList.get((surfaceName, daytime, z, x  , y-1), 0) & 0b0101), coord)
+        return (((surfaceName, daytime, z, str(x+1), str(y+1) + ext) in keepList and cropList.get((surfaceName, daytime, z, x+1, y+1), 0) & 0b1000) \
+            or ((surfaceName, daytime, z, str(x+1), str(y-1) + ext) in keepList and cropList.get((surfaceName, daytime, z, x+1, y-1), 0) & 0b0100) \
+            or ((surfaceName, daytime, z, str(x-1), str(y+1) + ext) in keepList and cropList.get((surfaceName, daytime, z, x-1, y+1), 0) & 0b0010) \
+            or ((surfaceName, daytime, z, str(x-1), str(y-1) + ext) in keepList and cropList.get((surfaceName, daytime, z, x-1, y-1), 0) & 0b0001) \
+            or ((surfaceName, daytime, z, str(x+1), str(y  ) + ext) in keepList and cropList.get((surfaceName, daytime, z, x+1, y  ), 0) & 0b1100) \
+            or ((surfaceName, daytime, z, str(x-1), str(y  ) + ext) in keepList and cropList.get((surfaceName, daytime, z, x-1, y  ), 0) & 0b0011) \
+            or ((surfaceName, daytime, z, str(x  ), str(y+1) + ext) in keepList and cropList.get((surfaceName, daytime, z, x  , y+1), 0) & 0b1010) \
+            or ((surfaceName, daytime, z, str(x  ), str(y-1) + ext) in keepList and cropList.get((surfaceName, daytime, z, x  , y-1), 0) & 0b0101), coord)
 
 
 

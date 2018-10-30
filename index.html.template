@@ -216,6 +216,8 @@
 		L.TileLayer.prototype.getTileUrl = function(c) {
 			var mapIndex = this.tileIndex[c.z] && this.tileIndex[c.z][c.y] && this.tileIndex[c.z][c.y][c.x];
 			if (isNaN(mapIndex))
+				mapIndex = this.tileIndex.fallback;
+			if (isNaN(mapIndex))
 				return "";
 			return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
 		}
