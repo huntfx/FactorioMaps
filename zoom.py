@@ -1,8 +1,6 @@
-from PIL import Image, JpegImagePlugin
+from PIL import Image
 import multiprocessing as mp
 import os, math, sys, time, math, json, psutil, subprocess
-
-import tempfile
 
 
 maxQuality = False  		# Set this to true if you want to compress/postprocess the images yourself later
