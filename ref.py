@@ -220,13 +220,14 @@ if __name__ == '__main__':
             for coord in aList:
                 x = int(coord[3])
                 y = int(os.path.splitext(coord[4])[0])
-                if coord[0] in allImageIndex: #only save surfaces that have had older maps of the same surface
-                    if coord[1] not in allImageIndex[coord[0]]:
-                        allImageIndex[coord[0]][coord[1]] = {}
-                    if y not in allImageIndex[coord[0]][coord[1]]:
-                        allImageIndex[coord[0]][coord[1]][y] = [x]
-                    elif x not in allImageIndex[coord[0]][coord[1]][y]:
-                        allImageIndex[coord[0]][coord[1]][y].append(x)
+                if coord[0] not in allImageIndex:
+                    allImageIndex[coord[0]] = {}
+                if coord[1] not in allImageIndex[coord[0]]:
+                    allImageIndex[coord[0]][coord[1]] = {}
+                if y not in allImageIndex[coord[0]][coord[1]]:
+                    allImageIndex[coord[0]][coord[1]][y] = [x]
+                elif x not in allImageIndex[coord[0]][coord[1]][y]:
+                    allImageIndex[coord[0]][coord[1]][y].append(x)
 
 
 
