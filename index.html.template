@@ -214,7 +214,7 @@
 		//L.TileLayer.prototype.getTileUrl = function(coords) { return _getTileUrl.call(this, {x: coords.x - 1 * Math.pow(2, coords.z - 2), y: coords.y, z: coords.z}); };
 
 		L.TileLayer.prototype.getTileUrl = function(c) {
-			var mapIndex = this.tileIndex[c.z] && this.tileIndex[c.z][c.y] && this.tileIndex[c.z][c.y][c.x] || this.tileIndex.fallback;
+			var mapIndex = this.tileIndex[c.z] && this.tileIndex[c.z][c.y] && this.tileIndex[c.z][c.y][c.x];
 			if (isNaN(mapIndex))
 				return "";
 			return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
@@ -307,7 +307,7 @@
 					minNativeZoom: layer.zoom.min,
 					maxNativeZoom: layer.zoom.max,
 					minZoom: layer.zoom.min >= 3 ? layer.zoom.min - 3 : 1,
-					maxZoom: layer.zoom.max + 1,
+					maxZoom: layer.zoom.max + 2,
 					noWrap: true,
 					tileSize: 512 / window.devicePixelRatio,
 					keepBuffer: 3
