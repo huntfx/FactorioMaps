@@ -84,7 +84,7 @@ function fm.generateMap(data)
     local gridSize = gridSizes[2]
 
     local tilesPerChunk = 32    --hardcoded
-
+    
     local pixelsPerTile = 32
     if fm.autorun.HD == true then
         pixelsPerTile = 64   -- HD textures have 64 pixels/tile
@@ -176,19 +176,20 @@ function fm.generateMap(data)
     if mapIndex == 0 then
         for chunk in surface.get_chunks() do
             if force.is_chunk_charted(surface, chunk) then
-                for gridX = chunk.x * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
-                    for gridY = chunk.y * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
+                for gridX = (chunk.x) * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
+                    for gridY = (chunk.y) * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
                         if allGrid[gridX .. " " .. gridY] == nil then
-                            for k = 0, fm.autorun.around_build_range, 1 do
-                                for l = 0, fm.autorun.around_build_range, 1 do
+                            for k = 0, fm.autorun.around_build_range * pixelsPerTile / tilesPerChunk, 1 do
+                                for l = 0, fm.autorun.around_build_range * pixelsPerTile / tilesPerChunk, 1 do
                                     for m = 1, k > 0 and -1 or 1, -2 do
                                         for n = 1, l > 0 and -1 or 1, -2 do
                                             local i = k * m
                                             local j = l * n
-                                            if math.pow(i, 2) + math.pow(j, 2) <= math.pow(fm.autorun.around_build_range + 0.5, 2) then
-                                                local x = gridX + i + (tilesPerChunk / gridPixelSize - 1) / 2
-                                                local y = gridY + j + (tilesPerChunk / gridPixelSize - 1) / 2
-                                                local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
+                                            local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
+                                            if dist <= math.pow(fm.autorun.around_build_range + 0.5, 2) then
+                                                local x = gridX + i + (tilesPerChunk / gridPixelSize) / 2 - 1
+                                                local y = gridY + j + (tilesPerChunk / gridPixelSize) / 2 - 1
+                                                local area = {{gridPixelSize * (x-.5), gridPixelSize * (y-.5)}, {gridPixelSize * (x+.5), gridPixelSize * (y+.5)}}
                                                 if buildChunks[x .. " " .. y] == nil then
                                                     local powerCount = 0
                                                     if fm.autorun.smaller_types and #fm.autorun.smaller_types > 0 then
@@ -203,13 +204,12 @@ function fm.generateMap(data)
                                                         buildChunks[x .. " " .. y] = 0
                                                     end
                                                 end
-                                                if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and math.pow(i, 2) + math.pow(j, 2) <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
+                                                if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and dist <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
                                                     allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
                                                     allGridString = allGridString .. gridX .. " " .. gridY .. "|"
                                                     
-                                                    local x = gridX + (tilesPerChunk / gridPixelSize - 1) / 2
-                                                    local y = gridY + (tilesPerChunk / gridPixelSize - 1) / 2
-                                                    local area = {{gridPixelSize * x, gridPixelSize * y}, {gridPixelSize * (x + 1), gridPixelSize * (y + 1)}}
+                                                    local x = gridX + (tilesPerChunk / gridPixelSize) / 2 - 1
+                                                    local y = gridY + (tilesPerChunk / gridPixelSize) / 2 - 1
 
                                                     minX = math.min(minX, gridX)
                                                     minY = math.min(minY, gridY)
