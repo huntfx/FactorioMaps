@@ -3,6 +3,9 @@
     "1.1.0": "Fixed Lightorio Incompability, added update checker",
     "1.1.1": "Fixed minor problems",
     "1.1.2": "Fixed problem with save files with spaces in the names",
+    "1.2.1": "Bugfix. Splat!",
     "1.2.0": "Fixed problem with mod names with symbols, added changelog",
-    "1.2.1": "Bugfix. Splat!"
+    "2.0.0": "Added HD mode! Also allow more zoom levels in general.",
+    "2.1.0": "Block all 404 request, The client now knows exactly which images exist. (Breaks old maps)",
+    "2.2.0": "Significantly increased image quality and file size at the cost of some processing time."
 }
