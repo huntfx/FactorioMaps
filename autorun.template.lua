@@ -4,6 +4,8 @@ fm.autorun = {
     around_smaller_range = 1.2,		-- same as above, but smaller range for the following entity types:
     smaller_types = {"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"},
     date = "%%DATE%%",
+
+
     name = "%%NAME%%",				-- changing this is currently not supported
     day = true,			 			-- changing this is currently not supported
     night = true,		 			-- changing this is currently not supported
