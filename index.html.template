@@ -174,6 +174,10 @@
 		#prevBtn:hover {
 			background-color: #555; /* Add a dark-grey background on hover */
 		}
+
+		img.leaflet-tile.leaflet-tile-loaded {
+			image-rendering: pixelated;
+		}
 	</style>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.js" integrity="sha256-lwWHyfIX653fxmxYjZUYOSM7ufWv6dMT8ISVuTWwoOY="
 		crossorigin="anonymous"></script>
@@ -303,7 +307,7 @@
 					minNativeZoom: layer.zoom.min,
 					maxNativeZoom: layer.zoom.max,
 					minZoom: layer.zoom.min >= 3 ? layer.zoom.min - 3 : 1,
-					maxZoom: layer.zoom.max,
+					maxZoom: layer.zoom.max + 1,
 					noWrap: true,
 					tileSize: 512 / window.devicePixelRatio,
 					keepBuffer: 3
