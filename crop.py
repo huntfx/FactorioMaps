@@ -6,7 +6,7 @@ from functools import partial
 
 
     
-ext = ".png"
+ext = ".bmp"
 
 def work(line, imgsize, folder):
     arg = line.rstrip('\n').split(" ")
