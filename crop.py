@@ -1,6 +1,6 @@
 from PIL import Image
 import multiprocessing as mp
-import os, math, sys, time, psutil
+import os, math, sys, time, psutil, json
 from functools import partial
 
 
@@ -28,8 +28,13 @@ if __name__ == '__main__':
 
     subname = "\\".join(sys.argv[2:5])
     toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
+
     basepath = os.path.join(toppath, "Images", subname)
-    folder = os.path.join(basepath, "20")
+    
+
+    while not os.path.isdir(basepath) or len(os.walk(basepath).next()[1]) == 0:
+        time.sleep(1)
+    folder = os.path.join(basepath, os.walk(basepath).next()[1][0])
     datapath = os.path.join(basepath, "crop.txt")
     maxthreads = mp.cpu_count()
 

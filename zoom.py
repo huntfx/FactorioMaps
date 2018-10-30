@@ -8,7 +8,7 @@ import os, math, sys, time, math, json, psutil
 ext = ".png"
 outext = ".jpg"
 
-quality = 100
+quality = 90
 
 
 def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
