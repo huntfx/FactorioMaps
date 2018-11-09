@@ -1,5 +1,5 @@
 fm.autorun = {
-    HD = true,
+    HD = false,
     day = true,                     -- note: snapshots in the same timeline should have the same day/night settings for now (this will be possible in the future)
     night = true,
     around_build_range = 5.2,		-- max range from buildings that images will be saved. Feel free to crank this up to very large numbers, it will only render chunks that already exist, it will not generate new ones.
