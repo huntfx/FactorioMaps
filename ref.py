@@ -7,6 +7,7 @@ from functools import partial
 
 
 ext = ".bmp"
+outext = ".jpg"
 
 
 def compare(path, basePath, new, treshold):
@@ -17,7 +18,7 @@ def compare(path, basePath, new, treshold):
         #diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))
         #Image.open(os.path.join(basePath, *path)).save(os.path.join(basePath, new, *test))
         #print(ImageStat.Stat(ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))).sum2)
-        diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:]), mode='r'), Image.open(os.path.join(basePath, *path), mode='r'))
+        diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:]), mode='r').replace(outext, ext), Image.open(os.path.join(basePath, *path), mode='r'))
         #if sum(ImageStat.Stat(diff.copy().point(lambda x: 255 if x >= 16 else x ** 2)).sum2) + 256 * sum(ImageStat.Stat(diff.point(lambda x: x ** 2 >> 8)).sum2) > treshold:
         if sum(ImageStat.Stat(diff).sum2) > treshold:
             #print("%s %s" % (total, path))
@@ -169,9 +170,9 @@ if __name__ == '__main__':
                     for x in os.listdir(path):
                         for y in os.listdir(os.path.join(path, x)):
                             #if (y == "6.png"): print("hoi", x)
-                            if (x, os.path.splitext(y)[0]) in dayImages or (x, y) not in oldImages:
+                            if (x, os.path.splitext(y)[0]) in dayImages or (x, y.replace(ext, outext)) not in oldImages:
                                 keepList.append((surfaceName, daytime, str(z), x, y))
-                            elif (x, y) in oldImages:
+                            elif (x, y.replace(ext, outext)) in oldImages:
                                 compareList.append((oldImages[(x, y)], surfaceName, daytime, str(z), x, y))
 
                

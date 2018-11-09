@@ -51,7 +51,7 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 					for m in range(len(coords)):
 						if not os.path.isfile(paths[m]):
 							for n in range(1, len(pathList)):
-								paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + ext)
+								paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + outext)
 								if os.path.isfile(paths[m]):
 									break
 
