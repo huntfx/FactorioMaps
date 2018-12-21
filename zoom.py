@@ -48,8 +48,10 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 						except OSError:
 							pass
 
+					isOriginal = []
 					for m in range(len(coords)):
-						if not os.path.isfile(paths[m]):
+						isOriginal.append(os.path.isfile(paths[m]))
+						if not isOriginal[m]:
 							for n in range(1, len(pathList)):
 								paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + outext)
 								if os.path.isfile(paths[m]):
@@ -60,7 +62,7 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 					size = 0
 
 					imgs = []
-					for m in range(4):
+					for m in range(len(coords)):
 						if (os.path.isfile(paths[m])):
 							img = Image.open(paths[m], mode='r').convert("RGB")
 							if size == 0:
@@ -68,7 +70,8 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 								result = Image.new('RGB', (size, size), (27, 45, 51))
 							result.paste(box=(coords[m][0]*size/2, coords[m][1]*size/2), im=img.resize((size/2, size/2), Image.ANTIALIAS))
 
-							imgs.append((img, paths[m]))
+							if isOriginal[m]:
+								imgs.append((img, paths[m]))
 
 
 					if outext != ext and k == last+1:
@@ -108,7 +111,7 @@ if __name__ == '__main__':
 	maxthreads = mp.cpu_count()
 
 
-	#print(basepath)
+	print(basepath)
 
 
 	with open(datapath, "r") as f:

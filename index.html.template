@@ -208,6 +208,9 @@
 	<div id="map" style="background: #1B2D33;"></div>
 	<script>
 		"use strict";
+
+		
+		var DEBUG = false;
 		
 
 		//var _getTileUrl = L.TileLayer.prototype.getTileUrl;
@@ -227,6 +230,10 @@
 		var globalTileIndex = {};
 		var globalTileNightIndex = {};
 		for (var i = 0; i < mapInfo.maps.length; i++) {
+			if (DEBUG) {
+				globalTileIndex = {};
+				globalTileNightIndex = {};
+			}
 			var map = mapInfo.maps[i];
 			var layer = map.surfaces[surface];
 			if (!globalTileNightIndex[surface]) {
@@ -307,7 +314,7 @@
 					var LLayer = L.tileLayer(undefined, {
 						id: layer.path,
 						attribution: '<a href="https://github.com/L0laapk3/FactorioMods_FactorioMaps">FactorioMaps</a>',
-						minNativeZoom: layer.zoom.min,
+						minNativeZoom: DEBUG ? 20 : layer.zoom.min,
 						maxNativeZoom: layer.zoom.max,
 						minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,
 						maxZoom: 23, //layer.zoom.max + 2,

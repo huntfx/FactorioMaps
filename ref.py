@@ -5,7 +5,6 @@ from functools import partial
 
 
 
-
 ext = ".bmp"
 outext = ".jpg"
 
@@ -13,15 +12,14 @@ outext = ".jpg"
 def compare(path, basePath, new, treshold):
     
     try:
-        #test = path[1:-1] + (path[-1].split(".")[0] + "dub.png",)
-        #print(test)
-        #diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))
-        #Image.open(os.path.join(basePath, *path)).save(os.path.join(basePath, new, *test))
-        #print(ImageStat.Stat(ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:])), Image.open(os.path.join(basePath, *path)))).sum2)
-        diff = ImageChops.difference(Image.open(os.path.join(basePath, new, *path[1:]), mode='r').replace(outext, ext), Image.open(os.path.join(basePath, *path), mode='r'))
-        #if sum(ImageStat.Stat(diff.copy().point(lambda x: 255 if x >= 16 else x ** 2)).sum2) + 256 * sum(ImageStat.Stat(diff.point(lambda x: x ** 2 >> 8)).sum2) > treshold:
+        newImg = Image.open(os.path.join(basePath, new, *path[1:]), mode='r')
+        oldImg = Image.open(os.path.join(basePath, *path).replace(ext, outext), mode='r')
+        size = (oldImg.size[0] / 8, oldImg.size[0] / 8)
+        newImg.thumbnail(size, Image.BILINEAR)
+        oldImg.thumbnail(size, Image.BILINEAR)
+        diff = ImageChops.difference(newImg, oldImg)
+        
         if sum(ImageStat.Stat(diff).sum2) > treshold:
-            #print("%s %s" % (total, path))
             return (True, path[1:])
     except IOError:
         print("error")
@@ -148,7 +146,7 @@ if __name__ == '__main__':
                             path = os.path.join(toppath, "Images", data["maps"][old]["path"], surfaceName, daytime, str(z))
                             for x in os.listdir(path):
                                 for y in os.listdir(os.path.join(path, x)):
-                                    oldImages[(x, y)] = data["maps"][old]["path"]
+                                    oldImages[(x, y.replace(ext, outext))] = data["maps"][old]["path"]
 
 
                     if daytime != "day":
@@ -173,7 +171,7 @@ if __name__ == '__main__':
                             if (x, os.path.splitext(y)[0]) in dayImages or (x, y.replace(ext, outext)) not in oldImages:
                                 keepList.append((surfaceName, daytime, str(z), x, y))
                             elif (x, y.replace(ext, outext)) in oldImages:
-                                compareList.append((oldImages[(x, y)], surfaceName, daytime, str(z), x, y))
+                                compareList.append((oldImages[(x, y.replace(ext, outext))], surfaceName, daytime, str(z), x, y))
 
                
 
@@ -185,7 +183,11 @@ if __name__ == '__main__':
         print("found %s new images" % len(keepList))
         if len(compareList) > 0:
             print("comparing %s existing images" % len(compareList))
-            resultList = pool.map(partial(compare, treshold=20*Image.open(os.path.join(toppath, "Images", *compareList[0])).size[0] ** 2, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
+            treshold = .3 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
+            print(treshold)
+            #compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]))
+            resultList = pool.map(partial(compare, treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
+
             newList = map(lambda x: x[1], filter(lambda x: x[0], resultList))
             firstRemoveList += map(lambda x: x[1], filter(lambda x: not x[0], resultList))
             print("found %s changed in %s images" % (len(newList), len(compareList)))
