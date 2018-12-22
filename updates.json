@@ -9,5 +9,6 @@
     "2.1.0": "Block all 404 request, The client now knows exactly which images exist. (Breaks old maps)",
     "2.2.0": "Significantly increased image quality and file size at the cost of some processing time.",
     "2.2.1": "Fixed problem with missing graphics.",
-    "2.3.0": "Fixed problems with the deduplicator."
+    "2.3.0": "Fixed problems with the deduplicator.",
+    "2.4.0": "Fixed a bug in the image deduplicator."
 }
