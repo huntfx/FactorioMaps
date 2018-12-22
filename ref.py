@@ -184,7 +184,7 @@ if __name__ == '__main__':
         if len(compareList) > 0:
             print("comparing %s existing images" % len(compareList))
             treshold = .3 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
-            print(treshold)
+            #print(treshold)
             #compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]))
             resultList = pool.map(partial(compare, treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
 
