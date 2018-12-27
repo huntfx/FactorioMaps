@@ -6,21 +6,28 @@ require "generateMap"
 require "autorun"
 
 
+function exit()
+    function NOT_AN_ERROR() SERIOUSLY_THIS_IS_NOT_AN_ERROR() end
+    function SERIOUSLY_THIS_IS_NOT_AN_ERROR() PLEASE_DONT_REPORT_THIS_AS_AN_ERROR() end
+    function PLEASE_DONT_REPORT_THIS_AS_AN_ERROR() exit_game() end
+
+    NOT_AN_ERROR()
+end
 
 
 script.on_event(defines.events.on_tick, function(event)
 
-    if nil == fm.tmp then
-        -- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-        for key, entity in pairs(game.connected_players[1].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
-            entity.active = false
-        end
-        fm.tmp = true
-    end
-
     if fm.autorun then
 
         event.player_index = game.connected_players[1].index
+
+        if nil == fm.tmp then
+            -- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
+            for key, entity in pairs(game.connected_players[1].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
+                entity.active = false
+            end
+            fm.tmp = true
+        end
     
         if fm.ticks == nil then
         
@@ -63,6 +70,7 @@ script.on_event(defines.events.on_tick, function(event)
             end
 
             -- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
+            --game.pause()
             for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
                 entity.active = false
             end
@@ -123,5 +131,36 @@ script.on_event(defines.events.on_tick, function(event)
 
         end
 
+    
+    elseif fm.ticks == nil then
+        -- give instructions on how to use mod and a warning to disable it.
+    
+        event.player_index = game.connected_players[1].index
+        fm.ticks = 1
+
+        --game.pause()
+        game.players[event.player_index].character.active = false
+        
+        local main = game.players[event.player_index].gui.center.add{type = "frame", caption = "How To Use FactorioMaps", direction = "vertical"}
+        local topLine = main.add{type = "flow", direction = "horizontal"}
+        topLine.add{type = "label", caption = "To use FactorioMaps, check out"}
+        topLine.add{type = "label", caption = "https://git.io/factoriomaps."}.style.font = "default-bold"
+        --topLine.add{type = "label", name = "main-end", caption = "."}.style
+        main.add{type = "label", caption = "You can leave the mod disabled while you play.\nThe scripts will automagically enable it when it needs it!"}.style.single_line = false
+        main.style.align = "right"
+    
+        local buttonContainer = main.add{type = "flow", direction = "horizontal"}
+        local button = buttonContainer.add{type = "button", caption = "Back to main menu"}
+        buttonContainer.style.horizontally_stretchable = true
+        buttonContainer.style.align = "right"
+        script.on_event(defines.events.on_gui_click, function(event)
+
+            if event.element == button then
+                main.destroy()
+                exit()
+            end
+
+        end)
+        
     end
 end)
