@@ -15,7 +15,8 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # How to Use
 1. Make sure you close factorio before starting the process.
-1. Navigate to the FactorioMaps folder (`%appdata%\Factorio\mods\FactorioMaps_1.0.0`)
+1. Navigate to the factorio mods folder (`%appdata%\Factorio\mods`)
+1. Unzip FactorioMaps and delete the original zip. Go inside the factoriomaps folder.
 1. Open a command line by typing cmd in the address bar and pressing enter. ![opening cmd](https://user-images.githubusercontent.com/6313423/46446227-6ab5bc00-c77b-11e8-982e-b040f964a778.png)
 1. Run `python auto.py`. Some syntax examples:
     * `python auto.py` Generate a snapshot of the latest modified map (autosaves are excluded) and store it to a folder with the same name. If the folder already exists, the snapshot will be appended to the timeline.
