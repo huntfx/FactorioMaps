@@ -8,6 +8,14 @@ import re
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
+from shutil import get_terminal_size as tsize
+
+
+
+def printErase(arg):
+    tsiz = tsize()[0]
+    print("\r{}{}".format(arg, " " * (tsiz-len(arg))), end="\r\n" if tsiz <= len(arg) else "")
+
 
 
 
@@ -45,10 +53,13 @@ psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS or 5)
 basepath = kwargs["basepath"] if "basepath" in kwargs else "..\\..\\script-output\\FactorioMaps"
 workthread = None
 
+workfolder = os.path.join(basepath, foldername)
+print("output folder: {}".format(os.path.relpath(workfolder, "..\\..")))
+
 
 if "noupdate" not in kwargs:
     try:
-        print("Checking for updates")
+        print("checking for updates")
         latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
         with open("updates.json", "r") as f:
             currentUpdates = json.load(f)
@@ -76,7 +87,7 @@ if "noupdate" not in kwargs:
             print("")
             print("  heres what changed:")
             for update in updates:
-                print(("    %s: %s" % (update[0], str(update[1]))))
+                print("    %s: %s" % (update[0], str(update[1])))
             print("")
             print("")
             print("  Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps")
@@ -94,8 +105,8 @@ if "noupdate" not in kwargs:
 
 
     except Exception as e:
-        print("Faled to check for updates:")
-        print(e)
+        print("Failed to check for updates:")
+        print("", e)
 
 
 if os.path.isfile("autorun.lua"):
@@ -125,7 +136,7 @@ def printGameLog(pipe):
         while True:
             line = reader.readline()
             if "err" in line.lower() or "warn" in line.lower():
-                print(("[GAME] {}".format(line.rstrip('\n'))))     
+                printErase("[GAME] {}".format(line.rstrip('\n')))
 
 
 logIn, logOut = os.pipe()
@@ -134,23 +145,24 @@ logthread.daemon = True
 logthread.start()
 
 
-workfolder = os.path.join(basepath, foldername)
+
+
 datapath = os.path.join(workfolder, "latest.txt")
-print(workfolder)
 
 try:
-    for savename in savenames:
+
+    for index, savename in enumerate(savenames):
 
 
 
-        print("cleaning up")
+        printErase("cleaning up")
         if os.path.isfile(datapath):
             os.remove(datapath)
 
 
 
 
-        print("creating autorun.lua from autorun.template.lua")
+        printErase("building autorun.lua")
         if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
             with open(os.path.join(workfolder, "mapInfo.json"), "r") as f:
                 mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
@@ -168,42 +180,83 @@ try:
                     target.write(line.replace("%%NAME%%", foldername + "/").replace("%%CHUNKCACHE%%", chunkCache.replace("\n", "\n\t")).replace("%%MAPINFO%%", mapInfoLua.replace("\n", "\n\t")).replace("%%DATE%%", datetime.date.today().strftime('%d/%m/%y')))
 
 
-        print("starting factorio")
-        p = subprocess.Popen(factorioPath + ' --load-game "' + savename + '" --disable-audio --no-log-rotation')
+        printErase("starting factorio")
+        p = subprocess.Popen(factorioPath + ' --load-game "' + os.path.abspath(os.path.join("..\\..\\saves", savename+".zip")) + '" --disable-audio --no-log-rotation', stdout=logOut)
 
         if not os.path.exists(datapath):
             while not os.path.exists(datapath):
-                time.sleep(1)
+                time.sleep(0.4)
 
         latest = []
         with open(datapath, 'r') as f:
             for line in f:
                 latest.append(line.rstrip("\n"))
 
+        
+        otherInputs = latest[0].split(" ")
+        outFolder = otherInputs.pop(0)
+        waitfilename = os.path.join(basepath, outFolder[1:-1], "Images", otherInputs[0], otherInputs[1], "done.txt")
 
         
+        isKilled = False
+        def waitKill():
+            global isKilled
+            while not isKilled:
+                if os.path.isfile(waitfilename):
+                    isKilled = True
+                    printErase("killing factorio")
+                    if p.poll() is None:
+                        p.kill()
+                    else:
+                        os.system("taskkill /im factorio.exe")
+                    break
+                time.sleep(0.4)
+
+        killthread = threading.Thread(target=waitKill)
+        killthread.daemon = True
+        killthread.start()
+
+
+
         if workthread and workthread.isAlive():
-            print("waiting for workthread")
+            #print("waiting for workthread")
             workthread.join()
 
-        for screenshot in latest:
-            print(("Cropping %s images" % screenshot))
+
+
+
+
+        for jindex, screenshot in enumerate(latest):
+            otherInputs = screenshot.split(" ")
+            outFolder = otherInputs.pop(0)
+            print("Processing {}\\{} ({} of {})".format(outFolder[1:-1], "\\".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
+            #print("Cropping %s images" % screenshot)
             if 0 != call('%s crop.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("crop failed")
+            waitlocalfilename = os.path.join(basepath, outFolder[1:-1], "Images", otherInputs[0], otherInputs[1], otherInputs[2], "done.txt")
+            if not os.path.exists(waitlocalfilename):
+                #print("waiting for done.txt")
+                while not os.path.exists(waitlocalfilename):
+                    time.sleep(0.4)
+
 
 
             def refZoom():
-                print(("Crossreferencing %s images" % screenshot))
+                #print("Crossreferencing %s images" % screenshot)
                 if 0 != call('%s ref.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("ref failed")
-                print(("downsampling %s images" % screenshot))
+                #print("downsampling %s images" % screenshot)
                 if 0 != call('%s zoom.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("zoom failed")
+
             if screenshot != latest[-1]:
                 refZoom()
             else:
-                print("killing factorio")
-                if p.poll() is None:
-                    p.kill()
-                else:
-                    os.system("taskkill /im factorio.exe")
+                if not isKilled:
+                    isKilled = True
+                    printErase("killing factorio")
+                    if p.poll() is None:
+                        p.kill()
+                    else:
+                        os.system("taskkill /im factorio.exe")
+
                 if savename == savenames[-1]:
                     refZoom()
                 else:
@@ -213,14 +266,10 @@ try:
 
 
 
-
-    if workthread and workthread.isAlive():
-        print("waiting for workthread")
-        workthread.join()
         
 
     if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
-        print("updating mapInfo.json")
+        print("generating mapInfo.json")
         with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
             data = json.load(outf)
             for mapIndex, mapStuff in json.load(inf)["maps"].items():
@@ -239,7 +288,7 @@ try:
         outf.write("');")
         
         
-    print("copying index.html")
+    print("creating index.html")
     copy("index.html.template", os.path.join(workfolder, "index.html"))
 
 
@@ -258,5 +307,5 @@ finally:
 
 
 
-    print("reverting autorun.lua")
+    print("cleaning up")
     open("autorun.lua", 'w').close()

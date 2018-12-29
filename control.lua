@@ -119,6 +119,9 @@ script.on_event(defines.events.on_tick, function(event)
                 game.write_file(fm.topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
             end
             
+            game.write_file(fm.topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/done.txt", "", false, event.player_index)
+           
+            
             -- unfreeze all entities
             for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({})) do
                 entity.active = true

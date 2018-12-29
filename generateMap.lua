@@ -74,8 +74,9 @@ function fm.generateMap(data)
 
     -- delete folder (if it already exists)
     local basePath = fm.topfolder
-    local subPath = basePath .. "/Images/" .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. fm.subfolder .. "/"
+    local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. fm.subfolder
     game.remove_path(subPath)
+    subPath = subPath .. "/"
 
 
     

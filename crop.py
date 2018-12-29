@@ -41,10 +41,12 @@ if __name__ == '__main__':
 
 
 	if not os.path.exists(datapath):
-		print("waiting for game")
+		#print("waiting for game")
 		while not os.path.exists(datapath):
 			time.sleep(1)
 
+	print("crop {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
+	
 	files = []
 	with open(datapath, "r") as data:
 		imgsize = int(data.readline().rstrip('\n'))
@@ -57,7 +59,6 @@ if __name__ == '__main__':
 	progressQueue = m.Queue()
 	originalSize = len(files)
 	doneSize = 0
-	print(("crop {:5.1f}%".format(0)), end="")
 	while len(files) > 0:
 		workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, queue=progressQueue), files, 128)
 		for i in range(len(files)):
@@ -70,13 +71,5 @@ if __name__ == '__main__':
 		files = [x for x in workers.get() if x]
 		if len(files) > 0:
 			time.sleep(10 if len(files) > 1000 else 1)
-	print("")
-
-	
-	waitfilename = os.path.join(basepath, "done.txt")
-	if not os.path.exists(waitfilename):
-		#print("waiting for done.txt")
-		while not os.path.exists(waitfilename):
-			time.sleep(1)
-
+	print("\rcrop {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 
