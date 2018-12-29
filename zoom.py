@@ -42,9 +42,9 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 
 				if any(os.path.isfile(path) for path in paths):
 
-					if not os.path.exists(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2))):
+					if not os.path.exists(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2))):
 						try:
-							os.makedirs(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2)))
+							os.makedirs(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2)))
 						except OSError:
 							pass
 
@@ -68,16 +68,16 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 							if size == 0:
 								size = img.size[0]
 								result = Image.new('RGB', (size, size), (27, 45, 51))
-							result.paste(box=(coords[m][0]*size/2, coords[m][1]*size/2), im=img.resize((size/2, size/2), Image.ANTIALIAS))
+							result.paste(box=(coords[m][0]*size//2, coords[m][1]*size//2), im=img.resize((size//2, size//2), Image.ANTIALIAS))
 
 							if isOriginal[m]:
 								imgs.append((img, paths[m]))
 
 
 					if outext != ext and k == last+1:
-						saveCompress(result, os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2), str(j/2) + outext))
+						saveCompress(result, os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + outext))
 					else:
-						result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i/2), str(j/2) + ext)) 
+						result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + ext)) 
 						
 					
 					if outext != ext:
@@ -86,7 +86,7 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 							os.remove(path)   
 
 
-		chunksize = chunksize / 2
+		chunksize = chunksize // 2
 
 def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks, queue):
 	#print(start, stop, chunks)
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 		data = json.load(f)
 	for mapIndex, map in enumerate(data["maps"]):
 		if len(sys.argv) <= 2 or map["path"] == sys.argv[2]:
-			for surfaceName, surface in map["surfaces"].iteritems():
+			for surfaceName, surface in map["surfaces"].items():
 				if len(sys.argv) <= 3 or surfaceName == sys.argv[3]:
 					start = surface["zoom"]["max"]
 					stop = surface["zoom"]["min"]
@@ -158,8 +158,8 @@ if __name__ == '__main__':
 								threads = min(len(allChunks), maxthreads)
 								processes = []
 								
-								print("%s %s %s %s" % (pathList[0], str(surfaceName), daytime, pathList))
-								print("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks)))
+								# print(("%s %s %s %s" % (pathList[0], str(surfaceName), daytime, pathList)))
+								# print(("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks))))
 								originalSize = queue.qsize()
 								print("0%")
 								for t in range(0, threads):
@@ -174,14 +174,14 @@ if __name__ == '__main__':
 									tmp = math.floor((originalSize - nowSize) * 100 / originalSize)
 									if lastPercent < tmp:
 										lastPercent = tmp
-										print("%s%%" % int(lastPercent))
+										print(("%s%%" % int(lastPercent)))
 										time.sleep(0.2)
 								for p in processes:
 									p.join()
 									
 
 								
-								print("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks)))
+								print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
 								processes = []
 								i = len(allBigChunks) - 1
 								for chunk in list(allBigChunks):

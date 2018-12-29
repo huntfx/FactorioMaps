@@ -2,6 +2,7 @@ from PIL import Image
 import multiprocessing as mp
 import os, math, sys, time, psutil, json
 from functools import partial
+from shutil import get_terminal_size as tsize
 
 
 
@@ -32,15 +33,15 @@ if __name__ == '__main__':
 	basepath = os.path.join(toppath, "Images", subname)
 	
 
-	while not os.path.isdir(basepath) or len(os.walk(basepath).next()[1]) == 0:
+	while not os.path.isdir(basepath) or len(os.walk(basepath).__next__()[1]) == 0:
 		time.sleep(1)
-	folder = os.path.join(basepath, os.walk(basepath).next()[1][0])
+	folder = os.path.join(basepath, os.walk(basepath).__next__()[1][0])
 	datapath = os.path.join(basepath, "crop.txt")
 	maxthreads = mp.cpu_count()
 
 
 	if not os.path.exists(datapath):
-		print("waiting for crop.txt")
+		print("waiting for game")
 		while not os.path.exists(datapath):
 			time.sleep(1)
 
@@ -52,27 +53,29 @@ if __name__ == '__main__':
 	
 	pool = mp.Pool(processes=maxthreads)
 	
-	progressQueue = mp.Queue()
+	m = mp.Manager()
+	progressQueue = m.Queue()
 	originalSize = len(files)
 	doneSize = 0
-	print("\r{:5.1f}%".format(0))
+	print(("crop {:5.1f}%".format(0)), end="")
 	while len(files) > 0:
 		workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, queue=progressQueue), files, 128)
-		for _ in range(originalSize):
+		for i in range(len(files)):
 			if progressQueue.get(True):
 				doneSize += 1
 				progress = float(doneSize) / originalSize
-				#tsiz = tsize()[0]-10
-				#print "\r{:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))),
+				tsiz = tsize()[0]-15
+				print("\rcrop {:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
 		workers.wait()
-		files = filter(lambda x: x, workers.get())
+		files = [x for x in workers.get() if x]
 		if len(files) > 0:
 			time.sleep(10 if len(files) > 1000 else 1)
+	print("")
 
 	
 	waitfilename = os.path.join(basepath, "done.txt")
 	if not os.path.exists(waitfilename):
-		print("waiting for done.txt")
+		#print("waiting for done.txt")
 		while not os.path.exists(waitfilename):
 			time.sleep(1)
 

@@ -29,7 +29,7 @@ if __name__ == '__main__':
             if splitExt[1] == ".png":
                 allImages.append(splitExt[0])
 
-    print("converting %s images to jpg" % len(allImages))
+    print(("converting %s images to jpg" % len(allImages)))
     pool = mp.Pool(processes=maxthreads)
     pool.map(convert, allImages, 128)
 
