@@ -17,6 +17,8 @@ def parseArg(arg):
     kwargs[arg[2:].split("=",2)[0]] = arg[2:].split("=",2)[1] if len(arg[2:].split("=",2)) > 1 else True
     return False
 
+python = sys.executable
+
 args = sys.argv[1:]
 kwargs = {}
 args = filter(parseArg, args)
@@ -167,14 +169,14 @@ try:
 
         for screenshot in latest:
             print("Cropping %s images" % screenshot)
-            if 0 != call('python crop.py %s %s' % (screenshot, basepath)): raise RuntimeError("crop failed")
+            if 0 != call('%s crop.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("crop failed")
 
 
             def refZoom():
                 print("Crossreferencing %s images" % screenshot)
-                if 0 != call('python ref.py %s %s' % (screenshot, basepath)): raise RuntimeError("ref failed")
+                if 0 != call('%s ref.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("ref failed")
                 print("downsampling %s images" % screenshot)
-                if 0 != call('python zoom.py %s %s' % (screenshot, basepath)): raise RuntimeError("zoom failed")
+                if 0 != call('%s zoom.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("zoom failed")
             if screenshot != latest[-1]:
                 refZoom()
             else:
