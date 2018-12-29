@@ -1,6 +1,7 @@
 from PIL import Image
 import multiprocessing as mp
 import os, math, sys, time, math, json, psutil, subprocess
+from shutil import get_terminal_size as tsize
 
 
 maxQuality = False  		# Set this to true if you want to compress/postprocess the images yourself later
@@ -88,11 +89,12 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 
 		chunksize = chunksize // 2
 
-def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks, queue):
+def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks, queue, resultQueue):
 	#print(start, stop, chunks)
 	try:
 		while not queue.empty():
 			work(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks[queue.get(True)])
+			resultQueue.put(True)
 	except mp.queues.Empty:
 		pass
 		
@@ -111,7 +113,7 @@ if __name__ == '__main__':
 	maxthreads = mp.cpu_count()
 
 
-	print(basepath)
+	#print(basepath)
 
 
 	with open(datapath, "r") as f:
@@ -134,6 +136,8 @@ if __name__ == '__main__':
 						if len(sys.argv) <= 4 or daytime == sys.argv[4]:
 							if not os.path.isdir(os.path.join(toppath, "Images", str(map["path"]), surfaceName, daytime, str(start - 1))):
 
+								print("zoom {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
+
 								allBigChunks = {}
 								for x in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(surface["zoom"]["max"]))):
 									for y in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(surface["zoom"]["max"]), x)):
@@ -153,7 +157,7 @@ if __name__ == '__main__':
 									for i in range(2**threadsplit):
 										for j in range(2**threadsplit):
 											allChunks.append((pos[0]*(2**threadsplit) + i, pos[1]*(2**threadsplit) + j))
-											queue.put(queue.qsize())
+											queue.put(queue.qsize(), True)
 
 								threads = min(len(allChunks), maxthreads)
 								processes = []
@@ -161,27 +165,26 @@ if __name__ == '__main__':
 								# print(("%s %s %s %s" % (pathList[0], str(surfaceName), daytime, pathList)))
 								# print(("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks))))
 								originalSize = queue.qsize()
-								print("0%")
+								resultQueue = mp.Queue()
 								for t in range(0, threads):
-									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, start, stop + threadsplit, stop, allChunks, queue))
+									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, start, stop + threadsplit, stop, allChunks, queue, resultQueue))
 									p.start()
 									processes.append(p)
 								
-								nowSize = originalSize
-								lastPercent = 1
-								while nowSize > 0:
-									nowSize = queue.qsize()
-									tmp = math.floor((originalSize - nowSize) * 100 / originalSize)
-									if lastPercent < tmp:
-										lastPercent = tmp
-										print(("%s%%" % int(lastPercent)))
-										time.sleep(0.2)
+								doneSize = 0
+								for _ in range(originalSize):
+									resultQueue.get(True)
+									doneSize += 1
+									progress = float(doneSize) / originalSize
+									tsiz = tsize()[0]-15
+									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+
 								for p in processes:
 									p.join()
 									
 
 								
-								print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
+								#print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
 								processes = []
 								i = len(allBigChunks) - 1
 								for chunk in list(allBigChunks):
@@ -191,4 +194,6 @@ if __name__ == '__main__':
 									processes.append(p)
 								for p in processes:
 									p.join()
+									
+								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 				

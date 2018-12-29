@@ -2,6 +2,7 @@ from PIL import Image
 import multiprocessing as mp
 import os, math, sys, time, psutil
 from functools import partial
+from shutil import get_terminal_size as tsize
 
 
 
