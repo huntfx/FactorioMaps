@@ -11,5 +11,6 @@
     "2.2.1": "Fixed problem with missing graphics.",
     "2.3.0": "Fixed problems with the deduplicator.",
     "2.4.0": "Fixed a bug in the image deduplicator.",
-    "2.4.1": "Added a simple gui with instructions."
+    "2.4.1": "Added a simple gui with instructions.",
+    "2.4.2": "fix for dual python installation"
 }
