@@ -7,7 +7,7 @@ from shutil import copy
 import re
 from subprocess import call
 import datetime
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 
 
@@ -21,7 +21,7 @@ python = sys.executable
 
 args = sys.argv[1:]
 kwargs = {}
-args = filter(parseArg, args)
+args = list(filter(parseArg, args))
 foldername = args[0] if len(args) > 0 else os.path.splitext(os.path.basename(max([os.path.join("..\\..\\saves", basename) for basename in os.listdir("..\\..\\saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
 savenames = args[1:] or [ foldername ]
 
@@ -38,7 +38,7 @@ try:
 except StopIteration:
     raise Exception("Can't find factorio.exe. Please pass --factorio=PATH as an argument.")
 
-print(factorioPath)
+print("factorio path: {}".format(factorioPath))
 
 psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS or 5)
 
@@ -49,21 +49,21 @@ workthread = None
 if "noupdate" not in kwargs:
     try:
         print("Checking for updates")
-        latestUpdates = json.loads(urllib2.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
+        latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
         with open("updates.json", "r") as f:
             currentUpdates = json.load(f)
 
         updates = []
         majorUpdate = False
         currentVersion = (0, 0, 0)
-        for ver, changes in currentUpdates.iteritems():
-            ver = ver.split(".")
+        for verStr, changes in currentUpdates.items():
+            ver = tuple(map(int, verStr.split(".")))
             if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
                 currentVersion = ver
-        for ver, changes in latestUpdates.iteritems():
-            if ver not in currentUpdates: #here
-                ver = tuple(ver.split("."))
-                updates.append((ver, changes))
+        for verStr, changes in latestUpdates.items():
+            if verStr not in currentUpdates:
+                ver = tuple(map(int, verStr.split(".")))
+                updates.append((verStr, changes))
                 if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
                     majorUpdate = True
         updates.sort(key = lambda u: u[0])
@@ -72,13 +72,18 @@ if "noupdate" not in kwargs:
             print("")
             print("================================================================================")
             print("")
-            print("an " + ("important" if majorUpdate else "incremental") + " update has been found!")
-            print("heres what changed:")
-            for update in updates:
-                print("%s: %s" % (str(".".join(update[0])), str(update[1])))
+            print(("  an " + ("important" if majorUpdate else "incremental") + " update has been found!"))
             print("")
-            print("Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps, https://github.com/L0laapk3/FactorioMaps")
+            print("  heres what changed:")
+            for update in updates:
+                print(("    %s: %s" % (update[0], str(update[1]))))
+            print("")
+            print("")
+            print("  Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps")
+            print("            OR")
+            print("            https://github.com/L0laapk3/FactorioMaps")
             if majorUpdate:
+                print("")
                 print("You can dismiss this by using --noupdate (not recommended)")
             print("")
             print("================================================================================")
@@ -113,6 +118,20 @@ def changeModlist(newState):
 
 changeModlist(True)
 
+
+
+def printGameLog(pipe):
+    with os.fdopen(pipe) as reader:
+        while True:
+            line = reader.readline()
+            if "err" in line.lower() or "warn" in line.lower():
+                print(("[GAME] {}".format(line.rstrip('\n'))))     
+
+
+logIn, logOut = os.pipe()
+logthread = threading.Thread(target=printGameLog, args=[logIn])
+logthread.daemon = True
+logthread.start()
 
 
 workfolder = os.path.join(basepath, foldername)
@@ -168,14 +187,14 @@ try:
             workthread.join()
 
         for screenshot in latest:
-            print("Cropping %s images" % screenshot)
+            print(("Cropping %s images" % screenshot))
             if 0 != call('%s crop.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("crop failed")
 
 
             def refZoom():
-                print("Crossreferencing %s images" % screenshot)
+                print(("Crossreferencing %s images" % screenshot))
                 if 0 != call('%s ref.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("ref failed")
-                print("downsampling %s images" % screenshot)
+                print(("downsampling %s images" % screenshot))
                 if 0 != call('%s zoom.py %s %s' % (python, screenshot, basepath)): raise RuntimeError("zoom failed")
             if screenshot != latest[-1]:
                 refZoom()
@@ -204,8 +223,8 @@ try:
         print("updating mapInfo.json")
         with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
             data = json.load(outf)
-            for mapIndex, mapStuff in json.load(inf)["maps"].iteritems():
-                for surfaceName, surfaceStuff in mapStuff["surfaces"].iteritems():
+            for mapIndex, mapStuff in json.load(inf)["maps"].items():
+                for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
                     data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
             outf.seek(0)
             json.dump(data, outf)

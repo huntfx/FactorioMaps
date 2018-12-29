@@ -114,7 +114,7 @@ if __name__ == '__main__':
         cropList = {}
         didAnything = False
         if len(sys.argv) <= 4 or daytime == sys.argv[4]:
-            for surfaceName, surface in newMap["surfaces"].iteritems():
+            for surfaceName, surface in newMap["surfaces"].items():
                 if (len(sys.argv) <= 3 or surfaceName == sys.argv[3]) and daytime in surface and str(surface[daytime]) == "true" and (len(sys.argv) <= 4 or daytime == sys.argv[4]):
                     didAnything = True
                     z = surface["zoom"]["max"]
@@ -180,28 +180,28 @@ if __name__ == '__main__':
             continue
 
 
-        print("found %s new images" % len(keepList))
+        print(("found %s new images" % len(keepList)))
         if len(compareList) > 0:
-            print("comparing %s existing images" % len(compareList))
+            print(("comparing %s existing images" % len(compareList)))
             treshold = .3 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
             #print(treshold)
             #compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]))
             resultList = pool.map(partial(compare, treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 128)
 
-            newList = map(lambda x: x[1], filter(lambda x: x[0], resultList))
-            firstRemoveList += map(lambda x: x[1], filter(lambda x: not x[0], resultList))
-            print("found %s changed in %s images" % (len(newList), len(compareList)))
+            newList = [x[1] for x in [x for x in resultList if x[0]]]
+            firstRemoveList += [x[1] for x in [x for x in resultList if not x[0]]]
+            print(("found %s changed in %s images" % (len(newList), len(compareList))))
             keepList += newList
         
 
-        print("scanning %s chunks for neighbour cropping" % len(firstRemoveList))
+        print(("scanning %s chunks for neighbour cropping" % len(firstRemoveList)))
         resultList = pool.map(partial(neighbourScan, keepList=keepList, cropList=cropList), firstRemoveList, 64)
-        neighbourList = map(lambda x: x[1], filter(lambda x: x[0], resultList))
-        removeList = map(lambda x: x[1], filter(lambda x: not x[0], resultList))
-        print("keeping %s neighbouring images" % len(neighbourList))
+        neighbourList = [x[1] for x in [x for x in resultList if x[0]]]
+        removeList = [x[1] for x in [x for x in resultList if not x[0]]]
+        print(("keeping %s neighbouring images" % len(neighbourList)))
 
 
-        print("deleting %s, keeping %s of %s existing images" % (len(removeList), len(keepList) + len(neighbourList), len(keepList) + len(neighbourList) + len(removeList)))
+        print(("deleting %s, keeping %s of %s existing images" % (len(removeList), len(keepList) + len(neighbourList), len(keepList) + len(neighbourList) + len(removeList))))
 
 
         print("removing identical images")
@@ -243,11 +243,11 @@ if __name__ == '__main__':
         outdata["maps"] = {}
     if str(new) not in outdata["maps"]:
         outdata["maps"][str(new)] = { "surfaces": {} }
-    for surfaceName, daytimeImageIndex in allImageIndex.iteritems():
+    for surfaceName, daytimeImageIndex in allImageIndex.items():
         indexList = []
         daytime = "night" if "night" in daytimeImageIndex and data["maps"][new]["surfaces"][surfaceName] and str(data["maps"][new]["surfaces"][surfaceName]["night"]) == "true" else "day"
         surfaceImageIndex = daytimeImageIndex[daytime]
-        for y, xList in surfaceImageIndex.iteritems():
+        for y, xList in surfaceImageIndex.items():
             string = getBase64(y, False)
             isLastChangedImage = False
             isLastNightImage = False
