@@ -259,6 +259,34 @@ function fm.generateMap(data)
 
 
 
+
+		-- add around player on empty
+		if #allGrid == 0 then
+			range = math.max(fm.autorun.around_tag_range, fm.autorun.around_build_range)
+			for k = 0, range * pixelsPerTile / tilesPerChunk, 1 do
+				for l = 0, range * pixelsPerTile / tilesPerChunk, 1 do
+					for m = 1, k > 0 and -1 or 1, -2 do
+						for n = 1, l > 0 and -1 or 1, -2 do
+							local i = k * m
+							local j = l * n
+							local x = player.position.x / gridPixelSize + i
+							local y = player.position.y / gridPixelSize + j
+							local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
+							local chunk = {x = math.floor(x * gridPixelSize / tilesPerChunk), y = math.floor(y * gridPixelSize / tilesPerChunk)}
+							if dist <= math.pow(range + 0.5, 2) then
+								local gridX = math.floor(x)
+								local gridY = math.floor(y)
+								allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+							end
+						end
+					end
+				end
+			end
+		end
+
+
+
+
 		
 	
 		-- smoothing
