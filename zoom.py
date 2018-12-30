@@ -100,14 +100,21 @@ def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunk
 		
 
 
-			
-
-if __name__ == '__main__':
-
-	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS or -10)
 
 
-	toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
+
+
+
+
+
+
+def zoom(*args):
+
+
+	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else -10)
+
+
+	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 	datapath = os.path.join(toppath, "mapInfo.json")
 	basepath = os.path.join(toppath, "Images")
 	maxthreads = mp.cpu_count()
@@ -119,9 +126,9 @@ if __name__ == '__main__':
 	with open(datapath, "r") as f:
 		data = json.load(f)
 	for mapIndex, map in enumerate(data["maps"]):
-		if len(sys.argv) <= 2 or map["path"] == sys.argv[2]:
+		if len(args) <= 1 or map["path"] == args[1]:
 			for surfaceName, surface in map["surfaces"].items():
-				if len(sys.argv) <= 3 or surfaceName == sys.argv[3]:
+				if len(args) <= 2 or surfaceName == args[2]:
 					start = surface["zoom"]["max"]
 					stop = surface["zoom"]["min"]
 
@@ -133,7 +140,7 @@ if __name__ == '__main__':
 						if surface["night"]: daytimes.append("night")
 					except KeyError: pass
 					for daytime in daytimes:
-						if len(sys.argv) <= 4 or daytime == sys.argv[4]:
+						if len(args) <= 3 or daytime == args[3]:
 							if not os.path.isdir(os.path.join(toppath, "Images", str(map["path"]), surfaceName, daytime, str(start - 1))):
 
 								print("zoom {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
@@ -166,7 +173,7 @@ if __name__ == '__main__':
 								# print(("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks))))
 								originalSize = queue.qsize()
 								resultQueue = mp.Queue()
-								for t in range(0, threads):
+								for _ in range(0, threads):
 									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, start, stop + threadsplit, stop, allChunks, queue, resultQueue))
 									p.start()
 									processes.append(p)
@@ -197,3 +204,13 @@ if __name__ == '__main__':
 									
 								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 				
+
+
+
+
+
+				
+
+
+if __name__ == '__main__':
+	zoom(*sys.argv[1:])
