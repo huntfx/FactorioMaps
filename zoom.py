@@ -20,7 +20,8 @@ def saveCompress(img, path, inpath=None):
 	elif os.name == 'nt' and useBetterEncoder: #mozjpeg only supported on windows for now, feel free to make a pull request
 		if not inpath:
 			tmp = img._dump()
-		subprocess.check_call(["cjpeg", "-quality", str(quality), "-optimize", "-progressive", "-sample", "1x1", "-outfile", path, inpath if inpath else tmp]) #mozjpeg version used is 3.3.1
+		# mozjpeg version used is 3.3.1
+		subprocess.check_call(["cjpeg", "-quality", str(quality), "-optimize", "-progressive", "-sample", "1x1", "-outfile", path, inpath if inpath else tmp]) # This software is based in part on the work of the Independent JPEG Group.
 		if not inpath:
 			os.remove(tmp)
 	else:
