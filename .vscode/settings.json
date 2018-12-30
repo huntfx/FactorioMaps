@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "D:\\Python371\\python.exe"
+    "python.pythonPath": "D:\\Python371\\python.exe",
+    "editor.insertSpaces": false
 }
