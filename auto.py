@@ -134,9 +134,9 @@ changeModlist(True)
 def printGameLog(pipe):
     with os.fdopen(pipe) as reader:
         while True:
-            line = reader.readline()
-            if "err" in line.lower() or "warn" in line.lower():
-                printErase("[GAME] {}".format(line.rstrip('\n')))
+            line = reader.readline().rstrip('\n')
+            if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower():
+                printErase("[GAME] {}".format(line))
 
 
 logIn, logOut = os.pipe()
@@ -182,6 +182,9 @@ try:
 
         printErase("starting factorio")
         p = subprocess.Popen(factorioPath + ' --load-game "' + os.path.abspath(os.path.join("..\\..\\saves", savename+".zip")) + '" --disable-audio --no-log-rotation', stdout=logOut)
+        time.sleep(1)
+        if p.poll() is not None:
+            print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\tPlease confirm the steam 'start game with arguments' popup.")
 
         if not os.path.exists(datapath):
             while not os.path.exists(datapath):
