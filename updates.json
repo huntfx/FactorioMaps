@@ -5,13 +5,13 @@
     "1.1.2": "Fixed problem with save files with spaces in the names",
     "1.2.1": "Bugfix. Splat!",
     "1.2.0": "Fixed problem with mod names with symbols, added changelog",
-    "2.0.0": "Added HD mode! Also allow more zoom levels in general.",
-    "2.1.0": "Block all 404 request, The client now knows exactly which images exist. (Breaks old maps)",
+    "2.0.0": "Added HD mode. Also allow more zoom levels in general.",
+    "2.1.0": "Block all 404 requests, The client now knows exactly which images exist. (Breaks old maps)",
     "2.2.0": "Significantly increased image quality and file size at the cost of some processing time.",
     "2.2.1": "Fixed problem with missing graphics.",
     "2.3.0": "Fixed problems with the deduplicator.",
     "2.4.0": "Fixed a bug in the image deduplicator.",
     "2.4.1": "Added a simple gui with instructions.",
     "2.4.2": "Fix for dual python installation.",
-    "3.0.0": "Switched to python 3"
+    "3.0.0": ["Mapview tags are now included.", "Linux support", "Switched to python 3"]
 }
