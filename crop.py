@@ -23,18 +23,20 @@ def work(line, imgsize, folder):
         
 
 
-if __name__ == '__main__':
 
-	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS or -10)
+def crop(*args):
 
-	subname = "\\".join(sys.argv[2:5])
-	toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
+	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else -10)
+
+	subname = os.path.join(*args[1:4])
+	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 
 	basepath = os.path.join(toppath, "Images", subname)
 	
+	#print(basepath)
 
 	while not os.path.isdir(basepath) or len(os.walk(basepath).__next__()[1]) == 0:
-		time.sleep(1)
+		time.sleep(0.4)
 	folder = os.path.join(basepath, os.walk(basepath).__next__()[1][0])
 	datapath = os.path.join(basepath, "crop.txt")
 	maxthreads = mp.cpu_count()
@@ -61,7 +63,7 @@ if __name__ == '__main__':
 	doneSize = 0
 	while len(files) > 0:
 		workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, queue=progressQueue), files, 128)
-		for i in range(len(files)):
+		for _ in range(len(files)):
 			if progressQueue.get(True):
 				doneSize += 1
 				progress = float(doneSize) / originalSize
@@ -73,3 +75,12 @@ if __name__ == '__main__':
 			time.sleep(10 if len(files) > 1000 else 1)
 	print("\rcrop {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 
+
+
+
+
+
+
+
+if __name__ == '__main__':
+	crop(*sys.argv[1:])

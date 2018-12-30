@@ -76,12 +76,17 @@ def getBase64(number, isNight): #coordinate to 18 bit value (3 char base64)
 
 
 
-if __name__ == '__main__':
-
-	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS or -10)
 
 
-	toppath = os.path.join((sys.argv[5] if len(sys.argv) > 5 else "..\\..\\script-output\\FactorioMaps"), sys.argv[1])
+
+
+
+def ref(*args):
+
+	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else -10)
+
+
+	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 	datapath = os.path.join(toppath, "mapInfo.json")
 	maxthreads = mp.cpu_count()
 
@@ -98,9 +103,9 @@ if __name__ == '__main__':
 		outdata = {}
 
 
-	if len(sys.argv) > 2:
+	if len(args) > 1:
 		for i, mapObj in enumerate(data["maps"]):
-			if mapObj["path"] == sys.argv[2]:
+			if mapObj["path"] == args[1]:
 				new = i
 				break
 	else:
@@ -119,9 +124,9 @@ if __name__ == '__main__':
 		firstRemoveList = []
 		cropList = {}
 		didAnything = False
-		if len(sys.argv) <= 4 or daytime == sys.argv[4]:
+		if len(args) <= 3 or daytime == args[3]:
 			for surfaceName, surface in newMap["surfaces"].items():
-				if (len(sys.argv) <= 3 or surfaceName == sys.argv[3]) and daytime in surface and str(surface[daytime]) == "true" and (len(sys.argv) <= 4 or daytime == sys.argv[4]):
+				if (len(args) <= 2 or surfaceName == args[2]) and daytime in surface and str(surface[daytime]) == "true" and (len(args) <= 3 or daytime == args[3]):
 					didAnything = True
 					z = surface["zoom"]["max"]
 
@@ -295,7 +300,7 @@ if __name__ == '__main__':
 			json.dump(outdata, f)
 
 		if DEBUG: print("deleting empty folders")
-		for curdir, subdirs, files in os.walk(toppath, *sys.argv[2:5]):
+		for curdir, subdirs, files in os.walk(toppath, *args[1:4]):
 			if len(subdirs) == 0 and len(files) == 0:
 				os.rmdir(curdir)
 
@@ -303,3 +308,13 @@ if __name__ == '__main__':
 		
 
 
+
+
+
+
+
+
+
+
+if __name__ == '__main__':
+	ref(*sys.argv[1:])

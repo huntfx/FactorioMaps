@@ -78,10 +78,10 @@ script.on_event(defines.events.on_tick, function(event)
             
             latest = ""
             if fm.autorun.day then
-                latest = latest .. "\"" .. fm.autorun.name:sub(1, -2) .. "\" " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " day\n"
+                latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " day\n"
             end
             if fm.autorun.night then
-                latest = latest .. "\"" .. fm.autorun.name:sub(1, -2) .. "\" " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " night\n"
+                latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " night\n"
             end
             game.write_file(fm.topfolder .. "latest.txt", latest, false, event.player_index)
 
