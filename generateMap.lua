@@ -249,6 +249,7 @@ function fm.generateMap(data)
 								local gridX = math.floor(x)
 								local gridY = math.floor(y)
 								allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+								allGridString = allGridString .. gridX .. " " .. gridY .. "|"
 							end
 						end
 					end
@@ -277,6 +278,7 @@ function fm.generateMap(data)
 								local gridX = math.floor(x)
 								local gridY = math.floor(y)
 								allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+								allGridString = allGridString .. gridX .. " " .. gridY .. "|"
 							end
 						end
 					end
@@ -332,7 +334,7 @@ function fm.generateMap(data)
 	if fm.autorun.HD == true then
 		maxZoom = 21
 	end
-	local minZoom = (maxZoom - math.max(0, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))))
+	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))))
 	if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
 		fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
 			spawn = spawn,

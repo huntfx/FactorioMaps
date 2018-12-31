@@ -33,7 +33,7 @@ def crop(*args):
 
 	basepath = os.path.join(toppath, "Images", subname)
 	
-	#print(basepath)
+
 
 	while not os.path.isdir(basepath) or len(os.walk(basepath).__next__()[1]) == 0:
 		time.sleep(0.4)
