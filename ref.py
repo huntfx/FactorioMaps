@@ -29,7 +29,7 @@ def compare(path, basePath, new, treshold, progressQueue):
 		print("\rerror   ")
 		pass
 	finally:
-		progressQueue.put(True)
+		progressQueue.put(True, True)
 	return (False, path[1:])
 
 
@@ -163,8 +163,8 @@ def ref(*args):
 					if daytime != "day":
 						if not os.path.isfile(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "ref.txt")):
 							print("WARNING: cannot find day surface to copy non-day surface from. running ref.py on night surfaces is not very accurate.")
-						elif DEBUG:
-							print("found day surface, reuse results from ref.py from there")
+						else:
+							if DEBUG: print("found day surface, reuse results from ref.py from there")
 							
 							with open(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "ref.txt"), "r") as f:
 								for line in f:
@@ -172,6 +172,8 @@ def ref(*args):
 									#if (line.rstrip("\n").split(" ", 2)[1] == "6"): print("YUP", line.rstrip("\n").split(" ", 2)[0])
 									dayImages.append(tuple(line.rstrip("\n").split(" ", 2)))
 									
+
+						print("dayImages")
 						allDayImages[surfaceName] = dayImages
 					
 
@@ -190,6 +192,8 @@ def ref(*args):
 		if not didAnything:
 			continue
 
+
+	
 
 		if DEBUG: print("found %s new images" % len(keepList))
 		if len(compareList) > 0:

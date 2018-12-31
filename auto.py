@@ -121,6 +121,11 @@ def auto(*args):
 		os.remove("autorun.lua")
 
 
+
+	#TODO: integrety check, if done files arent there or there are any bmp's left, complain.
+
+
+
 	print("enabling FactorioMaps mod")
 	def changeModlist(newState):
 		done = False
@@ -220,7 +225,8 @@ def auto(*args):
 						else:
 							os.system("taskkill /im factorio.exe")
 						break
-					time.sleep(0.4)
+					else:
+						time.sleep(0.4)
 
 			killthread = threading.Thread(target=waitKill, args=(isKilled,))
 			killthread.daemon = True
