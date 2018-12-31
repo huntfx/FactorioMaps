@@ -219,11 +219,11 @@ def auto(*args):
 				while not isKilled[0]:
 					if os.path.isfile(waitfilename):
 						isKilled[0] = True
-						printErase("killing factorio")
 						if p.poll() is None:
 							p.kill()
 						else:
 							os.system("taskkill /im factorio.exe")
+						printErase("killed factorio")
 						break
 					else:
 						time.sleep(0.4)
@@ -267,11 +267,11 @@ def auto(*args):
 				else:
 					if not isKilled[0]:
 						isKilled[0] = True
-						printErase("killing factorio")
 						if p.poll() is None:
 							p.kill()
 						else:
 							os.system("taskkill /im factorio.exe")
+						printErase("killed factorio")
 
 					if savename == savenames[-1]:
 						refZoom()
@@ -312,11 +312,11 @@ def auto(*args):
 
 
 	except KeyboardInterrupt:
-		print("killing factorio")
 		if p.poll() is None:
 			p.kill()
 		else:
 			os.system("taskkill /im factorio.exe")
+		print("killed factorio")
 		raise
 
 	finally:
