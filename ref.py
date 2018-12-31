@@ -173,7 +173,6 @@ def ref(*args):
 									dayImages.append(tuple(line.rstrip("\n").split(" ", 2)))
 									
 
-						print("dayImages")
 						allDayImages[surfaceName] = dayImages
 					
 
