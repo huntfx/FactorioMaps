@@ -120,7 +120,7 @@ def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunk
 def zoom(*args):
 
 
-	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else -10)
+	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 
 
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
