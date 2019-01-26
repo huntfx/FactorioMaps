@@ -29,7 +29,7 @@ def auto(*args):
 	def parseArg(arg):
 		if arg[0:2] != "--":
 			return True
-		kwargs[arg[2:].split("=",2)[0]] = arg[2:].split("=",2)[1] if len(arg[2:].split("=",2)) > 1 else True
+		kwargs[arg[2:].split("=",2)[0].lower()] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
 		return False
 
 	kwargs = {}
@@ -148,7 +148,7 @@ def auto(*args):
 		with os.fdopen(pipe) as reader:
 			while True:
 				line = reader.readline().rstrip('\n')
-				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower():
+				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower() or kwargs["verbosegame"]:
 					printErase("[GAME] {}".format(line))
 
 
@@ -247,7 +247,7 @@ def auto(*args):
 				outFolder = otherInputs.pop(0).replace("/", " ")
 				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
 				#print("Cropping %s images" % screenshot)
-				crop(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath)
+				crop(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 				waitlocalfilename = os.path.join(basepath, outFolder, "Images", otherInputs[0], otherInputs[1], otherInputs[2], "done.txt")
 				if not os.path.exists(waitlocalfilename):
 					#print("waiting for done.txt")
@@ -258,9 +258,9 @@ def auto(*args):
 
 				def refZoom():
 					#print("Crossreferencing %s images" % screenshot)
-					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath)
+					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 					#print("downsampling %s images" % screenshot)
-					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath)
+					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 
 				if screenshot != latest[-1]:
 					refZoom()
