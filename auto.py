@@ -148,7 +148,7 @@ def auto(*args):
 		with os.fdopen(pipe) as reader:
 			while True:
 				line = reader.readline().rstrip('\n')
-				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower() or kwargs["verbosegame"]:
+				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower() or kwargs.get("verbosegame", False):
 					printErase("[GAME] {}".format(line))
 
 

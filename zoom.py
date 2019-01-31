@@ -117,7 +117,7 @@ def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunk
 
 
 
-def zoom(*args):
+def zoom(*args, **kwargs):
 
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
