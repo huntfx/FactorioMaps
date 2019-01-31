@@ -81,7 +81,7 @@ def getBase64(number, isNight): #coordinate to 18 bit value (3 char base64)
 
 
 
-def ref(*args):
+def ref(*args, **kwargs):
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 

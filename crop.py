@@ -6,25 +6,33 @@ from shutil import get_terminal_size as tsize
 
 
 
-    
+	
 ext = ".bmp"
 
-def work(line, imgsize, folder):
-    arg = line.rstrip('\n').split(" ")
-    path = os.path.join(folder, arg[0], arg[1] + ext)
-    top = int(arg[2])
-    left = int(arg[3])
-    try:
-        Image.open(path).convert("RGB").crop((top, left, top + imgsize, left + imgsize)).save(path)
-    except IOError:
-        return line
-    return False
+def work(line, imgsize, folder, progressQueue):
+	arg = line.rstrip('\n').split(" ")
+	path = os.path.join(folder, arg[0], arg[1] + ext)
+	top = int(arg[2])
+	left = int(arg[3])
+	try:
+		Image.open(path).convert("RGB").crop((top, left, top + imgsize, left + imgsize)).save(path)
+	except IOError:
+		progressQueue.put(False, True)
+		return line
+	except:
+		progressQueue.put(False, True)
+		import traceback
+		traceback.print_exc()
+		pass
+		return False
+	progressQueue.put(True, True)
+	return False
 
-        
+		
 
 
 
-def crop(*args):
+def crop(*args, **kwargs):
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 
@@ -62,7 +70,7 @@ def crop(*args):
 	originalSize = len(files)
 	doneSize = 0
 	while len(files) > 0:
-		workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, queue=progressQueue), files, 128)
+		workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, progressQueue=progressQueue), files, 128)
 		for _ in range(len(files)):
 			if progressQueue.get(True):
 				doneSize += 1
