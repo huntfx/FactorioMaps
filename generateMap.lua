@@ -1,28 +1,7 @@
-
+require("json")
 
 math.log2 = function(x) return math.log(x) / math.log(2) end
 
-function prettyjson(o, i)
-	local tab = '\n'..string.rep('\t', i or 0)
-	if type(o) == 'table' then
-	   local s = o[1] and '[' or '{'     
-	   for k,v in pairs(o) do
-		  s = s..tab..(o[1] and '\t' or '\t"'..k..'": ')..json(v, 1+(i or 0))..','
-	   end
-	   return s:sub(1, -2)..(#s>1 and tab..(o[1] and ']' or '}') or '[]')
-	end
-	return type(o) ~= 'number' and '"'..tostring(o)..'"' or tostring(o)
- end
- function json(o, i)
-	 if type(o) == 'table' then
-		local s = o[1] and '[' or '{'     
-		for k,v in pairs(o) do
-		   s = s .. (o[1] and '' or '"'..k..'":')..json(v, 1+(i or 0))..','
-		end
-		return s:sub(1, -2)..(#s>1 and (o[1] and ']' or '}') or '[]')
-	 end
-	 return type(o) ~= 'number' and '"'..tostring(o)..'"' or tostring(o)
-  end
 
 
 
@@ -208,9 +187,6 @@ function fm.generateMap(data)
 												if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and dist <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
 													allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
 													allGridString = allGridString .. gridX .. " " .. gridY .. "|"
-													
-													local x = gridX + (tilesPerChunk / gridPixelSize) / 2 - 1
-													local y = gridY + (tilesPerChunk / gridPixelSize) / 2 - 1
 
 													minX = math.min(minX, gridX)
 													minY = math.min(minY, gridY)
@@ -250,6 +226,11 @@ function fm.generateMap(data)
 								local gridY = math.floor(y)
 								allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
 								allGridString = allGridString .. gridX .. " " .. gridY .. "|"
+
+								minX = math.min(minX, gridX)
+								minY = math.min(minY, gridY)
+								maxX = math.max(maxX, gridX)
+								maxY = math.max(maxY, gridY)
 							end
 						end
 					end
@@ -279,6 +260,11 @@ function fm.generateMap(data)
 								local gridY = math.floor(y)
 								allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
 								allGridString = allGridString .. gridX .. " " .. gridY .. "|"
+
+								minX = math.min(minX, gridX)
+								minY = math.min(minY, gridY)
+								maxX = math.max(maxX, gridX)
+								maxY = math.max(maxY, gridY)
 							end
 						end
 					end
@@ -316,6 +302,11 @@ function fm.generateMap(data)
 			for _, v in pairs(tmp) do
 				allGrid[v.x .. " " .. v.y] = v 
 				allGridString = allGridString .. v.x .. " " .. v.y .. "|"
+
+				minX = math.min(minX, v.x)
+				minY = math.min(minY, v.y)
+				maxX = math.max(maxX, v.x)
+				maxY = math.max(maxY, v.y)
 			end
 		end
 
@@ -334,7 +325,11 @@ function fm.generateMap(data)
 	if fm.autorun.HD == true then
 		maxZoom = 21
 	end
-	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(4))))
+	
+
+	-- TODO: THIS SHIT IS BROKEN
+	local maxImagesNextToEachotherOnLargestZoom = 2
+	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(maxImagesNextToEachotherOnLargestZoom))))
 	if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
 		fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
 			spawn = spawn,
@@ -346,6 +341,7 @@ function fm.generateMap(data)
 			fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
 				iconType 	= tag.icon.type,
 				iconName 	= tag.icon.name or tag.icon.type,
+				iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. tag.icon.name .. ".png",
 				position 	= tag.position,
 				text 		= tag.text,
 				last_user	= tag.last_user and tag.last_user.name
@@ -360,6 +356,27 @@ function fm.generateMap(data)
 	
 	end
 	fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][fm.subfolder] = true
+
+
+	
+	-- in 0.17, we will hopefully be able to use writefile in the data stage instead..
+	local rawTagStrings = {}
+	for _, damageType in pairs(game.damage_prototypes) do
+		local match = damageType.name:match("FMh%d+_")
+		if match ~= nil then
+			rawTagStrings[tonumber(match:sub(4, -2)) + 1] = damageType.name:sub(match:len() + 1) .. damageType.order
+		end
+	end
+	local rawTagString = ""
+	for i = 1, #rawTagStrings, 1 do
+		rawTagString = rawTagString .. rawTagStrings[i]
+	end
+	local rawTags = {}
+	for typeName, path in rawTagString:gmatch("([^:|]+):([^:|]+)") do
+		rawTags[typeName] = path
+	end
+	
+	game.write_file(basePath .. "/rawTags.json", json(rawTags), false, data.player_index)
 
    
 	local extension = "bmp"

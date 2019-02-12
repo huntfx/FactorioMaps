@@ -178,6 +178,21 @@
 		img.leaflet-tile.leaflet-tile-loaded {
 			image-rendering: pixelated;
 		}
+
+
+		img.map-marker {
+			max-width: 64px;
+			max-height: 64px;
+		}
+		.map-marker-text {
+			color: white;
+			font-size: 1em;
+			margin: -6px -32px;
+			text-align: center;
+			display: block;
+			width: 96px;
+		}
+
 	</style>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.js" integrity="sha256-lwWHyfIX653fxmxYjZUYOSM7ufWv6dMT8ISVuTWwoOY="
 		crossorigin="anonymous"></script>
@@ -208,10 +223,11 @@
 	<div id="map" style="background: #1B2D33;"></div>
 	<script>
 		"use strict";
+		let DEBUG = false;
+		
 
-		
-		var DEBUG = false;
-		
+
+		let TILESPERIMAGE = 16
 
 		//var _getTileUrl = L.TileLayer.prototype.getTileUrl;
 		//L.TileLayer.prototype.getTileUrl = function(coords) { return _getTileUrl.call(this, {x: coords.x - 1 * Math.pow(2, coords.z - 2), y: coords.y, z: coords.z}); };
@@ -234,8 +250,12 @@
 				globalTileIndex = {};
 				globalTileNightIndex = {};
 			}
+
 			var map = mapInfo.maps[i];
 			var layer = map.surfaces[surface];
+
+			TILESPERIMAGE = layer.zoom.max == 20 ? 16 : 8;
+
 			if (!globalTileNightIndex[surface]) {
 				globalTileNightIndex[surface] = layer.chunks ? {} : {fallback: i};
 				globalTileIndex[surface] = layer.chunks ? {} : {fallback: i};
@@ -334,7 +354,6 @@
 
 
 
-			/* EDIT */
 			if (layer.save && layer.save.download) {
 				saves.push({
 					layer: layer.save.name || layer.name,
@@ -344,8 +363,24 @@
 					countAvailableSaves++;
 				}
 			}
-			/* END EDIT */
+
+
+
+
+
+			// todo: group tags.. ?
+			for (let tag in layer.tags) {
+				//console.log(tag);
+			}
 		}
+
+
+
+
+
+
+
+
 
 		/* EDIT */
 		if (countAvailableSaves > 0 || mapInfo.links && mapInfo.links.save) {
@@ -526,13 +561,20 @@
 			map.addLayer(layers[0].day || layers[0].night);
 		map.addControl(new L.Control.FullScreen().setPosition('bottomright'));
 		map.zoomControl.setPosition('bottomleft')
-		/*if (m.meta.map.markers !== null && m.meta.map.markers !== undefined) {
-			for (i = 0; i < m.meta.map.markers.length; i++) {
-				var markerData = m.meta.map.markers[i], div = document.createElement('div'), title = document.createElement('h3');
-				div.innerHTML = '<h3>' + markerData.title + '</h3>' + markerData.text;
-				L.marker(markerData.coords, { title: markerData.title }).addTo(map).bindPopup(div);
-			}
-		}*/
+		
+		
+		layers.sort((a, b) => a.position.y - b.position.y)
+		for (let tag of layer.tags) {
+
+			L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
+				icon: new L.DivIcon({
+					className: 'map-tag',
+					html: 	'<img class="map-marker" src="' + tag.iconPath + '"/>'+
+							'<span class="map-marker-text">' + tag.text + '</span>'
+				})
+			}).addTo(map);
+		}
+		
 	</script>
 </body>
 
