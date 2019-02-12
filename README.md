@@ -31,7 +31,7 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
 
 # Configuration
-You can change a few settings, such as the max range from buildings where pictures are generated, and HD mode, can be changed in `autorun.template.lua`.  
+You can change a few settings, such as **HD mode**, and as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`.  
 Image quality settings can be changed in the top of `zoom.py`.
 
 # Hosting this on a server
