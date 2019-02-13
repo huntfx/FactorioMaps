@@ -241,7 +241,7 @@
 			return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
 		}
 
-		var surface = "nauvis";
+		var surface = Object.keys(mapInfo.maps[0].surfaces)[0];
 		var layers = [], saves = [], countAvailableSaves = 0;
 		var globalTileIndex = {};
 		var globalTileNightIndex = {};
@@ -444,7 +444,7 @@
 		var coordScale = 2**19 / 16 * window.devicePixelRatio;
 		try {
 			var split = window.location.hash.substr(1).split('/');
-			if (window.location.hash[0] == '#' && split[0] == "1" && split[1] == "nauvis") {
+			if (window.location.hash[0] == '#' && split[0] == "1" && split[1] == surface) {
 				if (!isNaN(parseInt(split[2]))) startZ = parseInt(split[2]);
 				startX = parseInt(split[3]) / coordScale || startX;
 				startY = parseInt(split[4]) / coordScale || startY;

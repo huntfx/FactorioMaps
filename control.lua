@@ -17,7 +17,7 @@ end
 
 script.on_event(defines.events.on_tick, function(event)
 
-	if fm.autorun then
+	if fm.autorun and not fm.done then
 
 		event.player_index = game.connected_players[1].index
 
@@ -78,10 +78,10 @@ script.on_event(defines.events.on_tick, function(event)
 			
 			latest = ""
 			if fm.autorun.day then
-				latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " day\n"
+				latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name:gsub(" ", "|") .. " day\n"
 			end
 			if fm.autorun.night then
-				latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name .. " night\n"
+				latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name:gsub(" ", "|") .. " night\n"
 			end
 			game.write_file(fm.topfolder .. "latest.txt", latest, false, event.player_index)
 
@@ -132,38 +132,61 @@ script.on_event(defines.events.on_tick, function(event)
 	
 			fm.ticks = 3
 
+		else
+			fm.done = true
 		end
 
 	
-	elseif fm.ticks == nil then
+	elseif fm.shownWarn == nil then
 		-- give instructions on how to use mod and a warning to disable it.
+
+
+		local text
+		if fm.done then
+			text = {
+				"Factoriomaps automatic world capture",
+				"Factoriomaps is now finished capturing your game and will close soon.",
+				"If you believe the script is stuck or you see this screen in error,\nconsider making an issue on the github page: https://git.io/factoriomaps"
+			}
+		else
+			text = {
+				"Welcome to FactorioMaps!",
+				"For instructions, check out",
+				"You can leave the mod disabled while you play.\nThe scripts will automagically enable it when it needs it!"
+			}
+		end
 	
 		event.player_index = game.connected_players[1].index
-		fm.ticks = 1
+		fm.shownWarn = true
 
 		--game.pause()
 		game.players[event.player_index].character.active = false
 		
-		local main = game.players[event.player_index].gui.center.add{type = "frame", caption = "How To Use FactorioMaps", direction = "vertical"}
+		local main = game.players[event.player_index].gui.center.add{type = "frame", caption = text[1], direction = "vertical"}
 		local topLine = main.add{type = "flow", direction = "horizontal"}
-		topLine.add{type = "label", caption = "To use FactorioMaps, check out"}
-		topLine.add{type = "label", caption = "https://git.io/factoriomaps."}.style.font = "default-bold"
+		topLine.add{type = "label", caption = text[2]}
+		if not fm.done then
+			topLine.add{type = "label", caption = "https://git.io/factoriomaps."}.style.font = "default-bold"
+		end
 		--topLine.add{type = "label", name = "main-end", caption = "."}.style
-		main.add{type = "label", caption = "You can leave the mod disabled while you play.\nThe scripts will automagically enable it when it needs it!"}.style.single_line = false
+		main.add{type = "label", caption = text[3]}.style.single_line = false
 		main.style.align = "right"
 	
-		local buttonContainer = main.add{type = "flow", direction = "horizontal"}
-		local button = buttonContainer.add{type = "button", caption = "Back to main menu"}
-		buttonContainer.style.horizontally_stretchable = true
-		buttonContainer.style.align = "right"
-		script.on_event(defines.events.on_gui_click, function(event)
-
-			if event.element == button then
-				main.destroy()
-				exit()
-			end
-
-		end)
+		
+		if not fm.done then
+			local buttonContainer = main.add{type = "flow", direction = "horizontal"}
+			local button = buttonContainer.add{type = "button", caption = "Back to main menu"}
+			buttonContainer.style.horizontally_stretchable = true
+			buttonContainer.style.align = "right"
+			script.on_event(defines.events.on_gui_click, function(event)
+	
+				if event.element == button then
+					main.destroy()
+					exit()
+				end
+	
+			end)
+		end
 		
 	end
 end)
