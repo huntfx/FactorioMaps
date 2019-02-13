@@ -82,6 +82,8 @@ def auto(*args):
 			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
 			with open("updates.json", "r") as f:
 				currentUpdates = json.load(f)
+			if "reverseupdatetest" in kwargs:
+				latestUpdates, currentUpdates = currentUpdates, latestUpdates
 
 			updates = []
 			majorUpdate = False
@@ -107,7 +109,6 @@ def auto(*args):
 				print("  heres what changed:")
 
 				padding = max(map(lambda u: len(u[0]), updates))
-				print(padding)
 				for update in updates:
 					print("    %s: %s" % (update[0].rjust(padding), update[1] if isinstance(update[1], str) else str(("\r\n      " + " "*padding).join(update[1]))))
 				print("")
@@ -123,12 +124,11 @@ def auto(*args):
 				print("")
 				print("")
 				if majorUpdate:
-					sys.exit(1)
+					sys.exit(1)(1)
 
 
-		except Exception as e:
-			print("Failed to check for updates:")
-			print("", e)
+		except urllib.error.URLError as e:
+			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
 	if os.path.isfile("autorun.lua"):
