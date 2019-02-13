@@ -3,12 +3,14 @@ import subprocess, signal
 import json
 import threading, psutil
 import time
-from shutil import copy
 import re
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
-from shutil import get_terminal_size as tsize
+from shutil import copy, rmtree, get_terminal_size as tsize
+from zipfile import ZipFile
+import tempfile
+from PIL import Image, ImageChops
 
 from crop import crop
 from ref import ref
@@ -20,8 +22,14 @@ def auto(*args):
 
 
 	def printErase(arg):
-		tsiz = tsize()[0]
-		print("\r{}{}".format(arg, " " * (tsiz-len(arg))), end="\r\n" if tsiz <= len(arg) else "")
+		try:
+			tsiz = tsize()[0]
+			print("\r{}{}".format(arg, " " * (tsiz-len(arg))), end="\r\n" if tsiz <= len(arg) else "")
+		except:
+			try:
+				print(arg)
+			except:
+				pass
 
 
 
@@ -62,12 +70,20 @@ def auto(*args):
 	print("output folder: {}".format(os.path.relpath(workfolder, "../..")))
 
 
+
+	if "delete" in kwargs and "dry" in kwargs:
+		raise Exception("Delete and dry do not make sense together.")
+
+
+
 	if "noupdate" not in kwargs:
 		try:
 			print("checking for updates")
 			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
 			with open("updates.json", "r") as f:
 				currentUpdates = json.load(f)
+			if "reverseupdatetest" in kwargs:
+				latestUpdates, currentUpdates = currentUpdates, latestUpdates
 
 			updates = []
 			majorUpdate = False
@@ -80,10 +96,20 @@ def auto(*args):
 				if verStr not in currentUpdates:
 					ver = tuple(map(int, verStr.split(".")))
 					updates.append((verStr, changes))
-					if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
-						majorUpdate = True
 			updates.sort(key = lambda u: u[0])
 			if len(updates) > 0:
+
+				padding = max(map(lambda u: len(u[0]), updates))
+				changelogLines = []
+				for update in updates:
+					if isinstance(update[1], str):
+						updateText = update[1]
+					else: 
+						updateText = str(("\r\n      " + " "*padding).join(update[1]))
+					if updateText[0] == "!":
+						majorUpdate = True
+						updateText = updateText[1:]
+					changelogLines.append("    %s: %s" % (update[0].rjust(padding), updateText))
 				print("")
 				print("")
 				print("================================================================================")
@@ -91,11 +117,8 @@ def auto(*args):
 				print(("  an " + ("important" if majorUpdate else "incremental") + " update has been found!"))
 				print("")
 				print("  heres what changed:")
-
-				padding = max(map(lambda u: len(u[0]), updates))
-				print(padding)
-				for update in updates:
-					print("    %s: %s" % (update[0].rjust(padding), update[1] if isinstance(update[1], str) else str(("\r\n      " + " "*padding).join(update[1]))))
+				for line in changelogLines:
+					print(line)
 				print("")
 				print("")
 				print("  Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps")
@@ -108,13 +131,12 @@ def auto(*args):
 				print("================================================================================")
 				print("")
 				print("")
-				if majorUpdate:
-					sys.exit(1)
+				if majorUpdate or "reverseupdatetest" in kwargs:
+					sys.exit(1)(1)
 
 
-		except Exception as e:
-			print("Failed to check for updates:")
-			print("", e)
+		except urllib.error.URLError as e:
+			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
 	if os.path.isfile("autorun.lua"):
@@ -148,7 +170,7 @@ def auto(*args):
 		with os.fdopen(pipe) as reader:
 			while True:
 				line = reader.readline().rstrip('\n')
-				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower() or kwargs["verbosegame"]:
+				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
 					printErase("[GAME] {}".format(line))
 
 
@@ -164,7 +186,7 @@ def auto(*args):
 
 	try:
 
-		for index, savename in enumerate(savenames):
+		for index, savename in () if "dry" in kwargs else enumerate(savenames):
 
 
 
@@ -172,6 +194,13 @@ def auto(*args):
 			if os.path.isfile(datapath):
 				os.remove(datapath)
 
+
+			
+			if "delete" in kwargs:
+				try:
+					rmtree(workfolder)
+				except (FileNotFoundError, NotADirectoryError):
+					pass
 
 
 
@@ -222,7 +251,10 @@ def auto(*args):
 						if p.poll() is None:
 							p.kill()
 						else:
-							os.system("taskkill /im factorio.exe")
+							if os.name == 'nt':
+								os.system("taskkill /im factorio.exe")
+							else:
+								os.system("killall factorio")
 						printErase("killed factorio")
 						break
 					else:
@@ -243,7 +275,7 @@ def auto(*args):
 
 
 			for jindex, screenshot in enumerate(latest):
-				otherInputs = screenshot.split(" ")
+				otherInputs = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
 				outFolder = otherInputs.pop(0).replace("/", " ")
 				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
 				#print("Cropping %s images" % screenshot)
@@ -270,7 +302,10 @@ def auto(*args):
 						if p.poll() is None:
 							p.kill()
 						else:
-							os.system("taskkill /im factorio.exe")
+							if os.name == 'nt':
+								os.system("taskkill /im factorio.exe")
+							else:
+								os.system("killall factorio")
 						printErase("killed factorio")
 
 					if savename == savenames[-1]:
@@ -299,6 +334,83 @@ def auto(*args):
 			os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 
+
+		print("updating labels")
+		tags = {}
+		with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as mapInfoJson:
+			data = json.load(mapInfoJson)
+			for mapStuff in data["maps"]:
+				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
+					for tag in surfaceStuff["tags"]:
+						tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
+
+		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
+		
+		modVersions = sorted(
+				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
+					filter(lambda m: m,
+						map(lambda f: re.search(r"^((.*)_(\d)+\.(\d)+\.(\d))+(\.zip)?$", f, flags=re.IGNORECASE),
+							os.listdir(os.path.join(basepath, "../../mods"))))),
+				key = lambda t: t[1])
+
+		with open(os.path.join(workfolder, "rawTags.json"), 'r+') as rawTagJson:
+			rawTags = json.load(rawTagJson)
+			for _, tag in tags.items():
+				dest = os.path.join(workfolder, tag["iconPath"])
+				os.makedirs(os.path.dirname(dest), exist_ok=True)
+				
+
+				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
+
+
+				icons = rawPath.split('*')
+				img = None
+				for i, path in enumerate(icons):
+					m = re.match(r"^__([^\/]+)__[\/\\](.*)$", path)
+					if m is None:
+						raise Exception("raw path of %s %s: %s not found" % (tag["iconType"], tag["iconName"], path))
+
+					iconColor = m.group(2).split("?")
+					icon = iconColor[0]
+					if m.group(1) in ("base", "core"):
+						src = os.path.join(factorioPath, "../../../data", m.group(1), icon + ".png")
+					else:
+						mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
+						if not mod[1][3]: #true if mod is zip
+							zipPath = os.path.join(basepath, "../../mods", mod[2] + ".zip")
+							with ZipFile(zipPath, 'r') as zipObj:
+								if len(icons) == 1:
+									zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
+									zipInfo.filename = os.path.basename(dest)
+									zipObj.extract(zipInfo, os.path.dirname(os.path.realpath(dest)))
+									src = None
+								else:
+									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
+						else:
+							src = os.path.join(basepath, "../../mods", mod[2], icon + ".png")
+					
+					if len(icons) == 1:
+						if src is not None:
+							copy(src, dest)
+					else:
+						newImg = Image.open(src).convert("RGBA")
+						if len(iconColor) > 1:
+							newImg = ImageChops.multiply(newImg, Image.new("RGBA", img.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
+						if i == 0:
+							img = newImg
+						else:
+							img.paste(newImg.convert("RGB"), (0, 0), newImg)
+				if len(icons) > 1:
+					img.save(dest)
+
+
+
+
+
+
+
+
+
 		print("generating mapInfo.js")
 		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
 			outf.write("window.mapInfo = JSON.parse('")
@@ -315,7 +427,10 @@ def auto(*args):
 		if p.poll() is None:
 			p.kill()
 		else:
-			os.system("taskkill /im factorio.exe")
+			if os.name == 'nt':
+				os.system("taskkill /im factorio.exe")
+			else:
+				os.system("killall factorio")
 		print("killed factorio")
 		raise
 
