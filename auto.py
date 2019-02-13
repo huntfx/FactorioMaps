@@ -243,7 +243,10 @@ def auto(*args):
 						if p.poll() is None:
 							p.kill()
 						else:
-							os.system("taskkill /im factorio.exe")
+							if os.name == 'nt':
+								os.system("taskkill /im factorio.exe")
+							else:
+								os.system("killall factorio")
 						printErase("killed factorio")
 						break
 					else:
@@ -291,7 +294,10 @@ def auto(*args):
 						if p.poll() is None:
 							p.kill()
 						else:
-							os.system("taskkill /im factorio.exe")
+							if os.name == 'nt':
+								os.system("taskkill /im factorio.exe")
+							else:
+								os.system("killall factorio")
 						printErase("killed factorio")
 
 					if savename == savenames[-1]:
@@ -413,7 +419,10 @@ def auto(*args):
 		if p.poll() is None:
 			p.kill()
 		else:
-			os.system("taskkill /im factorio.exe")
+			if os.name == 'nt':
+				os.system("taskkill /im factorio.exe")
+			else:
+				os.system("killall factorio")
 		print("killed factorio")
 		raise
 
