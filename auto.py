@@ -198,8 +198,8 @@ def auto(*args):
 			
 			if "delete" in kwargs:
 				try:
-					rmtree(os.path.join(workfolder))
-				except FileNotFoundError:
+					rmtree(workfolder)
+				except (FileNotFoundError, NotADirectoryError):
 					pass
 
 
@@ -385,7 +385,7 @@ def auto(*args):
 									zipObj.extract(zipInfo, os.path.dirname(os.path.realpath(dest)))
 									src = None
 								else:
-									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.tempdir, "FactorioMaps"))
+									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
 						else:
 							src = os.path.join(basepath, "../../mods", mod[2], icon + ".png")
 					
