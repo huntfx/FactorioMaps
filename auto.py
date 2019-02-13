@@ -264,7 +264,7 @@ def auto(*args):
 
 
 			for jindex, screenshot in enumerate(latest):
-				otherInputs = screenshot.split(" ")
+				otherInputs = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
 				outFolder = otherInputs.pop(0).replace("/", " ")
 				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
 				#print("Cropping %s images" % screenshot)
