@@ -13,5 +13,5 @@
     "2.4.0": "Fixed a bug in the image deduplicator.",
     "2.4.1": "Added a simple gui with instructions.",
     "2.4.2": "Fix for dual python installation.",
-    "3.0.0": ["Mapview tags are now included.", "Linux support", "Switched to python 3"]
+    "3.0.0": ["Tags can now be seen on the map!", "Linux support", "Switched to python 3"]
 }
