@@ -96,10 +96,20 @@ def auto(*args):
 				if verStr not in currentUpdates:
 					ver = tuple(map(int, verStr.split(".")))
 					updates.append((verStr, changes))
-					if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
-						majorUpdate = True
 			updates.sort(key = lambda u: u[0])
 			if len(updates) > 0:
+
+				padding = max(map(lambda u: len(u[0]), updates))
+				changelogLines = []
+				for update in updates:
+					if isinstance(update[1], str):
+						updateText = update[1]
+					else: 
+						updateText = str(("\r\n      " + " "*padding).join(update[1]))
+					if updateText[0] == "!":
+						majorUpdate = True
+						updateText = updateText[1:]
+					changelogLines.append("    %s: %s" % (update[0].rjust(padding), updateText))
 				print("")
 				print("")
 				print("================================================================================")
@@ -107,10 +117,8 @@ def auto(*args):
 				print(("  an " + ("important" if majorUpdate else "incremental") + " update has been found!"))
 				print("")
 				print("  heres what changed:")
-
-				padding = max(map(lambda u: len(u[0]), updates))
-				for update in updates:
-					print("    %s: %s" % (update[0].rjust(padding), update[1] if isinstance(update[1], str) else str(("\r\n      " + " "*padding).join(update[1]))))
+				for line in changelogLines:
+					print(line)
 				print("")
 				print("")
 				print("  Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps")
@@ -123,7 +131,7 @@ def auto(*args):
 				print("================================================================================")
 				print("")
 				print("")
-				if majorUpdate:
+				if majorUpdate or "reverseupdatetest" in kwargs:
 					sys.exit(1)(1)
 
 
