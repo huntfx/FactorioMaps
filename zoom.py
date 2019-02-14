@@ -126,7 +126,7 @@ def zoom(*args, **kwargs):
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 	datapath = os.path.join(toppath, "mapInfo.json")
 	basepath = os.path.join(toppath, "Images")
-	maxthreads = mp.cpu_count()
+	maxthreads = int(kwargs["zoomthreads"]) if "zoomthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count())
 
 
 	#print(basepath)
