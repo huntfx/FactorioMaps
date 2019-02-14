@@ -38,16 +38,16 @@ Image quality settings can be changed in the top of `zoom.py`.
 
 # Hosting this on a server
 If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
-1. All references to `https://rawgit.com/L0laapk3/Leaflet.OpacityControls` *must* be removed and selfhosted.
+1. All references to `https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls` (should be replaced with self hosted versions. The files are on https://github.com/L0laapk3/Leaflet.OpacityControls.
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
     * `mapInfo.js`
     * All __images__ in `Images\`.
-    The other files, txt files in images do not matter. Some of them are used to save states for future timeline snapshots.
+    All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
 
 # Known limitations
-* If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. To get around this, install the standalone version of factorio.
-* If the program crashes while making a snapshot, it may leave behind existing timelapses in a state it can not automatically recover from. Please contact me on discord (L0laapk3#2010) or create an Issue, I will guide you trough the fixing process.
+* If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. The only way to get around this is to install the standalone version of factorio.
+* If the program crashes while making a snapshot, it is very likely to leave timelines behind in a 'bricked' state and will probably mess up future snapshots. The easiest way is to simply start over and regenerate all the snapshots from old savefiles. If thats not a possibility, feel free to contact me on discord (L0laapk3#2010) or create an Issue, I'll do my best to help you out.
 * Running this on headless servers is not possible due to factorio limitations.
 
 # Issues
