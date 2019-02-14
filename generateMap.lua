@@ -411,7 +411,7 @@ function fm.generateMap(data)
 		end
 
 		local pathText = subPath .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
-		game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile}, zoom = fm.autorun.HD and 2 or 1, path = pathText, show_entity_info = true})                        
+		game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile}, zoom = fm.autorun.HD and 2 or 1, path = pathText, show_entity_info = fm.autorun.alt_mode})                        
 	end 
 	
 	
