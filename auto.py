@@ -42,7 +42,11 @@ def auto(*args):
 
 	kwargs = {}
 	args = list(filter(parseArg, args))
-	foldername = args[0] if len(args) > 0 else os.path.splitext(os.path.basename(max([os.path.join("../../saves", basename) for basename in os.listdir("../../saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
+	if len(args) > 0:
+		foldername = args[0]
+	else:
+		foldername = os.path.splitext(os.path.basename(max([os.path.join("../../saves", basename) for basename in os.listdir("../../saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
+		print("No save name passed. Using most recent save: %s" % foldername)
 	savenames = args[1:] or [ foldername ]
 
 	possiblePaths = [
