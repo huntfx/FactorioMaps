@@ -24,14 +24,16 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
     * `python auto.py outfolder savename` Generate a snapshot of *savename* and store it to folder *outfolder*.
     * `python auto.py outfolder savename1 savename2 savename3` Generate timeline snapshots of *savename1*, *savename2*, *savename3* in that order, and store it to folder *outfolder*.
     * `python auto.py --factorio=PATH` Same as `python auto.py`, but will use `factorio.exe` from *PATH* instead of attempting to find it in common locations.
-    * `python auto.py --noupdate` Run the mod without checking for updates.
     * `python auto.py --verbosegame` Display *all* game logs.
     * `python auto.py --basepath=PATH` Same as `python auto.py`, but will output to *PATH* instead of `script-output\FactorioMaps`. Not recommended to use.
 
 1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
 
 # Configuration
-You can change a few settings, such as **HD mode**, and as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`.  
+auto.py has some useful flags: `--factorio=PATH`, `--basegame=PATH`, `--verbosegame`, `--noupdate`, `--maxthreads=N`, `--cropthreads=N`, `--refthreads=N`, `--zoomthreads=N`.
+Other than that there are a few developer flags that are not intended for the average user: `--dry`, `--delete`.
+
+Some other settings, such as **HD mode**, and as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`.  
 Image quality settings can be changed in the top of `zoom.py`.
 
 # Hosting this on a server
