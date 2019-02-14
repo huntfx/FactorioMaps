@@ -33,7 +33,7 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 auto.py has some useful flags: `--factorio=PATH`, `--basegame=PATH`, `--verbosegame`, `--noupdate`, `--maxthreads=N`, `--cropthreads=N`, `--refthreads=N`, `--zoomthreads=N`.
 Other than that there are a few developer flags that are not intended for the average user: `--dry`, `--delete`.
 
-Some other settings, such as **HD mode**, and as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`.  
+Some other settings, such as **HD mode**, alt mod, and as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`. I plan to move these settings to flags of auto.py instead at some point.  
 Image quality settings can be changed in the top of `zoom.py`.
 
 # Hosting this on a server
