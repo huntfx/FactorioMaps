@@ -75,10 +75,6 @@ def auto(*args):
 
 
 
-	if "delete" in kwargs and "dry" in kwargs:
-		raise Exception("Delete and dry do not make sense together.")
-
-
 
 	if "noupdate" not in kwargs:
 		try:
@@ -153,9 +149,24 @@ def auto(*args):
 
 
 	print("enabling FactorioMaps mod")
+	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
+	
+	if "modpath" in kwargs:
+		for file in os.listdir(kwargs["modpath"]):
+			if re.match(r'^L0laapk3_FactorioMaps_', file, flags=re.IGNORECASE):
+				print("Found other factoriomaps mod in custom mod folder, deleting.")
+				os.remove(os.path.join(kwargs["modpath"], file))
+
+		if os.name == 'nt':
+			subprocess.call(("MKLINK", "/J", os.path.abspath(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath(".")))), os.path.abspath(".")), shell=True)
+		else:
+			subprocess.call(("ln", "-s", os.path.abspath(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath(".")))), os.path.abspath(".")), shell=True)
+	
+		
+	
 	def changeModlist(newState):
 		done = False
-		with open("../mod-list.json", "r") as f:
+		with open(modListPath, "r") as f:
 			modlist = json.load(f)
 		for mod in modlist["mods"]:
 			if mod["name"] == "L0laapk3_FactorioMaps":
@@ -163,7 +174,7 @@ def auto(*args):
 				done = True
 		if not done:
 			modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
-		with open("../mod-list.json", "w") as f:
+		with open(modListPath, "w") as f:
 			json.dump(modlist, f, indent=2)
 
 	changeModlist(True)
@@ -174,7 +185,7 @@ def auto(*args):
 		with os.fdopen(pipe) as reader:
 			while True:
 				line = reader.readline().rstrip('\n')
-				if "err" in line.lower() or "warn" in line.lower() or "exc" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
+				if "err" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
 					printErase("[GAME] {}".format(line))
 
 
@@ -240,7 +251,10 @@ def auto(*args):
 
 
 			printErase("starting factorio")
-			p = subprocess.Popen([factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--no-log-rotation'], stdout=logOut)
+			params = [factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--no-log-rotation']
+			if "modpath" in kwargs:
+				params.extend(("--mod-directory", os.path.abspath(kwargs["modpath"])))
+			p = subprocess.Popen(params, stdout=logOut)
 			time.sleep(1)
 			if p.poll() is not None:
 				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\tPlease confirm the steam 'start game with arguments' popup.")
