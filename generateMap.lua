@@ -359,24 +359,24 @@ function fm.generateMap(data)
 
 
 	
-	-- in 0.17, we will hopefully be able to use writefile in the data stage instead..
-	local rawTagStrings = {}
-	for _, damageType in pairs(game.damage_prototypes) do
-		local match = damageType.name:match("FMh%d+_")
-		if match ~= nil then
-			rawTagStrings[tonumber(match:sub(4, -2)) + 1] = damageType.name:sub(match:len() + 1) .. damageType.order
-		end
-	end
-	local rawTagString = ""
-	for i = 1, #rawTagStrings, 1 do
-		rawTagString = rawTagString .. rawTagStrings[i]
-	end
-	local rawTags = {}
-	for typeName, path in rawTagString:gmatch("([^:|]+):([^:|]+)") do
-		rawTags[typeName] = path
-	end
+	-- -- in 0.17, we will hopefully be able to use writefile in the data stage instead..
+	-- local rawTagStrings = {}
+	-- for _, damageType in pairs(game.damage_prototypes) do
+	-- 	local match = damageType.name:match("FMh%d+_")
+	-- 	if match ~= nil then
+	-- 		rawTagStrings[tonumber(match:sub(4, -2)) + 1] = damageType.name:sub(match:len() + 1) .. damageType.order
+	-- 	end
+	-- end
+	-- local rawTagString = ""
+	-- for i = 1, #rawTagStrings, 1 do
+	-- 	rawTagString = rawTagString .. rawTagStrings[i]
+	-- end
+	-- local rawTags = {}
+	-- for typeName, path in rawTagString:gmatch("([^:|]+):([^:|]+)") do
+	-- 	rawTags[typeName] = path
+	-- end
 	
-	game.write_file(basePath .. "/rawTags.json", json(rawTags), false, data.player_index)
+	-- game.write_file(basePath .. "/rawTags.json", json(rawTags), false, data.player_index)
 
    
 	local extension = "bmp"
