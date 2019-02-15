@@ -67,7 +67,7 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = kwargs["basepath"] if "basepath" in kwargs else "../../script-output/FactorioMaps"
+	basepath = os.path.join("../../script-output", kwargs["basepath"] if "basepath" in kwargs else "FactorioMaps")
 	workthread = None
 
 	workfolder = os.path.join(basepath, foldername)
@@ -220,10 +220,23 @@ def auto(*args):
 			else:
 				chunkCache = "{}"
 
-			with open("autorun.lua", "w") as target:
-				with open("autorun.template.lua", "r") as template:
-					for line in template:
-						target.write(line.replace("%%NAME%%", foldername + "/").replace("%%CHUNKCACHE%%", chunkCache.replace("\n", "\n\t")).replace("%%MAPINFO%%", mapInfoLua.replace("\n", "\n\t")).replace("%%DATE%%", datetime.date.today().strftime('%d/%m/%y')))
+			with open("autorun.lua", "w") as f:
+				f.write(
+					f'fm.autorun = {{\n'
+					f'HD = {str("hd" in kwargs).lower()},\n'
+					f'day = {str("nightonly" not in kwargs).lower()},\n'
+					f'night = {str("dayonly" not in kwargs).lower()},\n'
+					f'alt_mode = {str("no-altmode" not in kwargs).lower()},\n'
+					f'around_tag_range = {float("tag-range") if "tag-range" in kwargs else 5.2},\n'
+					f'around_build_range = {float("build-range") if "build-range" in kwargs else 5.2},\n'
+					f'around_smaller_range = {float("connect-range") if "connect-range" in kwargs else 1.2},\n'
+					f'smaller_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
+					f'date = "{(datetime.date.strptime(kwargs["date"], "%d/%m/%y") if "date" in kwargs else datetime.date.today()).strftime("%d/%m/%y")}",\n'
+					f'name = "{foldername + "/"}",\n'
+					f'mapInfo = {mapInfoLua},\n'
+					f'chunkCache = {chunkCache}\n'
+					f'}}'
+				)
 
 
 			printErase("starting factorio")
