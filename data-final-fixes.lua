@@ -14,7 +14,6 @@ require("json")
 
 
 
-local icons = ""
 local function index(entity, type)
 	type = type or entity.type
 
@@ -32,18 +31,19 @@ local function index(entity, type)
 	else
 		for i, icon in pairs(entity.icons) do
 			if icon.tint ~= nil then
-				path = path .. "*" .. icon.icon:sub(1, -5) .. "?" ..
+				path = path .. "|" .. icon.icon:sub(1, -5) .. "?" ..
 					math.floor(icon.tint.r*255+0.5) .. "%" ..
 					math.floor(icon.tint.g*255+0.5) .. "%" ..
 					math.floor(icon.tint.b*255+0.5) .. "%" ..
 					math.floor((icon.tint["a"] or 1)*255+0.5)
 			else
-				path = path .. "*" .. icon.icon:sub(1, -5)
+				path = path .. "|" .. icon.icon:sub(1, -5)
 			end
 		end
 		path = path:sub(2)
 	end
-	icons = icons .. "|" .. type .. entity.name:sub(1,1):upper() .. entity.name:sub(2) .. ":" .. path
+
+	log("FactorioMaps_Output_RawTagPaths:".. type .. entity.name:sub(1,1):upper() .. entity.name:sub(2) .. ":" .. path)
 
 	-- in 0.17, we will hopefully be able to use writefile in the data stage instead..
 end
@@ -67,19 +67,20 @@ end
 
 
 
-icons = icons:sub(2)
-i = 0
-while icons:len() > 0 do
-	data:extend({
-		{
-			type = "damage-type",
-			name = "FMh" .. tostring(i) .. "_" .. icons:sub(1, 196 - tostring(i):len()),
-			order = icons:sub(197-tostring(i):len(), 396-tostring(i):len())
-		}
-	})
-	icons = icons:sub(397-tostring(i):len())
-	i = i + 1
-end
+-- log("[FactorioMaps] string transfer hack: string length: " .. tostring(icons:len()))
+-- icons = icons:sub(2)
+-- i = 0
+-- while icons:len() > 0 do
+-- 	-- data:extend({
+-- 	-- 	{
+-- 	-- 		type = "damage-type",
+-- 	-- 		name = "FMh" .. tostring(i) .. "_" .. icons:sub(1, 196 - tostring(i):len()),
+-- 	-- 		order = icons:sub(197-tostring(i):len(), 396-tostring(i):len())
+-- 	-- 	}
+-- 	-- })
+-- 	icons = icons:sub(397-tostring(i):len())
+-- 	i = i + 1
+-- end
 
 
 

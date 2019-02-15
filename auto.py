@@ -4,6 +4,8 @@ import json
 import threading, psutil
 import time
 import re
+import random
+import math
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
@@ -24,10 +26,11 @@ def auto(*args):
 	def printErase(arg):
 		try:
 			tsiz = tsize()[0]
-			print("\r{}{}".format(arg, " " * (tsiz-len(arg))), end="\r\n" if tsiz <= len(arg) else "")
-		except:
+			print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg))), end="", flush=True)
+		except e:
+			raise e
 			try:
-				print(arg)
+				print("PRINTERROR %s" % arg)
 			except:
 				pass
 
@@ -147,6 +150,12 @@ def auto(*args):
 	#TODO: integrety check, if done files arent there or there are any bmp's left, complain.
 
 
+	def linkDir(src, dest):
+		if os.name == 'nt':
+			subprocess.call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), shell=True)
+		else:
+			subprocess.call(("ln", "-s", os.path.abspath(src), os.path.abspath(dest)), shell=True)
+
 
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
@@ -157,10 +166,7 @@ def auto(*args):
 				print("Found other factoriomaps mod in custom mod folder, deleting.")
 				os.remove(os.path.join(kwargs["modpath"], file))
 
-		if os.name == 'nt':
-			subprocess.call(("MKLINK", "/J", os.path.abspath(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath(".")))), os.path.abspath(".")), shell=True)
-		else:
-			subprocess.call(("ln", "-s", os.path.abspath(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath(".")))), os.path.abspath(".")), shell=True)
+		linkDir(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath("."))), ".")
 	
 		
 	
@@ -180,13 +186,20 @@ def auto(*args):
 	changeModlist(True)
 
 
-
+	
+	rawTags = {}
+	rawTagsUsed = False
 	def printGameLog(pipe):
 		with os.fdopen(pipe) as reader:
 			while True:
 				line = reader.readline().rstrip('\n')
-				if "err" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
-					printErase("[GAME] {}".format(line))
+				m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
+				if m is not None:
+					rawTags[m.group(1)] = m.group(2)
+					if rawTagsUsed:
+						raise Exception("Tags added after they were used.")
+				elif "err" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
+					printErase("[GAME] %s" % line)
 
 
 	logIn, logOut = os.pipe()
@@ -251,7 +264,29 @@ def auto(*args):
 
 
 			printErase("starting factorio")
-			params = [factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--no-log-rotation']
+			tmpdir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
+			try:
+				rmtree(tmpdir)
+			except (FileNotFoundError, NotADirectoryError):
+				pass
+			os.makedirs(os.path.join(tmpdir, "config"))
+			configPath = os.path.join(tmpdir, "config/config.ini")
+			configInserted = False
+			with open(configPath, 'w+') as outf, open("../../config/config.ini", "r") as inf:
+				for line in inf:
+					if re.match(r'^ *write-data *=.*', line, re.IGNORECASE) is None:
+						outf.write(line)
+					if not configInserted and re.match(r'^ *\[path\].*', line, re.IGNORECASE) is not None:
+						outf.write("write-data=%s\n" % tmpdir)
+						configInserted = True
+				if not configInserted:
+					outf.write("[path]\n")
+					outf.write("write-data=%s\n" % tmpdir)
+
+			linkDir(os.path.join(tmpdir, "script-output"), "../../script-output")
+
+			
+			params = [factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath]
 			if "modpath" in kwargs:
 				params.extend(("--mod-directory", os.path.abspath(kwargs["modpath"])))
 			p = subprocess.Popen(params, stdout=logOut)
@@ -384,55 +419,55 @@ def auto(*args):
 							os.listdir(os.path.join(basepath, "../../mods"))))),
 				key = lambda t: t[1])
 
-		with open(os.path.join(workfolder, "rawTags.json"), 'r+') as rawTagJson:
-			rawTags = json.load(rawTagJson)
-			for _, tag in tags.items():
-				dest = os.path.join(workfolder, tag["iconPath"])
-				os.makedirs(os.path.dirname(dest), exist_ok=True)
+
+		rawTagsUsed = True
+		for _, tag in tags.items():
+			dest = os.path.join(workfolder, tag["iconPath"])
+			os.makedirs(os.path.dirname(dest), exist_ok=True)
+			
+
+			rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
+
+
+			icons = rawPath.split('*')
+			img = None
+			for i, path in enumerate(icons):
+				m = re.match(r"^__([^\/]+)__[\/\\](.*)$", path)
+				if m is None:
+					raise Exception("raw path of %s %s: %s not found" % (tag["iconType"], tag["iconName"], path))
+
+				iconColor = m.group(2).split("?")
+				icon = iconColor[0]
+				if m.group(1) in ("base", "core"):
+					src = os.path.join(factorioPath, "../../../data", m.group(1), icon + ".png")
+				else:
+					mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
+					if not mod[1][3]: #true if mod is zip
+						zipPath = os.path.join(basepath, "../../mods", mod[2] + ".zip")
+						with ZipFile(zipPath, 'r') as zipObj:
+							if len(icons) == 1:
+								zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
+								zipInfo.filename = os.path.basename(dest)
+								zipObj.extract(zipInfo, os.path.dirname(os.path.realpath(dest)))
+								src = None
+							else:
+								src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
+					else:
+						src = os.path.join(basepath, "../../mods", mod[2], icon + ".png")
 				
-
-				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
-
-
-				icons = rawPath.split('*')
-				img = None
-				for i, path in enumerate(icons):
-					m = re.match(r"^__([^\/]+)__[\/\\](.*)$", path)
-					if m is None:
-						raise Exception("raw path of %s %s: %s not found" % (tag["iconType"], tag["iconName"], path))
-
-					iconColor = m.group(2).split("?")
-					icon = iconColor[0]
-					if m.group(1) in ("base", "core"):
-						src = os.path.join(factorioPath, "../../../data", m.group(1), icon + ".png")
+				if len(icons) == 1:
+					if src is not None:
+						copy(src, dest)
+				else:
+					newImg = Image.open(src).convert("RGBA")
+					if len(iconColor) > 1:
+						newImg = ImageChops.multiply(newImg, Image.new("RGBA", img.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
+					if i == 0:
+						img = newImg
 					else:
-						mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
-						if not mod[1][3]: #true if mod is zip
-							zipPath = os.path.join(basepath, "../../mods", mod[2] + ".zip")
-							with ZipFile(zipPath, 'r') as zipObj:
-								if len(icons) == 1:
-									zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
-									zipInfo.filename = os.path.basename(dest)
-									zipObj.extract(zipInfo, os.path.dirname(os.path.realpath(dest)))
-									src = None
-								else:
-									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
-						else:
-							src = os.path.join(basepath, "../../mods", mod[2], icon + ".png")
-					
-					if len(icons) == 1:
-						if src is not None:
-							copy(src, dest)
-					else:
-						newImg = Image.open(src).convert("RGBA")
-						if len(iconColor) > 1:
-							newImg = ImageChops.multiply(newImg, Image.new("RGBA", img.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
-						if i == 0:
-							img = newImg
-						else:
-							img.paste(newImg.convert("RGB"), (0, 0), newImg)
-				if len(icons) > 1:
-					img.save(dest)
+						img.paste(newImg.convert("RGB"), (0, 0), newImg)
+			if len(icons) > 1:
+				img.save(dest)
 
 
 
