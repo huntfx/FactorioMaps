@@ -15,5 +15,6 @@
     "2.4.2": "Fix for dual python installation.",
     "3.0.0": ["Tags can now be seen on the map!", "Linux support", "Switched to python 3"],
     "3.0.1": "Added flags to set maximum threads used.",
-    "3.0.2": "Added flag to disable alt-mode."
+    "3.0.2": "Added flag to disable alt-mode.",
+    "3.1.0": "!Better implementation of tag image extraction."
 }

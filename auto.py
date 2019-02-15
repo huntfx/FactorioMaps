@@ -148,7 +148,7 @@ def auto(*args):
 			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
-	if os.path.isfile("autorun.lua"):
+	if os.path.isfile("autorun.lua") or "reverseupdatetest" in kwargs:
 		os.remove("autorun.lua")
 
 
