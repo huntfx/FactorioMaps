@@ -55,11 +55,17 @@ def auto(*args):
 	possiblePaths = [
 		"C:/Program Files/Factorio/bin/x64/factorio.exe",
 		"D:/Program Files/Factorio/bin/x64/factorio.exe",
+		"E:/Program Files/Factorio/bin/x64/factorio.exe",
+		"F:/Program Files/Factorio/bin/x64/factorio.exe",
 		"C:/Games/Factorio/bin/x64/factorio.exe",
 		"D:/Games/Factorio/bin/x64/factorio.exe",
-		"../../bin/x64/factorio",
+		"E:/Games/Factorio/bin/x64/factorio.exe",
+		"F:/Games/Factorio/bin/x64/factorio.exe",
 		"C:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-		"D:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe"
+		"D:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+		"E:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+		"F:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+		"../../bin/x64/factorio"
 	]
 	try:
 		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if "factorio" in kwargs else possiblePaths) if os.path.isfile(x))
