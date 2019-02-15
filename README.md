@@ -30,24 +30,44 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 1. An `index.html` will be created in `%appdata%\Factorio\script-output\FactorioMaps\mapName`. Enjoy!
 
 # Configuration
-auto.py has some useful flags: `--factorio=PATH`, `--basegame=PATH`, `--verbosegame`, `--noupdate`, `--maxthreads=N`, `--cropthreads=N`, `--refthreads=N`, `--zoomthreads=N`.
-Other than that there are a few developer flags that are not intended for the average user: `--dry`, `--delete`.
+Heres a list of flags that `auto.py` can accept:
 
-Some other settings, such as **HD mode**, alt mod, and as the max range from buildings where pictures are generated, can be changed in `autorun.template.lua`. I plan to move these settings to flags of auto.py instead at some point.  
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
+| --- | --- |
+| `--dayonly` | Do not take nighttime screenshots (For now, this setting needs to be the same across one timeline). |
+| `--nightonly` | Do not take daytime screenshots. |
+| `--HD` | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
+| `--no-altmode` | Hides entity info (alt mode) |
+| `--build-range=5.2` | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
+| `--connect-range=1.2` | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
+| `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. |
+| `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
+| `--modpath=PATH` | Use *PATH* as the mod folder. |
+| `--basepath=PATH` | Output to `script-output\PATH` instead of `script-output\FactorioMaps`. |
+| `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
+| `--verbosegame` | Displays *all* game logs. |
+| `--noupdate` | Skips the update check. |
+| `--maxthreads=N` | Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available. |
+| `--cropthreads=N` | Sets the number of threads used for the crop step. |
+| `--refthreads=N` | Sets the number of threads used for the crossreferencing step. |
+| `--zoomthreads=N` | Sets the number of threads used for the zoom step. |
+| `--delete` | Deletes the output folder specified before running the script. |
+| `--dry` | Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script. |
+ 
 Image quality settings can be changed in the top of `zoom.py`.
 
 # Hosting this on a server
 If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
-1. All references to `https://rawgit.com/L0laapk3/Leaflet.OpacityControls` *must* be removed and selfhosted.
+1. All references to `https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls` (should be replaced with self hosted versions. The files are on https://github.com/L0laapk3/Leaflet.OpacityControls.
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
     * `mapInfo.js`
     * All __images__ in `Images\`.
-    The other files, txt files in images do not matter. Some of them are used to save states for future timeline snapshots.
+    All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
 
 # Known limitations
-* If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. To get around this, install the standalone version of factorio.
-* If the program crashes while making a snapshot, it may leave behind existing timelapses in a state it can not automatically recover from. Please contact me on discord (L0laapk3#2010) or create an Issue, I will guide you trough the fixing process.
+* If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. The only way to get around this is to install the standalone version of factorio.
+* If the program crashes while making a snapshot, it is very likely to leave timelines behind in a 'bricked' state and will probably mess up future snapshots. The easiest way is to simply start over and regenerate all the snapshots from old savefiles. If thats not a possibility, feel free to contact me on discord (L0laapk3#2010) or create an Issue, I'll do my best to help you out.
 * Running this on headless servers is not possible due to factorio limitations.
 
 # Issues
