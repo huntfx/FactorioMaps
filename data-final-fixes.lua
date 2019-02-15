@@ -33,10 +33,10 @@ local function index(entity, type)
 		for i, icon in pairs(entity.icons) do
 			if icon.tint ~= nil then
 				path = path .. "*" .. icon.icon:sub(1, -5) .. "?" ..
-					math.floor(icon.tint.r*256+0.5) .. "%" ..
-					math.floor(icon.tint.g*256+0.5) .. "%" ..
-					math.floor(icon.tint.b*256+0.5) .. "%" ..
-					math.floor(icon.tint.a*256+0.5)
+					math.floor(icon.tint.r*255+0.5) .. "%" ..
+					math.floor(icon.tint.g*255+0.5) .. "%" ..
+					math.floor(icon.tint.b*255+0.5) .. "%" ..
+					math.floor((icon.tint.a or 1)*255+0.5)
 			else
 				path = path .. "*" .. icon.icon:sub(1, -5)
 			end
