@@ -26,7 +26,7 @@ def auto(*args):
 	def printErase(arg):
 		try:
 			tsiz = tsize()[0]
-			print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg))), end="", flush=True)
+			print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg) - 1)), end="", flush=True)
 		except e:
 			raise e
 			try:
@@ -166,7 +166,7 @@ def auto(*args):
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
 	
-	if "modpath" in kwargs:
+	if "modpath" in kwargs and not os.path.samefile(kwargs["modpath"], "../../mods"):
 		for file in os.listdir(kwargs["modpath"]):
 			if re.match(r'^L0laapk3_FactorioMaps_', file, flags=re.IGNORECASE):
 				print("Found other factoriomaps mod in custom mod folder, deleting.")
@@ -217,6 +217,7 @@ def auto(*args):
 
 
 	datapath = os.path.join(workfolder, "latest.txt")
+	allTmpDirs = []
 
 	try:
 
@@ -271,6 +272,7 @@ def auto(*args):
 
 			printErase("starting factorio")
 			tmpdir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
+			allTmpDirs.append(tmpdir)
 			try:
 				rmtree(tmpdir)
 			except (FileNotFoundError, NotADirectoryError):
@@ -290,12 +292,10 @@ def auto(*args):
 					outf.write("write-data=%s\n" % tmpdir)
 
 			linkDir(os.path.join(tmpdir, "script-output"), "../../script-output")
+			copy("../../player-data.json", os.path.join(tmpdir, "player-data.json"))
 
 			
-			params = [factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath]
-			if "modpath" in kwargs:
-				params.extend(("--mod-directory", os.path.abspath(kwargs["modpath"])))
-			p = subprocess.Popen(params, stdout=logOut)
+			p = subprocess.Popen((factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods")), stdout=logOut)
 			time.sleep(1)
 			if p.poll() is not None:
 				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\tPlease confirm the steam 'start game with arguments' popup.")
@@ -435,7 +435,7 @@ def auto(*args):
 			rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
 
 
-			icons = rawPath.split('*')
+			icons = rawPath.split('|')
 			img = None
 			for i, path in enumerate(icons):
 				m = re.match(r"^__([^\/]+)__[\/\\](.*)$", path)
@@ -514,6 +514,12 @@ def auto(*args):
 
 		print("cleaning up")
 		open("autorun.lua", 'w').close()
+		for tmpDir in allTmpDirs:
+			try:
+				rmtree(tmpDir)
+			except (FileNotFoundError, NotADirectoryError):
+				pass
+
 
 
 
