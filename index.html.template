@@ -181,8 +181,8 @@
 
 
 		img.map-marker {
-			max-width: 64px;
-			max-height: 64px;
+			width: 32px;
+			height: 32px;
 		}
 		.map-marker-text {
 			color: white;
