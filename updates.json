@@ -17,5 +17,6 @@
     "3.0.1": "Added flags to set maximum threads used.",
     "3.0.2": "Added flag to disable alt-mode.",
     "3.1.0": "!Better implementation of tag image extraction.",
-    "3.1.1": "!Fixed bugs when no mod path is specified."
+    "3.1.1": "!Fixed bugs when no mod path is specified.",
+    "3.1.2": "!Fixed bug where the entire script-output folder is sometimes removed due to inconsistent symlink behavior."
 }
