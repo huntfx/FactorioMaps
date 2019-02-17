@@ -162,7 +162,6 @@ def auto(*args):
 		else:
 			subprocess.call(("ln", "-s", os.path.abspath(src), os.path.abspath(dest)), shell=True)
 
-
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
 	
@@ -170,7 +169,11 @@ def auto(*args):
 		for file in os.listdir(kwargs["modpath"]):
 			if re.match(r'^L0laapk3_FactorioMaps_', file, flags=re.IGNORECASE):
 				print("Found other factoriomaps mod in custom mod folder, deleting.")
-				os.remove(os.path.join(kwargs["modpath"], file))
+				path = os.path.join(kwargs["modpath"], file)
+				if os.path.islink(path):
+					os.unlink(path)
+				else:
+					os.remove(path)
 
 		linkDir(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath("."))), ".")
 	
@@ -516,6 +519,7 @@ def auto(*args):
 		open("autorun.lua", 'w').close()
 		for tmpDir in allTmpDirs:
 			try:
+				os.unlink(os.path.join(tmpdir, "script-output"))
 				rmtree(tmpDir)
 			except (FileNotFoundError, NotADirectoryError):
 				pass
