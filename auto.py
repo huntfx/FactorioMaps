@@ -6,6 +6,7 @@ import time
 import re
 import random
 import math
+import configparser
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
@@ -13,6 +14,7 @@ from shutil import copy, rmtree, get_terminal_size as tsize
 from zipfile import ZipFile
 import tempfile
 from PIL import Image, ImageChops
+import multiprocessing as mp
 
 from crop import crop
 from ref import ref
@@ -23,16 +25,22 @@ from zoom import zoom
 def auto(*args):
 
 
+
+	def kill(pid, force=False):
+		if os.name == 'nt':
+			os.system(f"taskkill /pid {pid}")
+		else:
+			os.system(f"kill {pid}")
+
+
+
 	def printErase(arg):
 		try:
 			tsiz = tsize()[0]
 			print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg) - 1)), end="", flush=True)
 		except e:
-			raise e
-			try:
-				print("PRINTERROR %s" % arg)
-			except:
-				pass
+			#raise
+			pass
 
 
 
@@ -61,11 +69,11 @@ def auto(*args):
 		"D:/Games/Factorio/bin/x64/factorio.exe",
 		"E:/Games/Factorio/bin/x64/factorio.exe",
 		"F:/Games/Factorio/bin/x64/factorio.exe",
+		"../../bin/x64/factorio",
 		"C:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"D:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"E:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-		"F:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-		"../../bin/x64/factorio"
+		"F:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe"
 	]
 	try:
 		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if "factorio" in kwargs else possiblePaths) if os.path.isfile(x))
@@ -281,27 +289,43 @@ def auto(*args):
 			except (FileNotFoundError, NotADirectoryError):
 				pass
 			os.makedirs(os.path.join(tmpdir, "config"))
+
 			configPath = os.path.join(tmpdir, "config/config.ini")
-			configInserted = False
-			with open(configPath, 'w+') as outf, open("../../config/config.ini", "r") as inf:
-				for line in inf:
-					if re.match(r'^ *write-data *=.*', line, re.IGNORECASE) is None:
-						outf.write(line)
-					if not configInserted and re.match(r'^ *\[path\].*', line, re.IGNORECASE) is not None:
-						outf.write("write-data=%s\n" % tmpdir)
-						configInserted = True
-				if not configInserted:
-					outf.write("[path]\n")
-					outf.write("write-data=%s\n" % tmpdir)
+			config = configparser.ConfigParser()
+			config.read("../../config/config.ini")
+			
+			config["path"]["write-data"] = tmpdir
+			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads"]) if "screenshotthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count()))
+			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]) if "screenshotqueuesize" in kwargs else mp.cpu_count())
+			
+			with open(configPath, 'w+') as outf:
+				config.write(outf)
+				
 
 			linkDir(os.path.join(tmpdir, "script-output"), "../../script-output")
 			copy("../../player-data.json", os.path.join(tmpdir, "player-data.json"))
 
-			
+			pid = None
+			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
+			print(pidBlacklist)
+
 			p = subprocess.Popen((factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods")), stdout=logOut)
 			time.sleep(1)
 			if p.poll() is not None:
-				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\tPlease confirm the steam 'start game with arguments' popup.")
+				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\t Please open steam and confirm the steam 'start game with arguments' popup.")
+				attrs = ('pid', 'name', 'create_time')
+				oldest = None
+				while pid is None:
+					for proc in psutil.process_iter(attrs=attrs):
+						pinfo = proc.as_dict(attrs=attrs)
+						if pinfo["name"] == "factorio.exe" and pinfo["pid"] not in pidBlacklist and (pid is None or pinfo["create_time"] < oldest):
+							oldest = pinfo["create_time"]
+							pid = pinfo["pid"]
+					if pid is None:
+						time.sleep(1)
+			else:
+				pid = p.pid
+
 
 			if not os.path.exists(datapath):
 				while not os.path.exists(datapath):
@@ -319,23 +343,17 @@ def auto(*args):
 
 			
 			isKilled = [False]
-			def waitKill(isKilled):
+			def waitKill(isKilled, pid):
 				while not isKilled[0]:
 					if os.path.isfile(waitfilename):
 						isKilled[0] = True
-						if p.poll() is None:
-							p.send_signal(signal.CTRL_C_EVENT)
-						else:
-							if os.name == 'nt':
-								os.system("taskkill /im factorio.exe")
-							else:
-								os.system("killall factorio")
+						kill(pid)
 						printErase("killed factorio")
 						break
 					else:
 						time.sleep(0.4)
 
-			killthread = threading.Thread(target=waitKill, args=(isKilled,))
+			killthread = threading.Thread(target=waitKill, args=(isKilled, pid))
 			killthread.daemon = True
 			killthread.start()
 
@@ -374,13 +392,7 @@ def auto(*args):
 				else:
 					if not isKilled[0]:
 						isKilled[0] = True
-						if p.poll() is None:
-							p.send_signal(signal.CTRL_C_EVENT)
-						else:
-							if os.name == 'nt':
-								os.system("taskkill /im factorio.exe")
-							else:
-								os.system("killall factorio")
+						kill(pid)
 						printErase("killed factorio")
 
 					if savename == savenames[-1]:
@@ -499,14 +511,9 @@ def auto(*args):
 
 
 	except KeyboardInterrupt:
-		if p.poll() is None:
-			p.send_signal(signal.CTRL_C_EVENT)
-		else:
-			if os.name == 'nt':
-				os.system("taskkill /im factorio.exe")
-			else:
-				os.system("killall factorio")
+		kill(pid, True)
 		print("killed factorio")
+		time.sleep(1)
 		raise
 
 	finally:
