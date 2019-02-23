@@ -26,11 +26,17 @@ def auto(*args):
 
 
 
-	def kill(pid, force=False):
-		if os.name == 'nt':
-			os.system(f"taskkill /pid {pid}")
-		else:
-			os.system(f"kill {pid}")
+	def kill(pid):
+		try:
+			if os.name == 'nt':
+				os.system(f"taskkill /pid {pid}")
+			else:
+				os.system(f"kill {pid}")
+
+			while psutil.pid_exists(pid):
+				time.sleep(0.1)
+		except KeyboardInterrupt:
+			print("WTF")
 
 
 
@@ -293,13 +299,17 @@ def auto(*args):
 			configPath = os.path.join(tmpdir, "config/config.ini")
 			config = configparser.ConfigParser()
 			config.read("../../config/config.ini")
+
+			config["interface"]["show-tips-and-tricks"] = "false"
 			
 			config["path"]["write-data"] = tmpdir
 			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads"]) if "screenshotthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count()))
-			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]) if "screenshotqueuesize" in kwargs else mp.cpu_count())
+			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
+			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]) if "screenshotqueuesize" in kwargs else mp.cpu_count()*2)
 			
 			with open(configPath, 'w+') as outf:
-				config.write(outf)
+				outf.writelines(("; version=3\n", ))
+				config.write(outf, space_around_delimiters=False)
 				
 
 			linkDir(os.path.join(tmpdir, "script-output"), "../../script-output")
@@ -307,7 +317,6 @@ def auto(*args):
 
 			pid = None
 			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
-			print(pidBlacklist)
 
 			p = subprocess.Popen((factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods")), stdout=logOut)
 			time.sleep(1)
@@ -429,7 +438,8 @@ def auto(*args):
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
 					for tag in surfaceStuff["tags"]:
-						tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
+						if "iconType" in tag:
+							tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
 
 		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
 		
@@ -511,9 +521,9 @@ def auto(*args):
 
 
 	except KeyboardInterrupt:
-		kill(pid, True)
+		print("keyboardinterrupt")
+		kill(pid)
 		print("killed factorio")
-		time.sleep(1)
 		raise
 
 	finally:
