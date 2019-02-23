@@ -26,20 +26,6 @@ def auto(*args):
 
 
 
-	def kill(pid):
-		if psutil.pid_exists(pid):
-			print("killing factorio")
-
-			if os.name == 'nt':
-				os.system(f"taskkill /pid {pid}")
-			else:
-				os.system(f"kill {pid}")
-
-			while psutil.pid_exists(pid):
-				time.sleep(0.1)
-
-		time.sleep(0.1)
-
 
 
 	def printErase(arg):
@@ -51,6 +37,22 @@ def auto(*args):
 			pass
 
 
+
+	def kill(pid):
+		if psutil.pid_exists(pid):
+
+			if os.name == 'nt':
+				cmd = ("taskkill", "/pid", str(pid))
+			else:
+				cmd = ("kill", str(pid))
+			subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
+
+			while psutil.pid_exists(pid):
+				time.sleep(0.1)
+
+			printErase("killed factorio")
+
+		time.sleep(0.1)
 
 
 	def parseArg(arg):
@@ -174,9 +176,10 @@ def auto(*args):
 
 	def linkDir(src, dest):
 		if os.name == 'nt':
-			subprocess.call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), shell=True)
+			cmd = ("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest))
 		else:
-			subprocess.call(("ln", "-s", os.path.abspath(src), os.path.abspath(dest)), shell=True)
+			cmd = ("ln", "-s", os.path.abspath(src), os.path.abspath(dest))
+		subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
 
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
