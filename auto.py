@@ -324,7 +324,7 @@ def auto(*args):
 					if os.path.isfile(waitfilename):
 						isKilled[0] = True
 						if p.poll() is None:
-							p.kill()
+							p.send_signal(signal.CTRL_C_EVENT)
 						else:
 							if os.name == 'nt':
 								os.system("taskkill /im factorio.exe")
@@ -375,7 +375,7 @@ def auto(*args):
 					if not isKilled[0]:
 						isKilled[0] = True
 						if p.poll() is None:
-							p.kill()
+							p.send_signal(signal.CTRL_C_EVENT)
 						else:
 							if os.name == 'nt':
 								os.system("taskkill /im factorio.exe")
@@ -484,7 +484,7 @@ def auto(*args):
 
 
 
-
+		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
 		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
@@ -500,7 +500,7 @@ def auto(*args):
 
 	except KeyboardInterrupt:
 		if p.poll() is None:
-			p.kill()
+			p.send_signal(signal.CTRL_C_EVENT)
 		else:
 			if os.name == 'nt':
 				os.system("taskkill /im factorio.exe")

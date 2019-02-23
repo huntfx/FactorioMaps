@@ -57,6 +57,8 @@ function fm.generateMap(data)
 	game.remove_path(subPath)
 	subPath = subPath .. "/"
 
+	log("Starting surface prescan to target directory: " .. subPath)
+
 
 	
 	-- Number of pixels in an image     -- CHANGE THIS AND REF.PY WILL NEED TO BE CHANGED
@@ -338,14 +340,23 @@ function fm.generateMap(data)
 			tags = {}
 		}
 		for i, tag in pairs(force.find_chart_tags(surface)) do
-			fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
-				iconType 	= tag.icon.type,
-				iconName 	= tag.icon.name or tag.icon.type,
-				iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. tag.icon.name .. ".png",
-				position 	= tag.position,
-				text 		= tag.text,
-				last_user	= tag.last_user and tag.last_user.name
-			}
+			if tag.icon == nil then
+				fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
+					position 	= tag.position,
+					text 		= tag.text,
+					last_user	= tag.last_user and tag.last_user.name
+				}
+			else
+				name = tag.icon["name"] or tag.icon.type
+				fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
+					iconType 	= tag.icon.type,
+					iconName 	= name,
+					iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. name .. ".png",
+					position 	= tag.position,
+					text 		= tag.text,
+					last_user	= tag.last_user and tag.last_user.name
+				}
+			end
 		end
 
 		if fm.autorun.chunkCache[fm.autorun.tick] == nil then
@@ -380,6 +391,10 @@ function fm.generateMap(data)
 
    
 	local extension = "bmp"
+
+
+	
+	log("Starting surface capture to target directory: " .. subPath)
 
 	
 	game.write_file(basePath .. "/mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
