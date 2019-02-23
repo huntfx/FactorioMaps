@@ -27,7 +27,9 @@ def auto(*args):
 
 
 	def kill(pid):
-		try:
+		if psutil.pid_exists(pid):
+			print("killing factorio")
+
 			if os.name == 'nt':
 				os.system(f"taskkill /pid {pid}")
 			else:
@@ -35,8 +37,8 @@ def auto(*args):
 
 			while psutil.pid_exists(pid):
 				time.sleep(0.1)
-		except KeyboardInterrupt:
-			print("WTF")
+
+		time.sleep(0.1)
 
 
 
@@ -225,11 +227,20 @@ def auto(*args):
 					printErase("[GAME] %s" % line)
 
 
+
+			
+	if "delete" in kwargs:
+		try:
+			rmtree(workfolder)
+		except (FileNotFoundError, NotADirectoryError):
+			pass
+
+
+
 	logIn, logOut = os.pipe()
 	logthread = threading.Thread(target=printGameLog, args=[logIn])
 	logthread.daemon = True
 	logthread.start()
-
 
 
 
@@ -245,14 +256,6 @@ def auto(*args):
 			printErase("cleaning up")
 			if os.path.isfile(datapath):
 				os.remove(datapath)
-
-
-			
-			if "delete" in kwargs:
-				try:
-					rmtree(workfolder)
-				except (FileNotFoundError, NotADirectoryError):
-					pass
 
 
 
@@ -288,21 +291,21 @@ def auto(*args):
 
 
 			printErase("starting factorio")
-			tmpdir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
-			allTmpDirs.append(tmpdir)
+			tmpDir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
+			allTmpDirs.append(tmpDir)
 			try:
-				rmtree(tmpdir)
+				rmtree(tmpDir)
 			except (FileNotFoundError, NotADirectoryError):
 				pass
-			os.makedirs(os.path.join(tmpdir, "config"))
+			os.makedirs(os.path.join(tmpDir, "config"))
 
-			configPath = os.path.join(tmpdir, "config/config.ini")
+			configPath = os.path.join(tmpDir, "config/config.ini")
 			config = configparser.ConfigParser()
 			config.read("../../config/config.ini")
 
 			config["interface"]["show-tips-and-tricks"] = "false"
 			
-			config["path"]["write-data"] = tmpdir
+			config["path"]["write-data"] = tmpDir
 			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads"]) if "screenshotthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count()))
 			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
 			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]) if "screenshotqueuesize" in kwargs else mp.cpu_count()*2)
@@ -312,8 +315,8 @@ def auto(*args):
 				config.write(outf, space_around_delimiters=False)
 				
 
-			linkDir(os.path.join(tmpdir, "script-output"), "../../script-output")
-			copy("../../player-data.json", os.path.join(tmpdir, "player-data.json"))
+			linkDir(os.path.join(tmpDir, "script-output"), "../../script-output")
+			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
 
 			pid = None
 			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
@@ -357,7 +360,6 @@ def auto(*args):
 					if os.path.isfile(waitfilename):
 						isKilled[0] = True
 						kill(pid)
-						printErase("killed factorio")
 						break
 					else:
 						time.sleep(0.4)
@@ -402,7 +404,6 @@ def auto(*args):
 					if not isKilled[0]:
 						isKilled[0] = True
 						kill(pid)
-						printErase("killed factorio")
 
 					if savename == savenames[-1]:
 						refZoom()
@@ -523,10 +524,12 @@ def auto(*args):
 	except KeyboardInterrupt:
 		print("keyboardinterrupt")
 		kill(pid)
-		print("killed factorio")
 		raise
 
 	finally:
+
+		kill(pid)
+
 		print("disabling FactorioMaps mod")
 		changeModlist(False)
 
@@ -536,7 +539,7 @@ def auto(*args):
 		open("autorun.lua", 'w').close()
 		for tmpDir in allTmpDirs:
 			try:
-				os.unlink(os.path.join(tmpdir, "script-output"))
+				os.unlink(os.path.join(tmpDir, "script-output"))
 				rmtree(tmpDir)
 			except (FileNotFoundError, NotADirectoryError):
 				pass
