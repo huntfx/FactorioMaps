@@ -241,10 +241,14 @@
 			return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
 		}
 
-		var surface = Object.keys(mapInfo.maps[0].surfaces)[0];
-		var layers = [], saves = [], countAvailableSaves = 0;
-		var globalTileIndex = {};
-		var globalTileNightIndex = {};
+		//TODO: iterate over surfaces
+		//var surface = Object.keys(mapInfo.maps[0].surfaces)[0];
+
+		let currentSurface = Object.keys(mapInfo.maps[0].surfaces)[0];
+
+		let layers = [], saves = [], countAvailableSaves = 0;
+		let globalTileIndex = {};
+		let globalTileNightIndex = {};
 		for (var i = 0; i < mapInfo.maps.length; i++) {
 			if (DEBUG) {
 				globalTileIndex = {};
@@ -252,125 +256,129 @@
 			}
 
 			var map = mapInfo.maps[i];
-			var layer = map.surfaces[surface];
 
-			TILESPERIMAGE = layer.zoom.max == 20 ? 16 : 8;
+			for (let surface of Object.keys(map.surfaces)) {
+				let layer = map.surfaces[surface];
 
-			if (!globalTileNightIndex[surface]) {
-				globalTileNightIndex[surface] = layer.chunks ? {} : {fallback: i};
-				globalTileIndex[surface] = layer.chunks ? {} : {fallback: i};
-			}
-			for (var z = layer.zoom.min; z <= layer.zoom.max; z++)
-				if (!globalTileNightIndex[surface][z]) {
-					globalTileNightIndex[surface][z] = {};
-					globalTileIndex[surface][z] = {};
-				}
-			(layer.chunks || "").split('=').forEach(function(row) {
-				function B64Parse(offset) {
-					return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset])
-					+ 64 * "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+1])
-					+64*64*"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+2])
-					- 2**16;
-				}
+				TILESPERIMAGE = layer.zoom.max == 20 ? 16 : 8;
 
-				console.assert(row.length % 3 == 0); //corrupted data, prevent infinite loop
-				var j = 3, y = B64Parse(0) - 2**17;
-				
-				if (!globalTileNightIndex[surface][layer.zoom.max][y]){
-					globalTileNightIndex[surface][layer.zoom.max][y] = {};
-					globalTileIndex[surface][layer.zoom.max][y] = {};
+				if (!globalTileNightIndex[surface]) {
+					globalTileNightIndex[surface] = layer.chunks ? {} : {fallback: i};
+					globalTileIndex[surface] = layer.chunks ? {} : {fallback: i};
 				}
-				while (j < row.length) {
-					var stop = B64Parse(j + 3)
-					var start = B64Parse(j);
-					var mode = start > 2**16;
-					for (var x = start - mode*2**17; x < (stop - (stop>2**16)*2**17); x++) {
-						globalTileNightIndex[surface][layer.zoom.max][y][x] = i;
-						if (mode)
-							globalTileIndex[surface][layer.zoom.max][y][x] = i;
-						for (var z = 1; z <= layer.zoom.max - layer.zoom.min; z++)  {
-							if (!globalTileNightIndex[surface][layer.zoom.max-z][y >> z]) {
-								globalTileNightIndex[surface][layer.zoom.max-z][y >> z] = {};
-								globalTileIndex[surface][layer.zoom.max-z][y >> z] = {};
-							}
-							if ((mode ? globalTileIndex : globalTileNightIndex)[surface][layer.zoom.max-z][y >> z][x >> z] == i)
-								break;
-							globalTileNightIndex[surface][layer.zoom.max-z][y >> z][x >> z] = i;
-							if (mode)
-								globalTileIndex[surface][layer.zoom.max-z][y >> z][x >> z] = i;
-						}
+				for (var z = layer.zoom.min; z <= layer.zoom.max; z++)
+					if (!globalTileNightIndex[surface][z]) {
+						globalTileNightIndex[surface][z] = {};
+						globalTileIndex[surface][z] = {};
 					}
-					j += mode == stop > 2**16 ? 6 : 3;
-				}
-			});
+				(layer.chunks || "").split('=').forEach(function(row) {
+					function B64Parse(offset) {
+						return "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset])
+						+ 64 * "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+1])
+						+64*64*"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(row[offset+2])
+						- 2**16;
+					}
 
-			var tileIndex = { fallback: globalTileIndex[surface].fallback };
-			for (var z in globalTileIndex[surface]) {
-				if (z == "fallback")
-					continue;
-				tileIndex[z] = {};
-				for (var y in globalTileIndex[surface][z]) {
-					tileIndex[z][y] = {};
-					for (var x in globalTileIndex[surface][z][y])
-						tileIndex[z][y][x] = globalTileIndex[surface][z][y][x];
-				}
-			}
-			var tileNightIndex = { fallback: globalTileNightIndex[surface].fallback };
-			for (var z in globalTileNightIndex[surface]) {
-				if (z == "fallback")
-					continue;
-				tileNightIndex[z] = {};
-				for (var y in globalTileNightIndex[surface][z]) {
-					tileNightIndex[z][y] = {};
-					for (var x in globalTileNightIndex[surface][z][y])
-						tileNightIndex[z][y][x] = globalTileNightIndex[surface][z][y][x];
-				}
-			}
-
-
-			layers[i] = {};
-			["day", "night"].forEach(function(daytime) {
-				if (layer[daytime] == "true") {
-					var LLayer = L.tileLayer(undefined, {
-						id: layer.path,
-						attribution: '<a href="https://github.com/L0laapk3/FactorioMods_FactorioMaps">FactorioMaps</a>',
-						minNativeZoom: DEBUG ? 20 : layer.zoom.min,
-						maxNativeZoom: layer.zoom.max,
-						minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,
-						maxZoom: 23, //layer.zoom.max + 2,
-						noWrap: true,
-						tileSize: 512 / window.devicePixelRatio,
-						keepBuffer: 3
-					});
-					LLayer.surface = surface;
-					LLayer.daytime = daytime;
-					LLayer.path = map.path;
-					LLayer.tileIndex = daytime == "day" ? tileIndex : tileNightIndex;
-
-
-					layers[i][daytime] = LLayer;
-				}
-			});
-
-
-
-			if (layer.save && layer.save.download) {
-				saves.push({
-					layer: layer.save.name || layer.name,
-					url: layer.save.url
+					console.assert(row.length % 3 == 0); //corrupted data, prevent infinite loop
+					var j = 3, y = B64Parse(0) - 2**17;
+					
+					if (!globalTileNightIndex[surface][layer.zoom.max][y]){
+						globalTileNightIndex[surface][layer.zoom.max][y] = {};
+						globalTileIndex[surface][layer.zoom.max][y] = {};
+					}
+					while (j < row.length) {
+						var stop = B64Parse(j + 3)
+						var start = B64Parse(j);
+						var mode = start > 2**16;
+						for (var x = start - mode*2**17; x < (stop - (stop>2**16)*2**17); x++) {
+							globalTileNightIndex[surface][layer.zoom.max][y][x] = i;
+							if (mode)
+								globalTileIndex[surface][layer.zoom.max][y][x] = i;
+							for (var z = 1; z <= layer.zoom.max - layer.zoom.min; z++)  {
+								if (!globalTileNightIndex[surface][layer.zoom.max-z][y >> z]) {
+									globalTileNightIndex[surface][layer.zoom.max-z][y >> z] = {};
+									globalTileIndex[surface][layer.zoom.max-z][y >> z] = {};
+								}
+								if ((mode ? globalTileIndex : globalTileNightIndex)[surface][layer.zoom.max-z][y >> z][x >> z] == i)
+									break;
+								globalTileNightIndex[surface][layer.zoom.max-z][y >> z][x >> z] = i;
+								if (mode)
+									globalTileIndex[surface][layer.zoom.max-z][y >> z][x >> z] = i;
+							}
+						}
+						j += mode == stop > 2**16 ? 6 : 3;
+					}
 				});
-				if (layer.save.url) {
-					countAvailableSaves++;
+
+				var tileIndex = { fallback: globalTileIndex[surface].fallback };
+				for (var z in globalTileIndex[surface]) {
+					if (z == "fallback")
+						continue;
+					tileIndex[z] = {};
+					for (var y in globalTileIndex[surface][z]) {
+						tileIndex[z][y] = {};
+						for (var x in globalTileIndex[surface][z][y])
+							tileIndex[z][y][x] = globalTileIndex[surface][z][y][x];
+					}
 				}
-			}
+				var tileNightIndex = { fallback: globalTileNightIndex[surface].fallback };
+				for (var z in globalTileNightIndex[surface]) {
+					if (z == "fallback")
+						continue;
+					tileNightIndex[z] = {};
+					for (var y in globalTileNightIndex[surface][z]) {
+						tileNightIndex[z][y] = {};
+						for (var x in globalTileNightIndex[surface][z][y])
+							tileNightIndex[z][y][x] = globalTileNightIndex[surface][z][y][x];
+					}
+				}
+
+
+				layers[i] = {};
+				["day", "night"].forEach(function(daytime) {
+					if (layer[daytime] == "true") {
+						var LLayer = L.tileLayer(undefined, {
+							id: layer.path,
+							attribution: '<a href="https://github.com/L0laapk3/FactorioMods_FactorioMaps">FactorioMaps</a>',
+							minNativeZoom: DEBUG ? 20 : layer.zoom.min,
+							maxNativeZoom: layer.zoom.max,
+							minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,
+							maxZoom: 23, //layer.zoom.max + 2,
+							noWrap: true,
+							tileSize: 512 / window.devicePixelRatio,
+							keepBuffer: 3
+						});
+						LLayer.surface = surface;
+						LLayer.daytime = daytime;
+						LLayer.path = map.path;
+						LLayer.tileIndex = daytime == "day" ? tileIndex : tileNightIndex;
+
+
+						layers[i][daytime] = LLayer;
+					}
+				});
+
+
+
+				if (layer.save && layer.save.download) {
+					saves.push({
+						layer: layer.save.name || layer.name,
+						url: layer.save.url
+					});
+					if (layer.save.url) {
+						countAvailableSaves++;
+					}
+				}
 
 
 
 
+				layers[i].tags = layer.tags;
+				// todo: group tags.. ?
+				for (let tag in layer.tags) {
+					//console.log(tag);
+				}
 
-			// todo: group tags.. ?
-			for (let tag in layer.tags) {
-				//console.log(tag);
 			}
 		}
 
@@ -444,7 +452,8 @@
 		var coordScale = 2**19 / 16 * window.devicePixelRatio;
 		try {
 			var split = window.location.hash.substr(1).split('/');
-			if (window.location.hash[0] == '#' && split[0] == "1" && split[1] == surface) {
+			if (window.location.hash[0] == '#' && split[0] == "1") {
+				currentSurface = split[1];
 				if (!isNaN(parseInt(split[2]))) startZ = parseInt(split[2]);
 				startX = parseInt(split[3]) / coordScale || startX;
 				startY = parseInt(split[4]) / coordScale || startY;
@@ -460,7 +469,7 @@
 		var lastHash = "";
 		function updateHash() {
 			//console.log(map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp);
-			var hash = "#" + [1, surface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')].join("/");
+			var hash = "#" + [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')].join("/");
 			if (hash != lastHash) {
 				window.location.replace(hash);
 				lastHash = hash;
@@ -480,11 +489,11 @@
 		map.on("zoomend moveend", updateHash);
 
 		
-		var opacitySlider, timeSlider;
+		var daylightSlider, timeSlider;
 		var mapLoadedBySlider = false;
 		if (layers.some(function(layer) { return layer.day; }) && layers.some(function(layer) { return layer.night; })) {
 			//L.control.layers({Day: layers.Day}, {Night: layers.Night}, { collapsed: m.meta.map.options.collapseLayerList }).addTo(map).setPosition('bottomright');
-			opacitySlider = new L.Control.opacitySlider({
+			daylightSlider = new L.Control.opacitySlider({
 				position: "bottomright",
 				orientation: "horizontal",
 				initial: nightOpacity,
@@ -496,9 +505,25 @@
 					updateHash();
 				}
 			});
-			map.addControl(opacitySlider);
+			map.addControl(daylightSlider);
 			mapLoadedBySlider = true;
 		}
+
+		
+		// let surfaceList = []
+		// for (let layer of layers)
+		// 	if (surfaceList.indexOf(layer.surface) < 0)
+		// 		surfaceList.push(layer.surface)
+
+		// if (surfaceList.length > 1) {
+		// 	//TODO: add selection stuff
+		// }
+
+
+
+
+
+		// TODO: update sliders with selection of surface
 		if (layers.length > 1 && true) {
 			var min = Math.min.apply(undefined, mapInfo.maps.map(l => parseInt(l.path)));
 			var max = Math.max.apply(undefined, mapInfo.maps.map(l => parseInt(l.path)));
@@ -544,8 +569,8 @@
 					if (!above)
 						timestamp = below.name.slice(0, -1);
 					else {
-						var one = below.name.slice(0, -1).split("-");
-						var two = above.name.slice(0, -1).split("-");
+						let one = below.name.slice(0, -1).split("-");
+						let two = above.name.slice(0, -1).split("-");
 						if (one[0] == two[0])
 							timestamp = one[0] + "-" + Math.round(((parseInt(one[1]) || 0) + localValue * ((parseInt(two[1]) || 0) - (parseInt(one[1]) || 0))) * 100) / 100;
 						else
@@ -563,16 +588,18 @@
 		map.zoomControl.setPosition('bottomleft')
 		
 		
-		layers.sort((a, b) => a.position.y - b.position.y)
-		for (let tag of layer.tags) {
+		for (let layer of layers) {
+			layer.tags.sort((a, b) => a.position.y - b.position.y)
+			for (let tag of layer.tags) {
 
-			L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
-				icon: new L.DivIcon({
-					className: 'map-tag',
-					html: 	'<img class="map-marker" src="' + tag.iconPath + '"/>'+
-							'<span class="map-marker-text">' + tag.text + '</span>'
-				})
-			}).addTo(map);
+				L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
+					icon: new L.DivIcon({
+						className: 'map-tag',
+						html: 	'<img class="map-marker" src="' + tag.iconPath + '"/>'+
+								'<span class="map-marker-text">' + tag.text + '</span>'
+					})
+				}).addTo(map);
+			}
 		}
 		
 	</script>

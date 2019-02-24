@@ -134,7 +134,12 @@ def ref(*args, **kwargs):
 
 					newComparedSurfaces.append((surfaceName, daytime))
 					
+					oldMapsList = []
 					for old in range(new):
+						if surfaceName in data["maps"][old]["surfaces"]:
+							oldMapsList.append(old)
+
+					for old in oldMapsList:
 						with open(os.path.join(toppath, "Images", data["maps"][old]["path"], surfaceName, daytime, "crop.txt"), "r") as f:
 							next(f)
 							for line in f:
@@ -150,7 +155,7 @@ def ref(*args, **kwargs):
 
 
 					oldImages = {}
-					for old in range(new):
+					for old in oldMapsList:
 						if surfaceName in data["maps"][old]["surfaces"] and daytime in surface and z == surface["zoom"]["max"]:
 							if surfaceName not in allImageIndex:
 								allImageIndex[surfaceName] = {}

@@ -22,6 +22,9 @@ script.on_event(defines.events.on_tick, function(event)
 		event.player_index = game.connected_players[1].index
 
 		if nil == fm.tmp then
+
+			log("Start world capture")
+
 			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
 			for key, entity in pairs(game.connected_players[1].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
 				entity.active = false
