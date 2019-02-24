@@ -6,6 +6,7 @@ import time
 import re
 import random
 import math
+import configparser
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
@@ -13,6 +14,7 @@ from shutil import copy, rmtree, get_terminal_size as tsize
 from zipfile import ZipFile
 import tempfile
 from PIL import Image, ImageChops
+import multiprocessing as mp
 
 from crop import crop
 from ref import ref
@@ -23,18 +25,34 @@ from zoom import zoom
 def auto(*args):
 
 
+
+
+
 	def printErase(arg):
 		try:
 			tsiz = tsize()[0]
 			print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg) - 1)), end="", flush=True)
 		except e:
-			raise e
-			try:
-				print("PRINTERROR %s" % arg)
-			except:
-				pass
+			#raise
+			pass
 
 
+
+	def kill(pid):
+		if psutil.pid_exists(pid):
+
+			if os.name == 'nt':
+				cmd = ("taskkill", "/pid", str(pid))
+			else:
+				cmd = ("kill", str(pid))
+			subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
+
+			while psutil.pid_exists(pid):
+				time.sleep(0.1)
+
+			printErase("killed factorio")
+
+		time.sleep(0.1)
 
 
 	def parseArg(arg):
@@ -61,11 +79,11 @@ def auto(*args):
 		"D:/Games/Factorio/bin/x64/factorio.exe",
 		"E:/Games/Factorio/bin/x64/factorio.exe",
 		"F:/Games/Factorio/bin/x64/factorio.exe",
+		"../../bin/x64/factorio",
 		"C:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"D:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"E:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-		"F:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-		"../../bin/x64/factorio"
+		"F:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe"
 	]
 	try:
 		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if "factorio" in kwargs else possiblePaths) if os.path.isfile(x))
@@ -158,9 +176,10 @@ def auto(*args):
 
 	def linkDir(src, dest):
 		if os.name == 'nt':
-			subprocess.call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), shell=True)
+			cmd = ("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest))
 		else:
-			subprocess.call(("ln", "-s", os.path.abspath(src), os.path.abspath(dest)), shell=True)
+			cmd = ("ln", "-s", os.path.abspath(src), os.path.abspath(dest))
+		subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
 
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
@@ -211,11 +230,20 @@ def auto(*args):
 					printErase("[GAME] %s" % line)
 
 
+
+			
+	if "delete" in kwargs:
+		try:
+			rmtree(workfolder)
+		except (FileNotFoundError, NotADirectoryError):
+			pass
+
+
+
 	logIn, logOut = os.pipe()
 	logthread = threading.Thread(target=printGameLog, args=[logIn])
 	logthread.daemon = True
 	logthread.start()
-
 
 
 
@@ -231,14 +259,6 @@ def auto(*args):
 			printErase("cleaning up")
 			if os.path.isfile(datapath):
 				os.remove(datapath)
-
-
-			
-			if "delete" in kwargs:
-				try:
-					rmtree(workfolder)
-				except (FileNotFoundError, NotADirectoryError):
-					pass
 
 
 
@@ -274,34 +294,53 @@ def auto(*args):
 
 
 			printErase("starting factorio")
-			tmpdir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
-			allTmpDirs.append(tmpdir)
+			tmpDir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
+			allTmpDirs.append(tmpDir)
 			try:
-				rmtree(tmpdir)
+				rmtree(tmpDir)
 			except (FileNotFoundError, NotADirectoryError):
 				pass
-			os.makedirs(os.path.join(tmpdir, "config"))
-			configPath = os.path.join(tmpdir, "config/config.ini")
-			configInserted = False
-			with open(configPath, 'w+') as outf, open("../../config/config.ini", "r") as inf:
-				for line in inf:
-					if re.match(r'^ *write-data *=.*', line, re.IGNORECASE) is None:
-						outf.write(line)
-					if not configInserted and re.match(r'^ *\[path\].*', line, re.IGNORECASE) is not None:
-						outf.write("write-data=%s\n" % tmpdir)
-						configInserted = True
-				if not configInserted:
-					outf.write("[path]\n")
-					outf.write("write-data=%s\n" % tmpdir)
+			os.makedirs(os.path.join(tmpDir, "config"))
 
-			linkDir(os.path.join(tmpdir, "script-output"), "../../script-output")
-			copy("../../player-data.json", os.path.join(tmpdir, "player-data.json"))
+			configPath = os.path.join(tmpDir, "config/config.ini")
+			config = configparser.ConfigParser()
+			config.read("../../config/config.ini")
 
+			config["interface"]["show-tips-and-tricks"] = "false"
 			
+			config["path"]["write-data"] = tmpDir
+			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads"]) if "screenshotthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count()))
+			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
+			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]) if "screenshotqueuesize" in kwargs else mp.cpu_count()*2)
+			
+			with open(configPath, 'w+') as outf:
+				outf.writelines(("; version=3\n", ))
+				config.write(outf, space_around_delimiters=False)
+				
+
+			linkDir(os.path.join(tmpDir, "script-output"), "../../script-output")
+			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
+
+			pid = None
+			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
+
 			p = subprocess.Popen((factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods")), stdout=logOut)
 			time.sleep(1)
 			if p.poll() is not None:
-				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\tPlease confirm the steam 'start game with arguments' popup.")
+				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\t Please open steam and confirm the steam 'start game with arguments' popup.")
+				attrs = ('pid', 'name', 'create_time')
+				oldest = None
+				while pid is None:
+					for proc in psutil.process_iter(attrs=attrs):
+						pinfo = proc.as_dict(attrs=attrs)
+						if pinfo["name"] == "factorio.exe" and pinfo["pid"] not in pidBlacklist and (pid is None or pinfo["create_time"] < oldest):
+							oldest = pinfo["create_time"]
+							pid = pinfo["pid"]
+					if pid is None:
+						time.sleep(1)
+			else:
+				pid = p.pid
+
 
 			if not os.path.exists(datapath):
 				while not os.path.exists(datapath):
@@ -319,23 +358,16 @@ def auto(*args):
 
 			
 			isKilled = [False]
-			def waitKill(isKilled):
+			def waitKill(isKilled, pid):
 				while not isKilled[0]:
 					if os.path.isfile(waitfilename):
 						isKilled[0] = True
-						if p.poll() is None:
-							p.kill()
-						else:
-							if os.name == 'nt':
-								os.system("taskkill /im factorio.exe")
-							else:
-								os.system("killall factorio")
-						printErase("killed factorio")
+						kill(pid)
 						break
 					else:
 						time.sleep(0.4)
 
-			killthread = threading.Thread(target=waitKill, args=(isKilled,))
+			killthread = threading.Thread(target=waitKill, args=(isKilled, pid))
 			killthread.daemon = True
 			killthread.start()
 
@@ -374,14 +406,7 @@ def auto(*args):
 				else:
 					if not isKilled[0]:
 						isKilled[0] = True
-						if p.poll() is None:
-							p.kill()
-						else:
-							if os.name == 'nt':
-								os.system("taskkill /im factorio.exe")
-							else:
-								os.system("killall factorio")
-						printErase("killed factorio")
+						kill(pid)
 
 					if savename == savenames[-1]:
 						refZoom()
@@ -417,7 +442,8 @@ def auto(*args):
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
 					for tag in surfaceStuff["tags"]:
-						tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
+						if "iconType" in tag:
+							tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
 
 		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
 		
@@ -484,7 +510,7 @@ def auto(*args):
 
 
 
-
+		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
 		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
@@ -499,17 +525,14 @@ def auto(*args):
 
 
 	except KeyboardInterrupt:
-		if p.poll() is None:
-			p.kill()
-		else:
-			if os.name == 'nt':
-				os.system("taskkill /im factorio.exe")
-			else:
-				os.system("killall factorio")
-		print("killed factorio")
+		print("keyboardinterrupt")
+		kill(pid)
 		raise
 
 	finally:
+
+		kill(pid)
+
 		print("disabling FactorioMaps mod")
 		changeModlist(False)
 
@@ -519,7 +542,7 @@ def auto(*args):
 		open("autorun.lua", 'w').close()
 		for tmpDir in allTmpDirs:
 			try:
-				os.unlink(os.path.join(tmpdir, "script-output"))
+				os.unlink(os.path.join(tmpDir, "script-output"))
 				rmtree(tmpDir)
 			except (FileNotFoundError, NotADirectoryError):
 				pass
