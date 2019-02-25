@@ -1,4 +1,5 @@
 *.pyc
+.vscode
 __pycache__
 L0laapk3_FactorioMaps_*.zip
 autorun.lua
