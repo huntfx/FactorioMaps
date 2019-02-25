@@ -10,7 +10,7 @@ import configparser
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
-from shutil import copy, rmtree, get_terminal_size as tsize
+from shutil import copy, copytree, rmtree, get_terminal_size as tsize
 from zipfile import ZipFile
 import tempfile
 from PIL import Image, ImageChops
@@ -99,9 +99,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 def auto(*args):
 
 	lock = threading.Lock()
-	def kill(pid):
+	def kill(pid, onlyStall=False):
 		with lock:
-			if psutil.pid_exists(pid):
+			if not onlyStall and psutil.pid_exists(pid):
 
 				if os.name == 'nt':
 					cmd = ("taskkill", "/pid", str(pid))
@@ -449,28 +449,29 @@ def auto(*args):
 
 
 
-				def refZoom(killWhenDone):
+				def refZoom():
 					#print("Crossreferencing %s images" % screenshot)
 					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 					#print("downsampling %s images" % screenshot)
 					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 
-					if killWhenDone:
-						startLogProcess.terminate()
-
 				if screenshot != latest[-1]:
-					refZoom(False)
+					refZoom()
 				else:
+					
+					startLogProcess.terminate()
+
 					# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
-					if not isKilled[0]:
-						isKilled[0] = True
-						kill(pid)
+					
+					onlyStall = isKilled[0]
+					isKilled[0] = True
+					kill(pid, onlyStall)
 
 					if savename == savenames[-1]:
-						refZoom(True)
+						refZoom()
 
 					else:
-						workthread = threading.Thread(target=refZoom, args=(True, ))
+						workthread = threading.Thread(target=refZoom)
 						workthread.daemon = True
 						workthread.start()
 
@@ -581,6 +582,7 @@ def auto(*args):
 			
 		print("creating index.html")
 		copy("index.html.template", os.path.join(workfolder, "index.html"))
+		copytree("web", os.path.join(workfolder, "lib"))
 
 
 

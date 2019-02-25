@@ -5,7 +5,7 @@ from urllib.request import urlretrieve, build_opener, install_opener
 from tempfile import gettempdir
 
 
-targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib")
+targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
 urlList = (
 	"https://cdn.jsdelivr.net/npm/leaflet@1.4.0/dist/leaflet.css",
