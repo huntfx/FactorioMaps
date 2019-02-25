@@ -49,6 +49,8 @@ except (FileNotFoundError, NotADirectoryError):
 
 
 copytree(tempPath, targetPath)
+with open(os.path.join(targetPath, "VERSION"), "w") as f:
+	f.write("1")
 
 
 try:

@@ -37,7 +37,7 @@ def auto(*args):
 			pass
 
 
-
+	logthread = None
 	def kill(pid):
 		if psutil.pid_exists(pid):
 
@@ -185,10 +185,10 @@ def auto(*args):
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
 	
 	if "modpath" in kwargs and not os.path.samefile(kwargs["modpath"], "../../mods"):
-		for file in os.listdir(kwargs["modpath"]):
-			if re.match(r'^L0laapk3_FactorioMaps_', file, flags=re.IGNORECASE):
+		for f in os.listdir(kwargs["modpath"]):
+			if re.match(r'^L0laapk3_FactorioMaps_', f, flags=re.IGNORECASE):
 				print("Found other factoriomaps mod in custom mod folder, deleting.")
-				path = os.path.join(kwargs["modpath"], file)
+				path = os.path.join(kwargs["modpath"], f)
 				if os.path.islink(path):
 					os.unlink(path)
 				else:
@@ -217,17 +217,6 @@ def auto(*args):
 	
 	rawTags = {}
 	rawTagsUsed = False
-	def printGameLog(pipe):
-		with os.fdopen(pipe) as reader:
-			while True:
-				line = reader.readline().rstrip('\n')
-				m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
-				if m is not None:
-					rawTags[m.group(1)] = m.group(2)
-					if rawTagsUsed:
-						raise Exception("Tags added after they were used.")
-				elif "err" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
-					printErase("[GAME] %s" % line)
 
 
 
@@ -240,10 +229,17 @@ def auto(*args):
 
 
 
-	logIn, logOut = os.pipe()
-	logthread = threading.Thread(target=printGameLog, args=[logIn])
-	logthread.daemon = True
-	logthread.start()
+	def handleGameLine(line):
+		line = line.rstrip('\n')
+		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
+		if m is not None:
+			rawTags[m.group(1)] = m.group(2)
+			if rawTagsUsed:
+				raise Exception("Tags added after they were used.")
+		elif "err" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
+			printErase("[GAME] %s" % line)
+
+
 
 
 
@@ -322,24 +318,75 @@ def auto(*args):
 			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
 
 			pid = None
+			isSteam = None
 			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
 
-			p = subprocess.Popen((factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods")), stdout=logOut)
-			time.sleep(1)
-			if p.poll() is not None:
-				print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\t Please open steam and confirm the steam 'start game with arguments' popup.")
-				attrs = ('pid', 'name', 'create_time')
-				oldest = None
-				while pid is None:
-					for proc in psutil.process_iter(attrs=attrs):
-						pinfo = proc.as_dict(attrs=attrs)
-						if pinfo["name"] == "factorio.exe" and pinfo["pid"] not in pidBlacklist and (pid is None or pinfo["create_time"] < oldest):
-							oldest = pinfo["create_time"]
-							pid = pinfo["pid"]
-					if pid is None:
-						time.sleep(1)
-			else:
-				pid = p.pid
+			pipeOut, pipeIn = os.pipe()
+
+			p = subprocess.Popen((factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods")), stdout=pipeIn)
+					
+			condition = threading.Condition()
+
+			def readGameLogs(results):
+				global isSteam, pid
+				with os.fdopen(pipeOut) as reader:
+					line = reader.readline().rstrip("\n")
+					handleGameLine(line)
+					isSteam = line.endswith("Initializing Steam API.")
+					pid = None
+
+					if isSteam:
+						print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to do this every time with the steam version)\n\t Also, if you have any default arguments set in steam for factorio, you'll have to remove them.")
+						attrs = ('pid', 'name', 'create_time')
+						oldest = None
+						while pid is None:
+							for proc in psutil.process_iter(attrs=attrs):
+								pinfo = proc.as_dict(attrs=attrs)
+								if pinfo["name"] == "factorio.exe" and pinfo["pid"] not in pidBlacklist and (pid is None or pinfo["create_time"] < oldest):
+									oldest = pinfo["create_time"]
+									pid = pinfo["pid"]
+							if pid is None:
+								time.sleep(1)
+					else:
+						pid = p.pid
+
+					results.extend((isSteam, pid))
+					with condition:
+						condition.notify()
+
+					if isSteam:
+						with open(os.path.join(tmpDir, "factorio-current.log"), "r") as f:
+							while psutil.pid_exists(pid):
+								where = f.tell()
+								line = f.readline()
+								if not line:
+									time.sleep(0.4)
+									f.seek(where)
+								else:
+									handleGameLine(line)
+
+					else:
+						while True:
+							line = reader.readline()
+							handleGameLine(line)
+
+			results = []
+			logthread = threading.Thread(target=readGameLogs, args=(results,))
+			logthread.daemon = True
+			logthread.start()
+
+
+			with condition:
+				condition.wait()
+			isSteam, pid = results[:]
+
+
+			if isSteam is None:
+				raise Exception("isSteam error")
+			if pid is None:
+				raise Exception("pid error")
+				
+
 
 
 			if not os.path.exists(datapath):
@@ -416,7 +463,7 @@ def auto(*args):
 						workthread.start()
 
 
-		os.close(logOut)
+		os.close(pipeOut)
 
 
 			
