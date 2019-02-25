@@ -43,7 +43,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. |
 | `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
 | `--modpath=PATH` | Use *PATH* as the mod folder. |
-| `--basepath=PATH` | Output to `script-output\PATH` instead of `script-output\FactorioMaps`. |
+| `--basepath=RELPATH` | Output to `script-output\RELPATH` instead of `script-output\FactorioMaps`. (Factorio cannot output outside of `script-output`) |
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
 | `--verbosegame` | Displays *all* game logs. |
 | `--noupdate` | Skips the update check. |
