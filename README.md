@@ -60,11 +60,11 @@ Image quality settings can be changed in the top of `zoom.py`.
 
 # Hosting this on a server
 If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
-1. All references to `https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls` (should be replaced with self hosted versions. The files are on https://github.com/L0laapk3/Leaflet.OpacityControls.
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
     * `mapInfo.js`
     * All __images__ in `Images\`.
+    * All files in `lib\`.
     All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
 
 # Known limitations
