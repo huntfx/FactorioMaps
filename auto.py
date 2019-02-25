@@ -19,6 +19,7 @@ import multiprocessing as mp
 from crop import crop
 from ref import ref
 from zoom import zoom
+from updateLib import update as updateLib
 
 
 
@@ -230,6 +231,10 @@ def auto(*args):
 
 	if os.path.isfile("autorun.lua") or "reverseupdatetest" in kwargs:
 		os.remove("autorun.lua")
+
+
+
+	updateLib(False)
 
 
 
