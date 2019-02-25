@@ -3,12 +3,11 @@
 
 <head>
 	<title>FactorioMaps</title>
-	<link href="https://factorio.com/static/img/favicon.ico" rel="icon" type="image/x-icon">
-	<meta name="og:image" content="https://i.factoriomaps.com/t92kw.png" />
+	<link href="lib/favicon.ico" rel="icon" type="image/x-icon">
+	<meta name="og:image" content="lib/t92kw.png" />
 	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.css" integrity="sha256-iYUgmrapfDGvBrePJPrMWQZDcObdAcStKBpjP3Az+3s="
-		crossorigin="anonymous" />
+	<link rel="stylesheet" href="lib/leaflet.css" />
 
 	<style type="text/css">
 		html {
@@ -196,26 +195,21 @@
 		}
 
 	</style>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.js" integrity="sha256-lwWHyfIX653fxmxYjZUYOSM7ufWv6dMT8ISVuTWwoOY="
-		crossorigin="anonymous"></script>
-	<link href='https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.4.5/Control.FullScreen.css' rel='stylesheet'
-	/>
-	<script src='https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/1.4.5/Control.FullScreen.min.js'></script>
+	<script src="lib/leaflet-src.min.js"></script>
+	<link href='lib/Control.FullScreen.css' rel='stylesheet' />
+	<script src='lib/Control.FullScreen.min.js'></script>
 
 
 
 
 
-	<!-- HERE: DONT FORGET TO FIX THIS -->
+	<script src="lib/jquery.min.js"></script>
 	
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-	
-	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
-	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+	<link rel="stylesheet" href="lib/jquery-ui.css">
+	<script src="lib/jquery-ui.min.js"></script>
 
-	<!-- HERE: ESPECIALLY THESE TWO -->
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@1/Control.Opacity.css" />
-	<script src="https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@1/Control.Opacity.js" ></script>
+	<link rel="stylesheet" href="lib/Control.Opacity.css" />
+	<script src="lib/Control.Opacity.js" ></script>
 
 
 	<script src="mapInfo.js"></script>
@@ -341,7 +335,7 @@
 					if (layer[daytime] == "true") {
 						var LLayer = L.tileLayer(undefined, {
 							id: layer.path,
-							attribution: '<a href="https://github.com/L0laapk3/FactorioMods_FactorioMaps">FactorioMaps</a>',
+							attribution: '<a href="https://github.com/L0laapk3/FactorioMaps">FactorioMaps</a>',
 							minNativeZoom: DEBUG ? 20 : layer.zoom.min,
 							maxNativeZoom: layer.zoom.max,
 							minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,

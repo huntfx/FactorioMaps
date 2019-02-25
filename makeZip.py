@@ -25,13 +25,18 @@ excludeDirs = (
 	".vscode",
 	"__pycache__"
 )
+excludeFiles = (
+	".gitignore",
+	".gitattributes",
+	"makezip.py"
+)
 
 for root, dirs, files in os.walk("."):
 	dirs[:] = [d for d in dirs if d not in excludeDirs]
 	for file in files:
 		if file[-4:].lower() == ".pyc":
 			continue
-		if file.lower() in (".gitignore", ".gitattributes", "makezip.py"):
+		if file.lower() in excludeFiles:
 			continue
 
 		src = os.path.normpath(os.path.join(root, file))
