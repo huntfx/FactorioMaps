@@ -3,6 +3,7 @@ import os
 from shutil import rmtree, copy, make_archive
 
 import shutil
+from updateLib import update as updateLib
 
 
 folderName = os.path.basename(os.path.realpath("."))
@@ -31,6 +32,7 @@ excludeFiles = (
 	"makezip.py"
 )
 
+updateLib(False)
 for root, dirs, files in os.walk("."):
 	dirs[:] = [d for d in dirs if d not in excludeDirs]
 	for file in files:
