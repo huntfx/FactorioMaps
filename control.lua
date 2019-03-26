@@ -34,7 +34,7 @@ script.on_event(defines.events.on_tick, function(event)
 	
 		if fm.ticks == nil then
 		
-			fm.topfolder = "FactorioMaps/" .. (fm.autorun.name or "")
+			fm.topfolder = "script-output/FactorioMaps/" .. (fm.autorun.name or "")
 			fm.autorun.tick = game.tick
 
 			hour = math.ceil(fm.autorun.tick / 60 / 60 / 60)
@@ -173,14 +173,14 @@ script.on_event(defines.events.on_tick, function(event)
 		end
 		--topLine.add{type = "label", name = "main-end", caption = "."}.style
 		main.add{type = "label", caption = text[3]}.style.single_line = false
-		main.style.align = "right"
+		main.style.horizontal_align = "right"
 	
 		
 		if not fm.done then
 			local buttonContainer = main.add{type = "flow", direction = "horizontal"}
 			local button = buttonContainer.add{type = "button", caption = "Back to main menu"}
 			buttonContainer.style.horizontally_stretchable = true
-			buttonContainer.style.align = "right"
+			buttonContainer.style.horizontal_align = "right"
 			script.on_event(defines.events.on_gui_click, function(event)
 	
 				if event.element == button then

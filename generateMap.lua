@@ -365,7 +365,7 @@ function fm.generateMap(data)
 			fm.autorun.chunkCache[fm.autorun.tick] = {}
 		end
 		fm.autorun.chunkCache[fm.autorun.tick][surface.name] = allGridString:sub(1, -2)
-		game.write_file(basePath .. "/chunkCache.json", prettyjson(fm.autorun.chunkCache), false, data.player_index)
+		game.write_file(basePath .. "chunkCache.json", prettyjson(fm.autorun.chunkCache), false, data.player_index)
 	
 	end
 	fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][fm.subfolder] = true
@@ -389,7 +389,7 @@ function fm.generateMap(data)
 	-- 	rawTags[typeName] = path
 	-- end
 	
-	-- game.write_file(basePath .. "/rawTags.json", json(rawTags), false, data.player_index)
+	-- game.write_file(basePath .. "rawTags.json", json(rawTags), false, data.player_index)
 
    
 	local extension = "bmp"
@@ -398,8 +398,7 @@ function fm.generateMap(data)
 	
 	log("Starting surface capture to target directory: " .. subPath)
 
-	
-	game.write_file(basePath .. "/mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
+	game.write_file(basePath .. "mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
 
 
 	local cropText = ""
