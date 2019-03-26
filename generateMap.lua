@@ -41,6 +41,7 @@ function fm.generateMap(data)
 	local surface = player.surface
 	local force = player.force
 
+	game.set_wait_for_screenshots_to_finish()
 	
 	
 	if fm.autorun.mapInfo.maps == nil then
