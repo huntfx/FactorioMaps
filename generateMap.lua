@@ -46,6 +46,7 @@ function fm.generateMap(data)
 	if fm.autorun.mapInfo.maps == nil then
 		fm.autorun.mapInfo = {
 			seed = game.default_map_gen_settings.seed,
+			mapExchangeString = game.get_map_exchange_string(),
 			maps = {}
 		}
 	end
