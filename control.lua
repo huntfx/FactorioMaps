@@ -21,6 +21,9 @@ script.on_event(defines.events.on_tick, function(event)
 
 		event.player_index = game.connected_players[1].index
 
+		game.tick_paused = true
+		game.ticks_to_run = 1
+
 		if nil == fm.tmp then
 
 			log("Start world capture")
@@ -34,7 +37,7 @@ script.on_event(defines.events.on_tick, function(event)
 	
 		if fm.ticks == nil then
 		
-			fm.topfolder = "script-output/FactorioMaps/" .. (fm.autorun.name or "")
+			fm.topfolder = "FactorioMaps/" .. (fm.autorun.name or "")
 			fm.autorun.tick = game.tick
 
 			hour = math.ceil(fm.autorun.tick / 60 / 60 / 60)
@@ -162,7 +165,8 @@ script.on_event(defines.events.on_tick, function(event)
 		event.player_index = game.connected_players[1].index
 		fm.shownWarn = true
 
-		--game.pause()
+		game.tick_paused = true
+		game.ticks_to_run = 0
 		game.players[event.player_index].character.active = false
 		
 		local main = game.players[event.player_index].gui.center.add{type = "frame", caption = text[1], direction = "vertical"}
