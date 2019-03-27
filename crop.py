@@ -47,7 +47,7 @@ def crop(*args, **kwargs):
 		time.sleep(0.4)
 	folder = os.path.join(basepath, os.walk(basepath).__next__()[1][0])
 	datapath = os.path.join(basepath, "crop.txt")
-	maxthreads = int(kwargs["cropthreads"]) if "cropthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count())
+	maxthreads = int(kwargs["cropthreads" if kwargs["cropthreads"] else "maxthreads"])
 
 
 	if not os.path.exists(datapath):
