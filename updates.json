@@ -20,5 +20,6 @@
     "3.1.1": "!Fixed bugs when no mod path is specified",
     "3.1.2": "!Fixed bug where the entire script-output folder is sometimes removed due to inconsistent symlink behavior",
     "3.2.0": ["!Considerable speedup for most users that haven't bothered changing the factorio config.ini", "Loads of bugfixes"],
-    "3.2.1": "Fixed various bugs"
+    "3.2.1": "Fixed various bugs",
+    "3.3.0": ["Updated for 0.17", "Some minor bugfixes"]
 }
