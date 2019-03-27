@@ -46,7 +46,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			rawTags[m.group(1)] = m.group(2)
 			if rawTags["__used"]:
 				raise Exception("Tags added after they were used.")
-		elif "err" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() or (kwargs.get("verbosegame", False) and len(line) > 0):
+		elif "error" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() \
+			or (kwargs.get("verbosegame", False) and len(line) > 0) \
+			or (kwargs.get("verbose", False) and "debug" in line.lower()):
 			printErase("[GAME] %s" % line)
 
 
@@ -142,6 +144,7 @@ def auto(*args):
 		"D:/Games/Factorio/bin/x64/factorio.exe",
 		"E:/Games/Factorio/bin/x64/factorio.exe",
 		"F:/Games/Factorio/bin/x64/factorio.exe",
+		"../../bin/x64/factorio.exe",
 		"../../bin/x64/factorio",
 		"C:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"D:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
