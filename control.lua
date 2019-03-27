@@ -21,8 +21,8 @@ script.on_event(defines.events.on_tick, function(event)
 
 		event.player_index = game.connected_players[1].index
 
-		game.tick_paused = true
-		game.ticks_to_run = 1
+		--game.tick_paused = true
+		--game.ticks_to_run = 1
 
 		if nil == fm.tmp then
 
@@ -76,7 +76,6 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 
 			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-			--game.pause()
 			for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
 				entity.active = false
 			end
@@ -103,7 +102,7 @@ script.on_event(defines.events.on_tick, function(event)
 		elseif fm.ticks < 2 then
 			
 			if fm.autorun.day then
-				game.write_file(fm.topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/day/done.txt", "", false, event.player_index)
+				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/day/done.txt", "", false, event.player_index)
 			end
 	
 			-- remove no path sign
@@ -122,10 +121,10 @@ script.on_event(defines.events.on_tick, function(event)
 		elseif fm.ticks < 3 then
 			
 			if fm.autorun.night then
-				game.write_file(fm.topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
+				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
 			end
 			
-			game.write_file(fm.topfolder .. "/Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/done.txt", "", false, event.player_index)
+			game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/done.txt", "", false, event.player_index)
 		   
 			
 			-- unfreeze all entities
