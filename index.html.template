@@ -179,11 +179,12 @@
 		}
 
 
-		img.map-marker {
+		.map-marker {
 			width: 32px;
 			height: 32px;
 			margin-left: -16px;
 			margin-top: -16px;
+			display: block;
 		}
 		.map-marker-text {
 			color: white;
@@ -192,6 +193,16 @@
 			text-align: center;
 			display: block;
 			width: 96px;
+		}
+
+		map-marker-default:before {
+			content: "";
+			display: inline-block;
+			background-color: red;
+			width: 19px;
+			height: 19px;
+			border: solid 6.5px #0F0;
+			border-radius: 16px;
 		}
 
 	</style>
@@ -591,7 +602,7 @@
 				L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
 					icon: new L.DivIcon({
 						className: 'map-tag',
-						html: 	'<img class="map-marker" src="' + tag.iconPath + '"/>'+
+						html: 	tag.iconPath ? '<img class="map-marker" src="' + tag.iconPath + '"/>' : '<map-marker-default class="map-marker"/>' +
 								'<span class="map-marker-text">' + tag.text + '</span>'
 					})
 				}).addTo(map);
