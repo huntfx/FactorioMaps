@@ -39,7 +39,15 @@ function fm.generateMap(data)
 
 	local player = game.players[data.player_index]
 	local surface = player.surface
-	local force = player.force
+
+	local forces = {}
+	local forceStats = {}
+	for _, force in pairs(game.forces) do
+		if #force.players > 0 then
+			forces[#forces+1] = force.name
+			forceStats[force.name] = 0
+		end
+	end
 
 	game.set_wait_for_screenshots_to_finish()
 	
@@ -65,7 +73,7 @@ function fm.generateMap(data)
 	
 	-- Number of pixels in an image     -- CHANGE THIS AND REF.PY WILL NEED TO BE CHANGED
 	local gridSizes = {256, 512, 1024} -- cant have 2048 anymore. code now relies on it being smaller than one game chunk (32 tiles * 32 pixels)
-	local gridSize = gridSizes[2]
+	local gridSize = gridSizes[2] --always 512x512 pixel images for now, its a good balance (check rest of code before changing this)
 
 	local tilesPerChunk = 32    --hardcoded
 	
@@ -73,7 +81,8 @@ function fm.generateMap(data)
 	if fm.autorun.HD == true then
 		pixelsPerTile = 64   -- HD textures have 64 pixels/tile
 	end
-	-- These are the number of tiles per grid section
+
+	-- These are the number of tiles per image (gridSize = 512, 32 pixelspertile means 16 by 16 tiles in each image)
 	local gridPixelSize = gridSize / pixelsPerTile
 
 
@@ -116,7 +125,7 @@ function fm.generateMap(data)
 
 	
 
-	local spawn = force.get_spawn_position(surface)
+	local spawn = player.force.get_spawn_position(surface)
 
 
 	
@@ -157,56 +166,77 @@ function fm.generateMap(data)
 
 	local buildChunks = {}
 	local allGridString = ""
+	local imageStats = {
+		charted = 0,
+		not_cached = 0,
+		build_range = 0,
+		smaller_range = 0,
+		tags = 0,
+		player = 0,
+		smoothed = 0
+	}
 	if mapIndex == 0 then
 		for chunk in surface.get_chunks() do
-			if force.is_chunk_charted(surface, chunk) then
-				for gridX = (chunk.x) * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
-					for gridY = (chunk.y) * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
-						if allGrid[gridX .. " " .. gridY] == nil then
-							for k = 0, fm.autorun.around_build_range * pixelsPerTile / tilesPerChunk, 1 do
-								for l = 0, fm.autorun.around_build_range * pixelsPerTile / tilesPerChunk, 1 do
-									for m = 1, k > 0 and -1 or 1, -2 do
-										for n = 1, l > 0 and -1 or 1, -2 do
-											local i = k * m
-											local j = l * n
-											local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
-											if dist <= math.pow(fm.autorun.around_build_range + 0.5, 2) then
-												local x = gridX + i + (tilesPerChunk / gridPixelSize) / 2 - 1
-												local y = gridY + j + (tilesPerChunk / gridPixelSize) / 2 - 1
-												local area = {{gridPixelSize * (x-.5), gridPixelSize * (y-.5)}, {gridPixelSize * (x+.5), gridPixelSize * (y+.5)}}
-												if buildChunks[x .. " " .. y] == nil then
-													local powerCount = 0
-													if fm.autorun.smaller_types and #fm.autorun.smaller_types > 0 then
-														powerCount = surface.count_entities_filtered({ force=force.name, area=area, type=fm.autorun.smaller_types })
+			for _, force in pairs(game.forces) do
+				if #force.players > 0 and force.is_chunk_charted(surface, chunk) then
+					forceStats[force.name] = forceStats[force.name] + 1
+					imageStats.charted = imageStats.charted + 1
+					for gridX = (chunk.x) * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
+						for gridY = (chunk.y) * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
+							if allGrid[gridX .. " " .. gridY] == nil then
+								imageStats.not_cached = imageStats.not_cached + 1
+								for k = 0, fm.autorun.around_build_range * pixelsPerTile / tilesPerChunk, 1 do
+									for l = 0, fm.autorun.around_build_range * pixelsPerTile / tilesPerChunk, 1 do
+										for m = 1, k > 0 and -1 or 1, -2 do
+											for n = 1, l > 0 and -1 or 1, -2 do
+												local i = k * m
+												local j = l * n
+												local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
+												if dist <= math.pow(fm.autorun.around_build_range + 0.5, 2) then
+													local x = gridX + i + (tilesPerChunk / gridPixelSize) / 2 - 1
+													local y = gridY + j + (tilesPerChunk / gridPixelSize) / 2 - 1
+													local area = {{gridPixelSize * (x-.5), gridPixelSize * (y-.5)}, {gridPixelSize * (x+.5), gridPixelSize * (y+.5)}}
+													if buildChunks[x .. " " .. y] == nil then
+														local powerCount = 0
+														if fm.autorun.smaller_types and #fm.autorun.smaller_types > 0 then
+															powerCount = surface.count_entities_filtered({ force=forces, area=area, type=fm.autorun.smaller_types })
+														end
+														local excludeCount = powerCount + surface.count_entities_filtered({ force=forces, area=area, type={"player"} })
+														if surface.count_entities_filtered({ force=forces, area=area, limit=excludeCount + 1 }) > excludeCount or surface.count_tiles_filtered({ force=forces, area=area, limit=excludeCount + 1, name=fm.tilenames }) > 0 then
+															buildChunks[x .. " " .. y] = 2
+														elseif powerCount > 0 then
+															buildChunks[x .. " " .. y] = 1
+														else
+															buildChunks[x .. " " .. y] = 0
+														end
 													end
-													local excludeCount = powerCount + surface.count_entities_filtered({ force=force.name, area=area, type={"player"} })
-													if surface.count_entities_filtered({ force=force.name, area=area, limit=excludeCount + 1 }) > excludeCount or surface.count_tiles_filtered({ area=area, limit=excludeCount + 1, name=fm.tilenames }) > 0 then
-														buildChunks[x .. " " .. y] = 2
-													elseif powerCount > 0 then
-														buildChunks[x .. " " .. y] = 1
-													else
-														buildChunks[x .. " " .. y] = 0
-													end
-												end
-												if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and dist <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
-													allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
-													allGridString = allGridString .. gridX .. " " .. gridY .. "|"
+													if buildChunks[x .. " " .. y] == 2 or (buildChunks[x .. " " .. y] == 1 and dist <= math.pow(fm.autorun.around_smaller_range + 0.5, 2)) then
+														allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+														allGridString = allGridString .. gridX .. " " .. gridY .. "|"
 
-													minX = math.min(minX, gridX)
-													minY = math.min(minY, gridY)
-													maxX = math.max(maxX, gridX)
-													maxY = math.max(maxY, gridY)
-													
-													goto done
+														minX = math.min(minX, gridX)
+														minY = math.min(minY, gridY)
+														maxX = math.max(maxX, gridX)
+														maxY = math.max(maxY, gridY)
+														
+														if buildChunks[x .. " " .. y] == 2 then
+															imageStats.build_range = imageStats.build_range + 1
+														else
+															imageStats.smaller_range = imageStats.smaller_range + 1
+														end
+
+														goto done
+													end
 												end
 											end
 										end
 									end
 								end
 							end
+							::done::
 						end
-						::done::
 					end
+					break
 				end
 			end
 		end
@@ -214,27 +244,33 @@ function fm.generateMap(data)
 
 
 		-- tag range
-		for _, tag in pairs(force.find_chart_tags(surface)) do
-			for k = 0, fm.autorun.around_tag_range * pixelsPerTile / tilesPerChunk, 1 do
-				for l = 0, fm.autorun.around_tag_range * pixelsPerTile / tilesPerChunk, 1 do
-					for m = 1, k > 0 and -1 or 1, -2 do
-						for n = 1, l > 0 and -1 or 1, -2 do
-							local i = k * m
-							local j = l * n
-							local x = tag.position.x / gridPixelSize + i
-							local y = tag.position.y / gridPixelSize + j
-							local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
-							local chunk = {x = math.floor(x * gridPixelSize / tilesPerChunk), y = math.floor(y * gridPixelSize / tilesPerChunk)}
-							if dist <= math.pow(fm.autorun.around_tag_range + 0.5, 2) and force.is_chunk_charted(surface, chunk) then
-								local gridX = math.floor(x)
-								local gridY = math.floor(y)
-								allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
-								allGridString = allGridString .. gridX .. " " .. gridY .. "|"
+		for _, force in pairs(game.forces) do
+			if #force.players > 0 then
+				for _, tag in pairs(force.find_chart_tags(surface)) do
+					for k = 0, fm.autorun.around_tag_range * pixelsPerTile / tilesPerChunk, 1 do
+						for l = 0, fm.autorun.around_tag_range * pixelsPerTile / tilesPerChunk, 1 do
+							for m = 1, k > 0 and -1 or 1, -2 do
+								for n = 1, l > 0 and -1 or 1, -2 do
+									local i = k * m
+									local j = l * n
+									local x = tag.position.x / gridPixelSize + i
+									local y = tag.position.y / gridPixelSize + j
+									local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
+									local chunk = {x = math.floor(x * gridPixelSize / tilesPerChunk), y = math.floor(y * gridPixelSize / tilesPerChunk)}
+									if dist <= math.pow(fm.autorun.around_tag_range + 0.5, 2) and force.is_chunk_charted(surface, chunk) then
+										local gridX = math.floor(x)
+										local gridY = math.floor(y)
+										allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
+										allGridString = allGridString .. gridX .. " " .. gridY .. "|"
 
-								minX = math.min(minX, gridX)
-								minY = math.min(minY, gridY)
-								maxX = math.max(maxX, gridX)
-								maxY = math.max(maxY, gridY)
+										minX = math.min(minX, gridX)
+										minY = math.min(minY, gridY)
+										maxX = math.max(maxX, gridX)
+										maxY = math.max(maxY, gridY)
+
+										imageStats.tags = imageStats.tags + 1
+									end
+								end
 							end
 						end
 					end
@@ -269,6 +305,8 @@ function fm.generateMap(data)
 								minY = math.min(minY, gridY)
 								maxX = math.max(maxX, gridX)
 								maxY = math.max(maxY, gridY)
+
+								imageStats.player = imageStats.player + 1
 							end
 						end
 					end
@@ -311,8 +349,25 @@ function fm.generateMap(data)
 				minY = math.min(minY, v.y)
 				maxX = math.max(maxX, v.x)
 				maxY = math.max(maxY, v.y)
+								
+				imageStats.smoothed = imageStats.smoothed + 1
 			end
 		end
+
+
+		log("FactorioMaps_Debug: imageStats")
+		log("FactorioMaps_Debug:     charted:       " .. imageStats.charted * math.pow(tilesPerChunk / gridPixelSize, 2))
+		log("FactorioMaps_Debug:     not_cached:    " .. imageStats.not_cached)
+		log("FactorioMaps_Debug:     build_range:   " .. imageStats.build_range)
+		log("FactorioMaps_Debug:     smaller_range: " .. imageStats.smaller_range)
+		log("FactorioMaps_Debug:     tags:          " .. imageStats.tags)
+		log("FactorioMaps_Debug:     player:        " .. imageStats.player)
+		log("FactorioMaps_Debug:     smoothed:      " .. imageStats.smoothed)
+		log("FactorioMaps_Debug: forceStats")
+		for force, count in pairs(forceStats) do
+			log("FactorioMaps_Debug:     " .. force .. ": " .. count)
+		end
+
 
 
 		mapIndex = #fm.autorun.mapInfo.maps + 1
@@ -334,30 +389,37 @@ function fm.generateMap(data)
 	-- TODO: THIS SHIT IS BROKEN
 	local maxImagesNextToEachotherOnLargestZoom = 2
 	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(maxImagesNextToEachotherOnLargestZoom))))
+
 	if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
 		fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
-			spawn = spawn,
+			spawn = spawn, -- this only includes spawn point of the player taking the screenshots
 			zoom = { min = minZoom, max = maxZoom },
 			playerPosition = player.position,
 			tags = {}
 		}
-		for i, tag in pairs(force.find_chart_tags(surface)) do
-			if tag.icon == nil then
-				fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
-					position 	= tag.position,
-					text 		= tag.text,
-					last_user	= tag.last_user and tag.last_user.name
-				}
-			else
-				name = tag.icon["name"] or tag.icon.type
-				fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
-					iconType 	= tag.icon.type,
-					iconName 	= name,
-					iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. name .. ".png",
-					position 	= tag.position,
-					text 		= tag.text,
-					last_user	= tag.last_user and tag.last_user.name
-				}
+		for _, force in pairs(game.forces) do
+			if #force.players > 0 then
+				for i, tag in pairs(force.find_chart_tags(surface)) do
+					if tag.icon == nil then
+						fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
+							position 	= tag.position,
+							text 		= tag.text,
+							last_user	= tag.last_user and tag.last_user.name,
+							force	    = force.name
+						}
+					else
+						name = tag.icon["name"] or tag.icon.type
+						fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
+							iconType 	= tag.icon.type,
+							iconName 	= name,
+							iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. name .. ".png",
+							position 	= tag.position,
+							text 		= tag.text,
+							last_user	= tag.last_user and tag.last_user.name,
+							force	    = force.name
+						}
+					end
+				end
 			end
 		end
 
@@ -403,8 +465,6 @@ function fm.generateMap(data)
 
 	local cropText = ""
 	for _, chunk in pairs(allGrid) do   
-		--game.print(chunk)
-
 		local positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
 
 		local box = { positionTable[1], positionTable[2], positionTable[1] + gridPixelSize, positionTable[2] + gridPixelSize } -- -X -Y X Y
