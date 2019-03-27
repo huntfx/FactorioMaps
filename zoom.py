@@ -192,7 +192,7 @@ def zoom(*args, **kwargs):
 									doneSize += 1
 									progress = float(doneSize) / originalSize
 									tsiz = tsize()[0]-15
-									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 99, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
 
 								for p in processes:
 									p.join()
