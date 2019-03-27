@@ -88,7 +88,7 @@ def ref(*args, **kwargs):
 
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 	datapath = os.path.join(toppath, "mapInfo.json")
-	maxthreads = int(kwargs["refthreads"]) if "refthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count())
+	maxthreads = int(kwargs["refthreads" if kwargs["refthreads"] else"maxthreads"])
 
 
 

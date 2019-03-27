@@ -25,6 +25,9 @@ from updateLib import update as updateLib
 
 
 
+
+
+
 def printErase(arg):
 	try:
 		tsiz = tsize()[0]
@@ -47,8 +50,8 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			if rawTags["__used"]:
 				raise Exception("Tags added after they were used.")
 		elif "error" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() \
-			or (kwargs.get("verbosegame", False) and len(line) > 0) \
-			or (kwargs.get("verbose", False) and "debug" in line.lower()):
+			or (kwargs["verbosegame"] and len(line) > 0) \
+			or (kwargs["verbose"] and "debug" in line.lower()):
 			printErase("[GAME] %s" % line)
 
 
@@ -120,13 +123,46 @@ def auto(*args):
 		#time.sleep(0.1)
 
 
+
+
+	kwargs = {
+		'dayonly': False,
+		'nightonly': False,
+		'hd': False,
+		'no-altmode': False,
+		'build-range': 5.2,
+		'connect-range': 1.2,
+		'tag-range': 5.2,
+		'factorio': None,
+		'modpath': "..",
+		'basepath': "FactorioMaps",
+		'date': None,
+		'verbosegame': False,
+		'verbose': False,
+		'noupdate': False,
+		'reverseupdatetest': False,
+		'maxthreads': mp.cpu_count(),	
+		'cropthreads': None,
+		'refthreads': None,
+		'zoomthreads': None,
+		'screenshotthreads': None,
+		'screenshotqueuesize': mp.cpu_count() * 2,
+		'delete': False,
+		'dry': False
+	}
+	
 	def parseArg(arg):
 		if arg[0:2] != "--":
 			return True
-		kwargs[arg[2:].split("=",2)[0].lower()] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
+		key = arg[2:].split("=",2)[0].lower()
+		if key in kwargs:
+			kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
+		else:
+			raise ValueError(f'Bad flag: "{key}"')
 		return False
 
-	kwargs = {}
+
+
 	args = list(filter(parseArg, args))
 	if len(args) > 0:
 		foldername = args[0]
@@ -152,7 +188,7 @@ def auto(*args):
 		"F:/Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe"
 	]
 	try:
-		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if "factorio" in kwargs else possiblePaths) if os.path.isfile(x))
+		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if kwargs["factorio"] else possiblePaths) if os.path.isfile(x))
 	except StopIteration:
 		raise Exception("Can't find factorio.exe. Please pass --factorio=PATH as an argument.")
 
@@ -160,7 +196,7 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = os.path.join("../../script-output", kwargs["basepath"] if "basepath" in kwargs else "FactorioMaps")
+	basepath = os.path.join("../../script-output", kwargs["basepath"])
 	workthread = None
 
 	workfolder = os.path.join(basepath, foldername)
@@ -169,13 +205,13 @@ def auto(*args):
 
 
 
-	if "noupdate" not in kwargs:
+	if not kwargs["noupdate"]:
 		try:
 			print("checking for updates")
 			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
 			with open("updates.json", "r") as f:
 				currentUpdates = json.load(f)
-			if "reverseupdatetest" in kwargs:
+			if kwargs["reverseupdatetest"]:
 				latestUpdates, currentUpdates = currentUpdates, latestUpdates
 
 			updates = []
@@ -224,7 +260,7 @@ def auto(*args):
 				print("================================================================================")
 				print("")
 				print("")
-				if majorUpdate or "reverseupdatetest" in kwargs:
+				if majorUpdate or kwargs["reverseupdatetest"]:
 					sys.exit(1)(1)
 
 
@@ -232,7 +268,7 @@ def auto(*args):
 			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
-	if os.path.isfile("autorun.lua") or "reverseupdatetest" in kwargs:
+	if os.path.isfile("autorun.lua"):
 		os.remove("autorun.lua")
 
 
@@ -252,9 +288,9 @@ def auto(*args):
 		subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
 
 	print("enabling FactorioMaps mod")
-	modListPath = os.path.join(kwargs["modpath"], "mod-list.json") if "modpath" in kwargs else "../mod-list.json"
+	modListPath = os.path.join(kwargs["modpath"], "mod-list.json")
 	
-	if "modpath" in kwargs and not os.path.samefile(kwargs["modpath"], "../../mods"):
+	if not os.path.samefile(kwargs["modpath"], "../../mods"):
 		for f in os.listdir(kwargs["modpath"]):
 			if re.match(r'^L0laapk3_FactorioMaps_', f, flags=re.IGNORECASE):
 				print("Found other factoriomaps mod in custom mod folder, deleting.")
@@ -291,7 +327,7 @@ def auto(*args):
 
 
 			
-	if "delete" in kwargs:
+	if kwargs["delete"]:
 		try:
 			rmtree(workfolder)
 		except (FileNotFoundError, NotADirectoryError):
@@ -307,7 +343,7 @@ def auto(*args):
 
 	try:
 
-		for index, savename in () if "dry" in kwargs else enumerate(savenames):
+		for index, savename in () if kwargs["dry"] else enumerate(savenames):
 
 
 
@@ -332,15 +368,15 @@ def auto(*args):
 			with open("autorun.lua", "w") as f:
 				f.write(
 					f'fm.autorun = {{\n'
-					f'HD = {str("hd" in kwargs).lower()},\n'
-					f'day = {str("nightonly" not in kwargs).lower()},\n'
-					f'night = {str("dayonly" not in kwargs).lower()},\n'
-					f'alt_mode = {str("no-altmode" not in kwargs).lower()},\n'
-					f'around_tag_range = {float("tag-range") if "tag-range" in kwargs else 5.2},\n'
-					f'around_build_range = {float("build-range") if "build-range" in kwargs else 5.2},\n'
-					f'around_smaller_range = {float("connect-range") if "connect-range" in kwargs else 1.2},\n'
+					f'HD = {str(kwargs["hd"] == True).lower()},\n'
+					f'day = {str(kwargs["nightonly"] != True).lower()},\n'
+					f'night = {str(kwargs["dayonly"] != True).lower()},\n'
+					f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
+					f'around_tag_range = {float(kwargs["tag-range"])},\n'
+					f'around_build_range = {float(kwargs["build-range"])},\n'
+					f'around_smaller_range = {float(kwargs["connect-range"])},\n'
 					f'smaller_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
-					f'date = "{(datetime.date.strptime(kwargs["date"], "%d/%m/%y") if "date" in kwargs else datetime.date.today()).strftime("%d/%m/%y")}",\n'
+					f'date = "{(datetime.date.strptime(kwargs["date"], "%d/%m/%y") if kwargs["date"] else datetime.date.today()).strftime("%d/%m/%y")}",\n'
 					f'name = "{foldername + "/"}",\n'
 					f'mapInfo = {mapInfoLua},\n'
 					f'chunkCache = {chunkCache}\n'
@@ -364,9 +400,9 @@ def auto(*args):
 			config["interface"]["show-tips-and-tricks"] = "false"
 			
 			config["path"]["write-data"] = tmpDir
-			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads"]) if "screenshotthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count()))
+			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads" if kwargs["screenshotthreads"] else "maxthreads"]))
 			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
-			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]) if "screenshotqueuesize" in kwargs else mp.cpu_count()*2)
+			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]))
 			
 			with open(configPath, 'w+') as outf:
 				outf.writelines(("; version=3\n", ))
@@ -380,7 +416,7 @@ def auto(*args):
 			isSteam = None
 			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
 
-			popenArgs = (factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"] if "modpath" in kwargs else "../../mods"), "--disable-migration-window")
+			popenArgs = (factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"]), "--disable-migration-window")
 					
 			condition = mp.Condition()
 
