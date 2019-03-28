@@ -496,7 +496,7 @@
 		function updateHash() {
 			const path = [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')];
 			console.log(path);
-			let hash = "#" + path.join("/");
+			let hash = "#" + path.map(encodeURIComponent).join("/");
 			if (hash != lastHash) {
 				lastHash = hash;
 				window.location.replace(hash);
