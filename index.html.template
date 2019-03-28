@@ -204,11 +204,13 @@
 			border: solid 6.5px #0F0;
 			border-radius: 16px;
 		}
+		
 
 	</style>
 	<script src="lib/leaflet-src.min.js"></script>
 	<link href='lib/Control.FullScreen.css' rel='stylesheet' />
 	<script src='lib/Control.FullScreen.min.js'></script>
+	<script src='lib/naturalsort.min.js'></script>
 
 
 
@@ -492,8 +494,9 @@
 		
 		let lastHash = "";
 		function updateHash() {
-			//console.log(map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp);
-			let hash = "#" + [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')].join("/");
+			const path = [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')];
+			console.log(path);
+			let hash = "#" + path.join("/");
 			if (hash != lastHash) {
 				lastHash = hash;
 				window.location.replace(hash);
@@ -519,15 +522,14 @@
 		
 		let daylightSlider, timeSlider;
 		let mapLoadedBySlider = false;
-		if (layers.some(surface => surface.some(layer => layer.day)) && layers.some(surface => surface.some(layer => layer.night))) {
-			//L.control.layers({Day: layers.Day}, {Night: layers.Night}, { collapsed: m.meta.map.options.collapseLayerList }).addTo(map).setPosition('bottomright');
+		if (Object.values(layers).some(s => Object.values(s).some(l => l.day)) && Object.values(layers).some(s => Object.values(s).some(l => l.night))) {
 			daylightSlider = new L.Control.opacitySlider({
 				position: "bottomright",
 				orientation: "horizontal",
 				initial: nightOpacity,
 				length: 135,
 				gravitate: 7,
-				labels: [ {name: "Day", position: 0, layers: layers.map(s => s.map(l => l.day))}, {name: "Nightvision", position: .42, gravitate: 5}, {name: "Night", position: 1, layers: layers.map(s => s.map(l => l.night))} ],
+				labels: [ {name: "Day", position: 0, layers: Object.values(layers).map(s => Object.values(s).map(l => l.day)).flat()}, {name: "Nightvision", position: .42, gravitate: 5}, {name: "Night", position: 1, layers: Object.values(layers).map(s => Object.values(s).map(l => l.night)).flat()} ],
 				onChange: function(value) {
 					nightOpacity = Math.round(value * 100) / 100;
 					updateHash();
@@ -537,32 +539,26 @@
 			mapLoadedBySlider = true;
 		}
 
+
+
+
+
 		
-		// let surfaceList = []
-		// for (const layer of layers)
-		// 	if (surfaceList.indexOf(layer.surface) < 0)
-		// 		surfaceList.push(layer.surface)
-
-		// if (surfaceList.length > 1) {
-		// 	//TODO: add selection stuff
-		// }
-
-
-
-
-
-		// TODO: update sliders with selection of surface
+		
+		
 		if (layersByTimestamp.length > 1 && true) {
 			let min = Math.min.apply(undefined, mapInfo.maps.map(l => parseInt(l.path)));
 			let max = Math.max.apply(undefined, mapInfo.maps.map(l => parseInt(l.path)));
-			let len = Math.min(window.innerHeight * .8, Math.max(95, 45 * (layersByTimestamp.length - 1)));
-			let timeLabels = layers.map(function(layer, i) {
+			let sliderHeight = Math.min(window.innerHeight * .8, Math.max(95, 45 * (layersByTimestamp.length - 1)));
+			let timeLabels = layersByTimestamp.map(function(layer, i) {
 				return {
 					name: mapInfo.maps[i].path + "h",
-					position: max == min ? i / (layersByTimestamp.length - 1) : i * 30/len + (parseInt(mapInfo.maps[i].path) - min) / (max - min) * (1 - (layersByTimestamp.length - 1) * 30/len),
+					position: max == min ? i / (layersByTimestamp.length - 1) : i * 30/sliderHeight + (parseInt(mapInfo.maps[i].path) - min) / (max - min) * (1 - (layersByTimestamp.length - 1) * 30/sliderHeight),
 					layers: Object.values(layer).map(s => ["day", "night"].map(n => s[n]).filter(l => l)).flat()
 				}
 			});
+
+
 			
 			let initialTime;
 			for (let i = 0; i < timeLabels.length; i++) {
@@ -588,7 +584,7 @@
 				position: "bottomright",
 				orientation: "vertical",
 				initial: initialTime,
-				length: len,
+				length: sliderHeight,
 				evenSpacing: true,
 				gravitate: 5,
 				backdrop: false,
@@ -610,6 +606,34 @@
 			map.addControl(timeSlider);
 			mapLoadedBySlider = true;
 		}
+
+
+		// nauvis ontop, other than that natural sort.
+		let surfaceKeys = Object.keys(layers).filter(s => s != "nauvis").sort(naturalSort);
+		if (Object.keys(layers).some(s => s == "nauvis"))
+			surfaceKeys.unshift("nauvis")
+
+		if (surfaceKeys.length > 1) {
+			let surfaceSlider = new L.Control.layerRadioSelector({
+				position: "bottomright",
+				orientation: "vertical",
+				initial: Math.max(0, surfaceKeys.indexOf(currentSurface)),
+				length: (surfaceKeys.length-1)*30,
+				evenSpacing: true,
+				backdrop: false,
+				labels: surfaceKeys.map((s, i) => { return {name: s, layers: Object.values(layers[s]).map(l => ["day", "night"].map(d => l[d])).flat()} }),
+				onChange: function(index) {
+					console.log(index, surfaceKeys);
+					currentSurface = surfaceKeys[index];
+					updateHash();
+				}
+			});
+			map.addControl(surfaceSlider);
+			mapLoadedBySlider = true;
+		}
+
+
+
 		if (!mapLoadedBySlider)
 			map.addLayer(loadLayer.day || loadLayer.night);
 		map.addControl(new L.Control.FullScreen().setPosition('bottomright'));
@@ -630,6 +654,10 @@
 					}).addTo(map);
 				}
 		}
+
+		setTimeout(_ => {
+			daylightSlider.setLength(135 + Math.round(($(".leaflet-control-container > .leaflet-bottom.leaflet-right").width() - 10 - $(daylightSlider._container).outerWidth())*10)/10);
+		});
 		
 	</script>
 </body>

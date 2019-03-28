@@ -56,7 +56,7 @@ script.on_event(defines.events.on_tick, function(event)
 			
 			
 			if fm.autorun.surfaces == nil then
-				fm.autorun.surfaces = {game.player.surface.name}
+				fm.autorun.surfaces = {player.surface.name}
 			else
 				for index, surfaceName in pairs(fm.autorun.surfaces) do
 					if player.surface.name == surfaceName then	-- move surface the player is on to first
