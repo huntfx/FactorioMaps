@@ -166,6 +166,7 @@ def auto(*args):
 			else:
 				kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
 		else:
+			print(f'Bad flag: "{key}"')
 			raise ValueError(f'Bad flag: "{key}"')
 		return False
 
@@ -178,6 +179,12 @@ def auto(*args):
 		foldername = os.path.splitext(os.path.basename(max([os.path.join("../../saves", basename) for basename in os.listdir("../../saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
 		print("No save name passed. Using most recent save: %s" % foldername)
 	savenames = args[1:] or [ foldername ]
+
+	for saveName in savenames:
+		savePath = os.path.join("../../saves", saveName)
+		if not (os.path.isdir(savePath) or os.path.isfile(savePath + ".zip")):
+			print(f'Cannot find savefile: "{saveName}"')
+			raise ValueError(f'Cannot find savefile: "{saveName}"')
 
 	possiblePaths = [
 		"C:/Program Files/Factorio/bin/x64/factorio.exe",

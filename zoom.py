@@ -210,7 +210,7 @@ def zoom(*args, **kwargs):
 									for p in processes:
 										p.join()
 									
-								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
+								print("\rzoom {:5.1f}% [{}]".format(100, " " * (tsize()[0]-15)))
 				
 
 

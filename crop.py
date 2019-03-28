@@ -77,7 +77,7 @@ def crop(*args, **kwargs):
 					doneSize += 1
 					progress = float(doneSize) / originalSize
 					tsiz = tsize()[0]-15
-					print("\rcrop {:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+					print("\rcrop {:5.1f}% [{}{}]".format(round(progress * 100, 1), " " * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
 			workers.wait()
 			files = [x for x in workers.get() if x]
 			if len(files) > 0:
