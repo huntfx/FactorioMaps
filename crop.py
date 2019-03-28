@@ -69,19 +69,29 @@ def crop(*args, **kwargs):
 	progressQueue = m.Queue()
 	originalSize = len(files)
 	doneSize = 0
-	while len(files) > 0:
-		workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, progressQueue=progressQueue), files, 128)
-		for _ in range(len(files)):
-			if progressQueue.get(True):
-				doneSize += 1
-				progress = float(doneSize) / originalSize
-				tsiz = tsize()[0]-15
-				print("\rcrop {:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
-		workers.wait()
-		files = [x for x in workers.get() if x]
-		if len(files) > 0:
-			time.sleep(10 if len(files) > 1000 else 1)
-	print("\rcrop {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
+	try:
+		while len(files) > 0:
+			workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, progressQueue=progressQueue), files, 128)
+			for _ in range(len(files)):
+				if progressQueue.get(True):
+					doneSize += 1
+					progress = float(doneSize) / originalSize
+					tsiz = tsize()[0]-15
+					print("\rcrop {:5.1f}% [{}{}]".format(round(progress * 100, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+			workers.wait()
+			files = [x for x in workers.get() if x]
+			if len(files) > 0:
+				time.sleep(10 if len(files) > 1000 else 1)
+		print("\rcrop {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
+	except KeyboardInterrupt:
+
+		time.sleep(0.2)
+		print(f"Keyboardinterrupt caught with {len(files)} files left.")
+		if len(files) < 40:
+			for line in files:
+				print(line)
+
+		raise
 
 
 

@@ -130,6 +130,7 @@ def ref(*args, **kwargs):
 					didAnything = True
 					z = surface["zoom"]["max"]
 
+
 					dayImages = []
 
 					newComparedSurfaces.append((surfaceName, daytime))
@@ -163,7 +164,6 @@ def ref(*args, **kwargs):
 							for x in os.listdir(path):
 								for y in os.listdir(os.path.join(path, x)):
 									oldImages[(x, y.replace(ext, outext))] = data["maps"][old]["path"]
-
 
 					if daytime != "day":
 						if not os.path.isfile(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "ref.txt")):

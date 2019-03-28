@@ -67,8 +67,6 @@ function fm.generateMap(data)
 	game.remove_path(subPath)
 	subPath = subPath .. "/"
 
-	log("Starting surface prescan to target directory: " .. subPath)
-
 
 	
 	-- Number of pixels in an image     -- CHANGE THIS AND REF.PY WILL NEED TO BE CHANGED
@@ -137,24 +135,28 @@ function fm.generateMap(data)
 
 	local allGrid = {}
 	local mapIndex = 0
+	local surfaceWasScanned = false
 	if fm.autorun.chunkCache then
 		for mapTick, v in pairs(fm.autorun.chunkCache) do
-			if tonumber(mapTick) <= fm.autorun.tick and v[surface.name] ~= nil then
-				for s in v[surface.name]:gmatch("%-?%d+ %-?%d+") do
-					local gridX, gridY = s:match("(%-?%d+) (%-?%d+)")
-					gridX = tonumber(gridX)
-					gridY = tonumber(gridY)
+			if tonumber(mapTick) <= fm.autorun.tick then
+				if v[surface.name] ~= nil then
+					for s in v[surface.name]:gmatch("%-?%d+ %-?%d+") do
+						local gridX, gridY = s:match("(%-?%d+) (%-?%d+)")
+						gridX = tonumber(gridX)
+						gridY = tonumber(gridY)
 
-					allGrid[s] = {x = gridX, y = gridY}
+						allGrid[s] = {x = gridX, y = gridY}
 
-					minX = math.min(minX, gridX)
-					minY = math.min(minY, gridY)
-					maxX = math.max(maxX, gridX)
-					maxY = math.max(maxY, gridY)
+						minX = math.min(minX, gridX)
+						minY = math.min(minY, gridY)
+						maxX = math.max(maxX, gridX)
+						maxY = math.max(maxY, gridY)
+					end
 				end
 				if tonumber(mapTick) == fm.autorun.tick then
 					for i, map in pairs(fm.autorun.mapInfo.maps) do
 						if map.tick == mapTick then
+							surfaceWasScanned = v[surface.name] ~= nil
 							mapIndex = i
 							break
 						end
@@ -175,7 +177,10 @@ function fm.generateMap(data)
 		player = 0,
 		smoothed = 0
 	}
-	if mapIndex == 0 then
+	if not surfaceWasScanned then
+
+		log("[info]Surface prescan " .. fm.savename .. fm.autorun.filePath .. "/" .. surface.name)
+		
 		for chunk in surface.get_chunks() do
 			for _, force in pairs(game.forces) do
 				if #force.players > 0 and force.is_chunk_charted(surface, chunk) then
@@ -355,20 +360,22 @@ function fm.generateMap(data)
 		end
 
 
-		log("FactorioMaps_Debug: imageStats")
-		log("FactorioMaps_Debug:     charted:       " .. imageStats.charted * math.pow(tilesPerChunk / gridPixelSize, 2))
-		log("FactorioMaps_Debug:     not_cached:    " .. imageStats.not_cached)
-		log("FactorioMaps_Debug:     build_range:   " .. imageStats.build_range)
-		log("FactorioMaps_Debug:     smaller_range: " .. imageStats.smaller_range)
-		log("FactorioMaps_Debug:     tags:          " .. imageStats.tags)
-		log("FactorioMaps_Debug:     player:        " .. imageStats.player)
-		log("FactorioMaps_Debug:     smoothed:      " .. imageStats.smoothed)
-		log("FactorioMaps_Debug: forceStats")
+		log("imageStats")
+		log("        charted:       " .. imageStats.charted * math.pow(tilesPerChunk / gridPixelSize, 2))
+		log("        not_cached:    " .. imageStats.not_cached)
+		log("        build_range:   " .. imageStats.build_range)
+		log("        smaller_range: " .. imageStats.smaller_range)
+		log("        tags:          " .. imageStats.tags)
+		log("        player:        " .. imageStats.player)
+		log("        smoothed:      " .. imageStats.smoothed)
+		log("forceStats")
 		for force, count in pairs(forceStats) do
-			log("FactorioMaps_Debug:     " .. force .. ": " .. count)
+			log("        " .. force .. ": " .. count)
 		end
 
 
+	end
+	if mapIndex == 0 then
 
 		mapIndex = #fm.autorun.mapInfo.maps + 1
 		fm.autorun.mapInfo.maps[mapIndex] = {
@@ -394,9 +401,11 @@ function fm.generateMap(data)
 		fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
 			spawn = spawn, -- this only includes spawn point of the player taking the screenshots
 			zoom = { min = minZoom, max = maxZoom },
-			playerPosition = player.position,
 			tags = {}
 		}
+		if not fm.teleportedPlayer then
+			fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].playerPosition = player.position
+		end
 		for _, force in pairs(game.forces) do
 			if #force.players > 0 then
 				for i, tag in pairs(force.find_chart_tags(surface)) do
@@ -458,7 +467,7 @@ function fm.generateMap(data)
 
 
 	
-	log("Starting surface capture to target directory: " .. subPath)
+	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. fm.subfolder)
 
 	game.write_file(basePath .. "mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
 
