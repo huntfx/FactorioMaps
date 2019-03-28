@@ -24,6 +24,32 @@ from updateLib import update as updateLib
 
 
 
+kwargs = {
+	'dayonly': False,
+	'nightonly': False,
+	'hd': False,
+	'no-altmode': False,
+	'build-range': 5.2,
+	'connect-range': 1.2,
+	'tag-range': 5.2,
+	'factorio': None,
+	'modpath': "..",
+	'basepath': "FactorioMaps",
+	'date': datetime.date.today().strftime("%d/%m/%y"),
+	'verbosegame': False,
+	'verbose': False,
+	'noupdate': False,
+	'reverseupdatetest': False,
+	'maxthreads': mp.cpu_count(),	
+	'cropthreads': None,
+	'refthreads': None,
+	'zoomthreads': None,
+	'screenshotthreads': None,
+	'delete': False,
+	'dry': False,
+	'surface': []
+}
+
 
 
 
@@ -49,10 +75,14 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			rawTags[m.group(1)] = m.group(2)
 			if rawTags["__used"]:
 				raise Exception("Tags added after they were used.")
-		elif "error" in line.lower() or "warn" in line.lower() or "exception" in line.lower() or "fail" in line.lower() \
-			or (kwargs["verbosegame"] and len(line) > 0) \
-			or (kwargs["verbose"] and "debug" in line.lower()):
-			printErase("[GAME] %s" % line)
+		else:
+			m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/(.*?)(?:(\[info\]) ?(.*))?$', line, re.IGNORECASE)
+			if m is not None and m.group(2) is not None:
+				printErase(m.group(3))
+			elif m is not None and kwargs["verbose"]:
+				printErase(m.group(1))
+			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (kwargs["verbosegame"] and len(line) > 0):
+				printErase("[GAME] %s" % line)
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
@@ -121,42 +151,20 @@ def auto(*args):
 				printErase("killed factorio")
 
 		#time.sleep(0.1)
+		
 
 
 
-
-	kwargs = {
-		'dayonly': False,
-		'nightonly': False,
-		'hd': False,
-		'no-altmode': False,
-		'build-range': 5.2,
-		'connect-range': 1.2,
-		'tag-range': 5.2,
-		'factorio': None,
-		'modpath': "..",
-		'basepath': "FactorioMaps",
-		'date': None,
-		'verbosegame': False,
-		'verbose': False,
-		'noupdate': False,
-		'reverseupdatetest': False,
-		'maxthreads': mp.cpu_count(),	
-		'cropthreads': None,
-		'refthreads': None,
-		'zoomthreads': None,
-		'screenshotthreads': None,
-		'screenshotqueuesize': mp.cpu_count() * 2,
-		'delete': False,
-		'dry': False
-	}
 	
 	def parseArg(arg):
 		if arg[0:2] != "--":
 			return True
 		key = arg[2:].split("=",2)[0].lower()
 		if key in kwargs:
-			kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
+			if isinstance(kwargs[key], list):
+				kwargs[key].append(arg[2:].split("=",2)[1])
+			else:
+				kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
 		else:
 			raise ValueError(f'Bad flag: "{key}"')
 		return False
@@ -366,6 +374,7 @@ def auto(*args):
 				chunkCache = "{}"
 
 			with open("autorun.lua", "w") as f:
+				surfaceString = '{"' + '", "'.join(kwargs["surface"]) + '"}' if len(kwargs["surface"]) > 0 else "nil"
 				f.write(
 					f'fm.autorun = {{\n'
 					f'HD = {str(kwargs["hd"] == True).lower()},\n'
@@ -376,7 +385,8 @@ def auto(*args):
 					f'around_build_range = {float(kwargs["build-range"])},\n'
 					f'around_smaller_range = {float(kwargs["connect-range"])},\n'
 					f'smaller_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
-					f'date = "{(datetime.date.strptime(kwargs["date"], "%d/%m/%y") if kwargs["date"] else datetime.date.today()).strftime("%d/%m/%y")}",\n'
+					f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
+					f'surfaces = {surfaceString},\n'
 					f'name = "{foldername + "/"}",\n'
 					f'mapInfo = {mapInfoLua},\n'
 					f'chunkCache = {chunkCache}\n'
@@ -402,7 +412,6 @@ def auto(*args):
 			config["path"]["write-data"] = tmpDir
 			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads" if kwargs["screenshotthreads"] else "maxthreads"]))
 			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
-			config["graphics"]["screenshots-queue-size"] = str(int(kwargs["screenshotqueuesize"]))
 			
 			with open(configPath, 'w+') as outf:
 				outf.writelines(("; version=3\n", ))
@@ -450,9 +459,9 @@ def auto(*args):
 					latest.append(line.rstrip("\n"))
 
 			
-			firstOtherInputs = latest[0].split(" ")
+			firstOtherInputs = latest[-1].split(" ")
 			firstOutFolder = firstOtherInputs.pop(0).replace("/", " ")
-			waitfilename = os.path.join(basepath, firstOutFolder, "Images", firstOtherInputs[0], firstOtherInputs[1], "done.txt")
+			waitfilename = os.path.join(basepath, firstOutFolder, "Images", firstOtherInputs[0], firstOtherInputs[1], firstOtherInputs[2], "done.txt")
 
 			
 			isKilled = [False]
@@ -637,7 +646,10 @@ def auto(*args):
 
 	finally:
 
-		kill(pid)
+		try:
+			kill(pid)
+		except:
+			pass
 
 		print("disabling FactorioMaps mod")
 		changeModlist(False)

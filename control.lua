@@ -17,33 +17,27 @@ end
 
 script.on_event(defines.events.on_tick, function(event)
 
+	local player = game.connected_players[1]
+	event.player_index = player.index
+
 	if fm.autorun and not fm.done then
 
-		event.player_index = game.connected_players[1].index
 
 		--game.tick_paused = true
 		--game.ticks_to_run = 1
 
-		if nil == fm.tmp then
+		if nil == fm.tmp then	-- non surface specific stuff.
 
 			log("Start world capture")
-
-			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-			for key, entity in pairs(game.connected_players[1].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
-				entity.active = false
-			end
-			fm.tmp = true
-		end
-	
-		if fm.ticks == nil then
 		
-			fm.topfolder = "FactorioMaps/" .. (fm.autorun.name or "")
+			fm.savename = fm.autorun.name or ""
+			fm.topfolder = "FactorioMaps/" .. fm.savename
 			fm.autorun.tick = game.tick
 
 			hour = math.ceil(fm.autorun.tick / 60 / 60 / 60)
 			exists = true
 			fm.autorun.filePath = tostring(hour)
-			i = 1
+			local i = 1
 			while exists do
 				exists = false
 				if fm.autorun.mapInfo.maps ~= nil then
@@ -59,40 +53,84 @@ script.on_event(defines.events.on_tick, function(event)
 					i = i + 1
 				end
 			end
+			
+			
+			if fm.autorun.surfaces == nil then
+				fm.autorun.surfaces = {game.player.surface.name}
+			else
+				for index, surfaceName in pairs(fm.autorun.surfaces) do
+					if player.surface.name == surfaceName then	-- move surface the player is on to first
 
+						table.remove(fm.autorun.surfaces, index)
+						fm.autorun.surfaces[#fm.autorun.surfaces+1] = surfaceName
+
+						break
+					end
+				end
+			end
+
+			latest = ""
+			for _, surfaceName in pairs(fm.autorun.surfaces) do
+				if game.surfaces[surfaceName] == nil then
+					log("ERROR: surface \"" .. surfaceName .. "\" not found.")
+					error("surface \"" .. surfaceName .. "\" not found.")
+				end
+				if fm.autorun.night then
+					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " night\n" .. latest
+				end
+				if fm.autorun.day then
+					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " day\n" .. latest
+				end
+			end
+			game.write_file(fm.topfolder .. "latest.txt", latest, false, event.player_index)
+			
+
+
+
+			fm.tmp = true
+
+		end
+	
+
+
+
+
+		if fm.ticks == nil then
+
+			local currentSurface = table.remove(fm.autorun.surfaces, #fm.autorun.surfaces)
+			if currentSurface ~= player.surface.name then
+				player.teleport({0, 0}, currentSurface)
+				fm.teleportedPlayer = true
+			end
 
 			
+			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
+			for key, entity in pairs(player.surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
+				entity.active = false
+			end
+			
 			-- remove no path sign and ghost entities
-			for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
+			for key, entity in pairs(player.surface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
 				entity.destroy()
 			end
 
 			--spawn a bunch of hidden energy sources on lamps
-			for _, t in pairs(game.players[event.player_index].surface.find_entities_filtered{type="lamp"}) do
+			for _, t in pairs(player.surface.find_entities_filtered{type="lamp"}) do
 				local control = t.get_control_behavior()
 				if t.energy > 1 and (control and not control.disabled) or (not control) then
-					game.players[event.player_index].surface.create_entity{name="hidden-electric-energy-interface", position=t.position}
+					player.surface.create_entity{name="hidden-electric-energy-interface", position=t.position}
 				end
 			end
 
 			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-			for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
+			for key, entity in pairs(player.surface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
 				entity.active = false
 			end
-			
-			
-			latest = ""
-			if fm.autorun.day then
-				latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name:gsub(" ", "|") .. " day\n"
-			end
-			if fm.autorun.night then
-				latest = latest .. fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. game.players[event.player_index].surface.name:gsub(" ", "|") .. " night\n"
-			end
-			game.write_file(fm.topfolder .. "latest.txt", latest, false, event.player_index)
+
 
 
 			if fm.autorun.day then
-				game.players[event.player_index].surface.daytime = 0
+				player.surface.daytime = 0
 				fm.subfolder = "day"
 				fm.generateMap(event)
 			end
@@ -102,16 +140,16 @@ script.on_event(defines.events.on_tick, function(event)
 		elseif fm.ticks < 2 then
 			
 			if fm.autorun.day then
-				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/day/done.txt", "", false, event.player_index)
+				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. player.surface.name .. "/day/done.txt", "", false, event.player_index)
 			end
 	
 			-- remove no path sign
-			for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({type="flying-text"})) do
+			for key, entity in pairs(player.surface.find_entities_filtered({type="flying-text"})) do
 				entity.destroy()
 			end
 
 			if fm.autorun.night then
-				game.players[event.player_index].surface.daytime = 0.5
+				player.surface.daytime = 0.5
 				fm.subfolder = "night"
 				fm.generateMap(event)
 			end
@@ -121,23 +159,28 @@ script.on_event(defines.events.on_tick, function(event)
 		elseif fm.ticks < 3 then
 			
 			if fm.autorun.night then
-				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/night/done.txt", "", false, event.player_index)
+				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. player.surface.name .. "/night/done.txt", "", false, event.player_index)
 			end
 			
-			game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. game.players[event.player_index].surface.name .. "/done.txt", "", false, event.player_index)
+			game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. player.surface.name .. "/done.txt", "", false, event.player_index)
 		   
 			
 			-- unfreeze all entities
-			for key, entity in pairs(game.players[event.player_index].surface.find_entities_filtered({})) do
+			for key, entity in pairs(player.surface.find_entities_filtered({})) do
 				entity.active = true
 			end
 
-			fm.subfolder = nil
-			fm.topfolder = nil
 	
-			fm.ticks = 3
+			if #fm.autorun.surfaces > 0 then
+				fm.ticks = nil
+			else
+				fm.ticks = 3
+			end
 
 		else
+			fm.subfolder = nil
+			fm.topfolder = nil
+
 			fm.done = true
 		end
 
@@ -161,14 +204,13 @@ script.on_event(defines.events.on_tick, function(event)
 			}
 		end
 	
-		event.player_index = game.connected_players[1].index
 		fm.shownWarn = true
 
 		game.tick_paused = true
 		game.ticks_to_run = 0
-		game.players[event.player_index].character.active = false
+		player.character.active = false
 		
-		local main = game.players[event.player_index].gui.center.add{type = "frame", caption = text[1], direction = "vertical"}
+		local main = player.gui.center.add{type = "frame", caption = text[1], direction = "vertical"}
 		local topLine = main.add{type = "flow", direction = "horizontal"}
 		topLine.add{type = "label", caption = text[2]}
 		if not fm.done then
