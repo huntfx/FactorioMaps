@@ -68,6 +68,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
 
+	printingStackTraceback = False
 	def handleGameLine(line):
 		line = line.rstrip('\n')
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
@@ -76,6 +77,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			if rawTags["__used"]:
 				raise Exception("Tags added after they were used.")
 		else:
+			if printingStackTraceback or line == "stack traceback:":
+				printErase("[GAME] %s" % line)
+				return True
 			m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/(.*?)(?:(\[info\]) ?(.*))?$', line, re.IGNORECASE)
 			if m is not None and m.group(2) is not None:
 				printErase(m.group(3))
@@ -83,12 +87,13 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				printErase(m.group(1))
 			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (kwargs["verbosegame"] and len(line) > 0):
 				printErase("[GAME] %s" % line)
+		return False
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
 		
 		line = pipef.readline()
-		handleGameLine(line)
+		printingStackTraceback = handleGameLine(line)
 		isSteam = line.rstrip("\n").endswith("Initializing Steam API.")
 
 		if isSteam:
@@ -122,12 +127,12 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 						time.sleep(0.4)
 						f.seek(where)
 					else:
-						handleGameLine(line)
+						printingStackTraceback = handleGameLine(line)
 
 		else:
 			while True:
 				line = pipef.readline()
-				handleGameLine(line)
+				printingStackTraceback = handleGameLine(line)
 
 
 
@@ -136,19 +141,20 @@ def auto(*args):
 
 	lock = threading.Lock()
 	def kill(pid, onlyStall=False):
-		with lock:
-			if not onlyStall and psutil.pid_exists(pid):
+		if pid:
+			with lock:
+				if not onlyStall and psutil.pid_exists(pid):
 
-				if os.name == 'nt':
-					cmd = ("taskkill", "/pid", str(pid))
-				else:
-					cmd = ("kill", str(pid))
-				subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
+					if os.name == 'nt':
+						cmd = ("taskkill", "/pid", str(pid))
+					else:
+						cmd = ("kill", str(pid))
+					subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
 
-				while psutil.pid_exists(pid):
-					time.sleep(0.1)
+					while psutil.pid_exists(pid):
+						time.sleep(0.1)
 
-				printErase("killed factorio")
+					printErase("killed factorio")
 
 		#time.sleep(0.1)
 		
@@ -474,6 +480,7 @@ def auto(*args):
 			isKilled = [False]
 			def waitKill(isKilled, pid):
 				while not isKilled[0]:
+					#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
 					if os.path.isfile(waitfilename):
 						isKilled[0] = True
 						kill(pid)
