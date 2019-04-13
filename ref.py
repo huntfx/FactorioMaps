@@ -201,7 +201,7 @@ def ref(*args, **kwargs):
 		if kwargs["verbose"]: print("found %s new images" % len(keepList))
 		if len(compareList) > 0:
 			if kwargs["verbose"]: print("comparing %s existing images" % len(compareList))
-			treshold = .3 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
+			treshold = .03 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
 			#print(treshold)
 			#compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]))
 			m = mp.Manager()
@@ -222,7 +222,7 @@ def ref(*args, **kwargs):
 			firstRemoveList += [x[1] for x in [x for x in resultList if not x[0]]]
 			if kwargs["verbose"]: print("found %s changed in %s images" % (len(newList), len(compareList)))
 			keepList += newList
-			print("\rref  {:5.1f}% [{}]".format(100, " " * (tsize()[0]-15)))
+			print("\rref  {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 		
 
 		if kwargs["verbose"]: print("scanning %s chunks for neighbour cropping" % len(firstRemoveList))

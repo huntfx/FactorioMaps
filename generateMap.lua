@@ -38,7 +38,7 @@ end
 function fm.generateMap(data)
 
 	local player = game.players[data.player_index]
-	local surface = player.surface
+	local surface = fm.currentSurface
 
 	local forces = {}
 	local forceStats = {}
@@ -393,17 +393,28 @@ function fm.generateMap(data)
 	end
 	
 
-	-- TODO: THIS SHIT IS BROKEN
 	local maxImagesNextToEachotherOnLargestZoom = 2
 	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(maxImagesNextToEachotherOnLargestZoom))))
 
 	if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
+		
+
 		fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
 			spawn = spawn, -- this only includes spawn point of the player taking the screenshots
 			zoom = { min = minZoom, max = maxZoom },
-			tags = {}
+			tags = {},
+			hidden = false,
+			links = fm.API.linkData[surface.name] or {}
 		}
-		if not fm.teleportedPlayer then
+
+		for _, s in pairs(fm.API.hiddenSurfaces) do
+			if s.name == surface.name then
+				fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].hidden = true
+				break
+			end
+		end
+
+		if fm.currentSurface == player.surface then
 			fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].playerPosition = player.position
 		end
 		for _, force in pairs(game.forces) do
@@ -442,25 +453,7 @@ function fm.generateMap(data)
 	fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][fm.subfolder] = true
 
 
-	
-	-- -- in 0.17, we will hopefully be able to use writefile in the data stage instead..
-	-- local rawTagStrings = {}
-	-- for _, damageType in pairs(game.damage_prototypes) do
-	-- 	local match = damageType.name:match("FMh%d+_")
-	-- 	if match ~= nil then
-	-- 		rawTagStrings[tonumber(match:sub(4, -2)) + 1] = damageType.name:sub(match:len() + 1) .. damageType.order
-	-- 	end
-	-- end
-	-- local rawTagString = ""
-	-- for i = 1, #rawTagStrings, 1 do
-	-- 	rawTagString = rawTagString .. rawTagStrings[i]
-	-- end
-	-- local rawTags = {}
-	-- for typeName, path in rawTagString:gmatch("([^:|]+):([^:|]+)") do
-	-- 	rawTags[typeName] = path
-	-- end
-	
-	-- game.write_file(basePath .. "rawTags.json", json(rawTags), false, data.player_index)
+	-- todo: if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].hidden is true, only care about the chunks linked to by renderboxes.
 
    
 	local extension = "bmp"
@@ -496,7 +489,7 @@ function fm.generateMap(data)
 		end
 
 		local pathText = subPath .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
-		game.take_screenshot({by_player=player, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile}, zoom = fm.autorun.HD and 2 or 1, path = pathText, show_entity_info = fm.autorun.alt_mode})                        
+		game.take_screenshot({by_player=player, surface = fm.currentSurface, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile}, zoom = fm.autorun.HD and 2 or 1, path = pathText, show_entity_info = fm.autorun.alt_mode})                        
 	end 
 	
 	
