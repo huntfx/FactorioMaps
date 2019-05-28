@@ -521,7 +521,8 @@ def auto(*args):
 					filter(lambda m: m,
 						map(lambda f: re.search(r"^((.*)_(\d+)\.(\d+)\.(\d+))(\.zip)?$", f, flags=re.IGNORECASE),
 							os.listdir(os.path.join(basepath, "../../mods"))))),
-				key = lambda t: t[1])
+				key = lambda t: t[1],
+				reverse = True)
 
 
 		rawTags["__used"] = True
