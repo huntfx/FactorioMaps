@@ -565,7 +565,7 @@ def auto(*args):
 				else:
 					newImg = Image.open(src).convert("RGBA")
 					if len(iconColor) > 1:
-						newImg = ImageChops.multiply(newImg, Image.new("RGBA", img.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
+						newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
 					if i == 0:
 						img = newImg
 					else:
