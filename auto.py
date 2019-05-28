@@ -519,7 +519,7 @@ def auto(*args):
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
-						map(lambda f: re.search(r"^((.*)_(\d)+\.(\d)+\.(\d))+(\.zip)?$", f, flags=re.IGNORECASE),
+						map(lambda f: re.search(r"^((.*)_(\d+)\.(\d+)\.(\d+))(\.zip)?$", f, flags=re.IGNORECASE),
 							os.listdir(os.path.join(basepath, "../../mods"))))),
 				key = lambda t: t[1])
 
