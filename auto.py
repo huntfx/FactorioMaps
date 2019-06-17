@@ -582,9 +582,10 @@ def auto(*args):
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
-						map(lambda f: re.search(r"^((.*)_(\d)+\.(\d)+\.(\d))+(\.zip)?$", f, flags=re.IGNORECASE),
+						map(lambda f: re.search(r"^((.*)_(\d+)\.(\d+)\.(\d+))(\.zip)?$", f, flags=re.IGNORECASE),
 							os.listdir(os.path.join(basepath, "../../mods"))))),
-				key = lambda t: t[1])
+				key = lambda t: t[1],
+				reverse = True)
 
 
 		rawTags["__used"] = True
@@ -628,7 +629,7 @@ def auto(*args):
 				else:
 					newImg = Image.open(src).convert("RGBA")
 					if len(iconColor) > 1:
-						newImg = ImageChops.multiply(newImg, Image.new("RGBA", img.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
+						newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
 					if i == 0:
 						img = newImg
 					else:
