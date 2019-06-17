@@ -223,7 +223,11 @@ def auto(*args):
 	workfolder = os.path.join(basepath, foldername)
 	print("output folder: {}".format(os.path.relpath(workfolder, "../..")))
 
-
+ 
+	try:
+		os.makedirs(workfolder)
+	except FileExistsError:
+		pass
 
 
 	if not kwargs["noupdate"]:
