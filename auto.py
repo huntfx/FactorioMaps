@@ -33,7 +33,7 @@ kwargs = {
 	'connect-range': 1.2,
 	'tag-range': 5.2,
 	'factorio': None,
-	'modpath': "..",
+	'modpath': "../../mods",
 	'basepath': "FactorioMaps",
 	'date': datetime.date.today().strftime("%d/%m/%y"),
 	'verbosegame': False,
@@ -302,7 +302,7 @@ def auto(*args):
 
 
 
-	#TODO: integrety check, if done files arent there or there are any bmp's left, complain.
+	#TODO: integrity check, if done files arent there or there are any bmp's left, complain.
 
 
 	def linkDir(src, dest):
@@ -583,7 +583,7 @@ def auto(*args):
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
 						map(lambda f: re.search(r"^((.*)_(\d+)\.(\d+)\.(\d+))(\.zip)?$", f, flags=re.IGNORECASE),
-							os.listdir(os.path.join(basepath, "../../mods"))))),
+							os.listdir(os.path.join(basepath, kwargs["modpath"]))))),
 				key = lambda t: t[1],
 				reverse = True)
 
@@ -611,7 +611,7 @@ def auto(*args):
 				else:
 					mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
 					if not mod[1][3]: #true if mod is zip
-						zipPath = os.path.join(basepath, "../../mods", mod[2] + ".zip")
+						zipPath = os.path.join(basepath, kwargs["modpath"], mod[2] + ".zip")
 						with ZipFile(zipPath, 'r') as zipObj:
 							if len(icons) == 1:
 								zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
@@ -621,7 +621,7 @@ def auto(*args):
 							else:
 								src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
 					else:
-						src = os.path.join(basepath, "../../mods", mod[2], icon + ".png")
+						src = os.path.join(basepath, kwargs["modpath"], mod[2], icon + ".png")
 				
 				if len(icons) == 1:
 					if src is not None:
