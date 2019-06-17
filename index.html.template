@@ -495,7 +495,6 @@
 		let lastHash = "";
 		function updateHash() {
 			const path = [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')];
-			console.log(path);
 			let hash = "#" + path.map(encodeURIComponent).join("/");
 			if (hash != lastHash) {
 				lastHash = hash;
@@ -520,7 +519,7 @@
 		map.on("zoomend moveend", updateHash);
 
 		
-		let daylightSlider, timeSlider;
+		let daylightSlider, timeSlider, surfaceSlider;
 		let mapLoadedBySlider = false;
 		if (Object.values(layers).some(s => Object.values(s).some(l => l.day)) && Object.values(layers).some(s => Object.values(s).some(l => l.night))) {
 			daylightSlider = new L.Control.opacitySlider({
@@ -614,7 +613,7 @@
 			surfaceKeys.unshift("nauvis")
 
 		if (surfaceKeys.length > 1) {
-			let surfaceSlider = new L.Control.layerRadioSelector({
+			surfaceSlider = new L.Control.layerRadioSelector({
 				position: "bottomright",
 				orientation: "vertical",
 				initial: Math.max(0, surfaceKeys.indexOf(currentSurface)),
@@ -623,12 +622,15 @@
 				backdrop: false,
 				labels: surfaceKeys.map((s, i) => { return {name: s, layers: Object.values(layers[s]).map(l => ["day", "night"].map(d => l[d])).flat()} }),
 				onChange: function(index) {
-					console.log(index, surfaceKeys);
 					currentSurface = surfaceKeys[index];
 					updateHash();
 				}
 			});
 			map.addControl(surfaceSlider);
+			if (!timeSlider) {
+				console.log("hi!");
+				$(surfaceSlider._container).attr("style", "float: right !important");
+			}
 			mapLoadedBySlider = true;
 		}
 
