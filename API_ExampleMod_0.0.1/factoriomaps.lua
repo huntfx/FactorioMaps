@@ -35,17 +35,10 @@ local function handle_factoriomaps()
 
 			-- link_renderbox_area: clickable box that renders the 'to' surface on the place of the 'from' surface.
 			remote.call("factoriomaps", "link_renderbox_area", {
-				from = { {40, 10}, {50, 20}, surface = "nauvis" },
-				to =   { {30, 30}, {40, 40}, surface = "Factory floor 1" }
+				from = { {-2, -45}, {14, -29}, surface = "nauvis" },
+				to =   { {-31, -31}, {31, 31}, surface = "Factory floor 1" }
 			})
 			
-
-			
-			-- link_renderbox_area: clickable box that renders the 'to' surface on the place of the 'from' surface.
-			remote.call("factoriomaps", "link_renderbox_area", {
-				from = { {30, 30}, {40, 40}, surface = "Factory floor 1" },
-				to =   { {10, 10}, {40, 20}, surface = "nauvis" }
-			})
 
 
 

@@ -156,6 +156,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 
 
 		layers[surface][i].tags = layer.tags;
+		layers[surface][i].links = layer.links;
 		layers[surface][i].path = map.path;
 
 		// todo: group tags.. ?
@@ -167,6 +168,11 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 }
 
 
+
+
+function updateLabelScaling(e) {
+	document.getElementById("map").style.setProperty("--scale", Math.pow(2, e.zoom - 15));
+}
 
 let allTimestamps = mapInfo.maps.map(m => m.path.split("-").map(parseFloat));
 function updateLabels() {
@@ -193,6 +199,9 @@ function updateLabels() {
 	}
 }
 
+function convertCoordinates(pos) {
+	return [-(pos.y - 1 - TILESPERIMAGE/2) / coordScale, (pos.x - TILESPERIMAGE/2) / coordScale]
+}
 
 
 
@@ -274,14 +283,15 @@ try {
 			timestamp = split[6];
 			if (!isNaN(parseInt(split[7])))
 				timestamp += "-" + split[7];
-		}
-
-				
+		}		
 	}
 } catch (_) {
 		window.location.href = "#";
 		window.location.reload();
 }
+
+updateLabelScaling({zoom: startZ});
+
 
 let lastHash = "";
 function updateHash() {
@@ -307,6 +317,7 @@ let map = L.map('map', {
 	zoomAnimation: true,
 	crs: L.CRS.Simple // the map is 2D by nature
 });
+map.on("zoomanim", updateLabelScaling);
 map.on("zoomend moveend", updateHash);
 
 
@@ -448,14 +459,34 @@ for (const [surfaceName, surface] of Object.entries(layers))
 				surface: surfaceName,
 				time: layer.path,
 				visible: false,
-				marker: L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
+				marker: L.marker(convertCoordinates(tag.position), {
 					icon: new L.DivIcon({
 						className: 'map-tag',
 						html: 	tag.iconPath ? '<img class="map-marker" src="' + tag.iconPath + '"/>' : '<map-marker-default class="map-marker"/>' +
-								'<span class="map-marker-text">' + tag.text + '</span>'
+								'<span class="map-marker-text">' + tag.text + '</span>',
+						iconSize: null,
 					})
 				}),
 			};
+
+			labels.push(label);
+		}
+
+		for (const link of layer.links) {
+
+			let label = {
+				surface: surfaceName,
+				time: layer.path,
+				visible: false,
+				link: link,
+				marker: L.marker(convertCoordinates(link.from[0]), {
+					icon: new L.DivIcon({
+						className: 'map-link',
+						html: 	'<map-link style="width:calc(var(--scale)*' + (link.from[1].y-link.from[0].y) + 'px);height:calc(var(--scale)*' + (link.from[1].x-link.from[0].x) + 'px)"/>',
+						iconSize: null,
+					})
+				}),
+			}
 
 			labels.push(label);
 		}

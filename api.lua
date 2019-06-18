@@ -55,7 +55,7 @@ local function parseLocation(options, optionName, isArea, canHaveSurface, defaul
 		if isArea then
 			return { parseLocation(obj, 1), parseLocation(obj, 2) }, surface
 		else
-			return { obj[1], obj[2] }, surface
+			return { x = obj[1], y = obj[2] }, surface
 		end
 	else
 		error(ERRORPRETEXT .. "option '" .. optionName .. "': invalid " .. (isArea and "area" or "point") .. " '" .. serpent.block(obj) .. "'\n")
@@ -67,12 +67,12 @@ end
 -- because of unknown scaling (powers of 2 only allowed, this could change in the future), do not test which parts
 -- of the renderbox are a problem, only test if any part of the renderbox can form a chain back to the origin.
 local function hasPartialOverlap(a, b)
-	return b[2][1] > a[1][1] and b[1][1] < a[2][1]
-	   and b[2][2] > a[1][2] and b[1][2] < a[2][2]
+	return b[2].x > a[1].x and b[1].x < a[2].x
+	   and b[2].y > a[1].y and b[1].y < a[2].y
 end
 local function testChainCausality(link, sourceSurface, sourceIndex)
 	for _, nextLinkIndex in pairs(link.chain or {}) do
-		local nextLink = fm.API.linkData[link.toSurface][nextLinkIndex]
+		local nextLink = fm.API.linkData[link.toSurface][nextLinkIndex+1]
 		log(nextLinkIndex .. " " .. sourceIndex)
 		log(sourceSurface .. " " .. link.toSurface)
 		if (nextLinkIndex == sourceIndex and sourceSurface == link.toSurface) or not testChainCausality(nextLink, sourceSurface, sourceIndex) then
@@ -96,7 +96,7 @@ local function populateRenderChain(newLink, newLinkIndex, fromSurface)
 	newLink.chain = {}
 	for i, link in pairs(fm.API.linkData[newLink.toSurface] or {}) do
 		if hasPartialOverlap(newLink.to, link.from) then
-			newLink.chain[#newLink.chain+1] = i
+			newLink.chain[#newLink.chain+1] = i-1
 			if not testChainCausality(link, fromSurface, newLinkIndex) then
 				error(ERRORPRETEXT .. "Renderbox bad causality: can cause an infinite rendering loop\n")
 			end
@@ -116,8 +116,8 @@ local function addLink(type, from, fromSurface, to, toSurface)
 		toSurface = toSurface.name
 	}
 	log("adding link type " .. type .. " from " .. fromSurface.name .. " to " .. toSurface.name)
-	local linkIndex = #fm.API.linkData[fromSurface.name]+1
-	fm.API.linkData[fromSurface.name][linkIndex] = newLink
+	local linkIndex = #fm.API.linkData[fromSurface.name]
+	fm.API.linkData[fromSurface.name][linkIndex+1] = newLink
 
 	if type == "link_renderbox_area" then
 		populateRenderChain(newLink, linkIndex, fromSurface.name)
