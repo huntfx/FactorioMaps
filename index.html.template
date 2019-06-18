@@ -389,6 +389,7 @@
 
 
 				layers[surface][i].tags = layer.tags;
+				layers[surface][i].path = map.path;
 
 				// todo: group tags.. ?
 				for (const tag in layer.tags) {
@@ -400,13 +401,36 @@
 
 
 
+		let allTimestamps = mapInfo.maps.map(m => m.path.split("-").map(parseFloat));
+		function updateLabels() {
+			let currentTime = timestamp.split("-").map(parseFloat);
+			let next = allTimestamps.find(m => m[0] >= currentTime[0] && (m[1] || 0) >= (currentTime[1] || 0)).join("-");
+			let previousIndex;
+			for (previousIndex = allTimestamps.length - 1; previousIndex >= 0; previousIndex--) {
+				const m = allTimestamps[previousIndex];
+				if (m[0] <= currentTime[0] && (m[1] || 0) <= (currentTime[1] || 0))
+					break;
+			}
+			let previous = allTimestamps[previousIndex].join("-");
+
+			for (const label of labels) {
+				let shouldBeVisible = currentSurface == label.surface && (label.time == next || label.time == previous);
+
+				if (shouldBeVisible && !label.visible)
+					label.marker.addTo(map);
+				else if (!shouldBeVisible && label.visible)
+					map.removeLayer(label.marker);
+				else
+					continue;
+				label.visible = shouldBeVisible;
+			}
+		}
 
 
 
 
 
 
-		/* EDIT */
 		if (countAvailableSaves > 0 || mapInfo.links && mapInfo.links.save) {
 			let btn = document.createElement("a"), modal = document.getElementById("modal"), ulContainer = document.getElementById("save-download-container"), modalClose = modal.getElementsByClassName("close")[0], opened = false, built = false;
 			btn.id = 'downBtn';
@@ -600,6 +624,7 @@
 							timestamp = "" + Math.round((parseInt(one[0]) + localValue * (parseInt(two[0]) - parseInt(one[0]))) * 100) / 100;
 					}
 					updateHash();
+					updateLabels();
 				}
 			});
 			map.addControl(timeSlider);
@@ -627,15 +652,16 @@
 				onChange: function(index) {
 					currentSurface = surfaceKeys[index];
 					updateHash();
+					updateLabels();
 				}
 			});
 			map.addControl(surfaceSlider);
-			if (!timeSlider) {
-				console.log("hi!");
+			if (!timeSlider)
 				$(surfaceSlider._container).attr("style", "float: right !important");
-			}
+
 			mapLoadedBySlider = true;
-		}
+		} else if (timeSlider)
+			$(timeSlider._container).attr("style", "float: right !important");
 
 
 
@@ -645,25 +671,35 @@
 		map.zoomControl.setPosition('bottomleft')
 		
 		
-		console.log(window.layers = layers)
-		for (const surface of Object.values(layers))
+		let labels = [];
+		for (const [surfaceName, surface] of Object.entries(layers))
 			for (const layer of Object.values(surface)) {
 				layer.tags.sort((a, b) => a.position.y - b.position.y)
 				for (const tag of layer.tags) {
 
-					L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
-						icon: new L.DivIcon({
-							className: 'map-tag',
-							html: 	tag.iconPath ? '<img class="map-marker" src="' + tag.iconPath + '"/>' : '<map-marker-default class="map-marker"/>' +
-									'<span class="map-marker-text">' + tag.text + '</span>'
-						})
-					}).addTo(map);
+					let label = {
+						surface: surfaceName,
+						time: layer.path,
+						visible: false,
+						marker: L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
+							icon: new L.DivIcon({
+								className: 'map-tag',
+								html: 	tag.iconPath ? '<img class="map-marker" src="' + tag.iconPath + '"/>' : '<map-marker-default class="map-marker"/>' +
+										'<span class="map-marker-text">' + tag.text + '</span>'
+							})
+						}),
+					};
+
+					labels.push(label);
 				}
 		}
+		updateLabels();
 
-		setTimeout(_ => {
-			daylightSlider.setLength(135 + Math.round(($(".leaflet-control-container > .leaflet-bottom.leaflet-right").width() - 10 - $(daylightSlider._container).outerWidth())*10)/10);
-		});
+
+		if (daylightSlider)
+			setTimeout(_ => {
+				daylightSlider.setLength(135 + Math.round(($(".leaflet-control-container > .leaflet-bottom.leaflet-right").width() - 10 - $(daylightSlider._container).outerWidth())*10)/10);
+			});
 		
 	</script>
 </body>

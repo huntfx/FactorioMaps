@@ -289,7 +289,7 @@ def auto(*args):
 					sys.exit(1)(1)
 
 
-		except urllib.error.URLError as e:
+		except (urllib.error.URLError, urllib.socket.timeout) as e:
 			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
