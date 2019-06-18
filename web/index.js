@@ -479,10 +479,10 @@ for (const [surfaceName, surface] of Object.entries(layers))
 				time: layer.path,
 				visible: false,
 				link: link,
-				marker: L.marker(convertCoordinates(link.from[0]), {
+				marker: L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}), {
 					icon: new L.DivIcon({
 						className: 'map-link',
-						html: 	'<map-link style="width:calc(var(--scale)*' + (link.from[1].y-link.from[0].y) + 'px);height:calc(var(--scale)*' + (link.from[1].x-link.from[0].x) + 'px)"/>',
+						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x) + ';--y:' + (link.from[1].y-link.from[0].y) + '"/>',
 						iconSize: null,
 					})
 				}),

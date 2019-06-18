@@ -196,15 +196,24 @@ map-marker-default:before {
 map-link {
     display: block;
 	box-shadow: inset 0 0 8px 4px #0099ff;
-	transition: width 0.25s cubic-bezier(0,0,0.25,1), height 0.25s cubic-bezier(0,0,0.25,1);
-    will-change: width, height;
+	transition: width		0.25s cubic-bezier(0,0,0.25,1),
+				height		0.25s cubic-bezier(0,0,0.25,1),
+				margin-left	0.25s cubic-bezier(0,0,0.25,1),
+				margin-top	0.25s cubic-bezier(0,0,0.25,1);
+	will-change: width height margin-left margin-top;
+	width:	calc(1px*var(--scale)*var(--y));
+	height:	calc(1px*var(--scale)*var(--x));
+	margin-left: calc(-.5px*var(--scale)*var(--y));
+	margin-top:  calc(-.5px*var(--scale)*var(--x));
+	cursor: pointer;
 }
+
 map-link::before {
 	content: '';
 	position: absolute;
-	width: 100%;
-	height: 100%;
-	box-shadow: inset 0 0 16px 8px #0099ff;
+	width: 200%;
+	height: 200%;
+	box-shadow: inset 0 0 12px 6px #0099ff;
 	opacity: 0;
 	transition: opacity 0.3s ease-in-out;
 }
