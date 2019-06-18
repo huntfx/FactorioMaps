@@ -18,13 +18,9 @@ urlList = (
 	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@2/Control.Opacity.js",
 	"https://cdn.jsdelivr.net/npm/js-natural-sort@0.8.1/dist/naturalsort.min.js",
 	"https://factorio.com/static/img/favicon.ico",
-	"https://i.factoriomaps.com/t92kw.png",
 )
 
-
-
-
-CURRENTVERSION = 2
+CURRENTVERSION = 3
 
 
 
@@ -33,7 +29,7 @@ CURRENTVERSION = 2
 
 def update(Force=True):
 
-	targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+	targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web/lib")
 	
 	if not Force:
 		try:
