@@ -388,8 +388,8 @@
 
 
 
-
 				layers[surface][i].tags = layer.tags;
+
 				// todo: group tags.. ?
 				for (const tag in layer.tags) {
 					//console.log(tag);
@@ -620,7 +620,10 @@
 				length: (surfaceKeys.length-1)*30,
 				evenSpacing: true,
 				backdrop: false,
-				labels: surfaceKeys.map((s, i) => { return {name: s, layers: Object.values(layers[s]).map(l => ["day", "night"].map(d => l[d])).flat()} }),
+				labels: surfaceKeys.map((s, i) => { return {
+					name: s, layers:
+					Object.values(layers[s]).map(l => ["day", "night"].map(d => l[d]).filter(d => d)).flat()
+				} }),
 				onChange: function(index) {
 					currentSurface = surfaceKeys[index];
 					updateHash();
