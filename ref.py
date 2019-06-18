@@ -10,7 +10,6 @@ ext = ".bmp"
 outext = ".jpg"
 
 
-DEBUG = False
 
 
 def compare(path, basePath, new, treshold, progressQueue):
@@ -88,7 +87,7 @@ def ref(*args, **kwargs):
 
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 	datapath = os.path.join(toppath, "mapInfo.json")
-	maxthreads = int(kwargs["refthreads"]) if "refthreads" in kwargs else (int(kwargs["maxthreads"]) if "maxthreads" in kwargs else mp.cpu_count())
+	maxthreads = int(kwargs["refthreads" if kwargs["refthreads"] else"maxthreads"])
 
 
 
@@ -130,6 +129,7 @@ def ref(*args, **kwargs):
 					didAnything = True
 					z = surface["zoom"]["max"]
 
+
 					dayImages = []
 
 					newComparedSurfaces.append((surfaceName, daytime))
@@ -164,12 +164,11 @@ def ref(*args, **kwargs):
 								for y in os.listdir(os.path.join(path, x)):
 									oldImages[(x, y.replace(ext, outext))] = data["maps"][old]["path"]
 
-
 					if daytime != "day":
 						if not os.path.isfile(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "ref.txt")):
 							print("WARNING: cannot find day surface to copy non-day surface from. running ref.py on night surfaces is not very accurate.")
 						else:
-							if DEBUG: print("found day surface, reuse results from ref.py from there")
+							if kwargs["verbose"]: print("found day surface, reuse results from ref.py from there")
 							
 							with open(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "ref.txt"), "r") as f:
 								for line in f:
@@ -199,10 +198,10 @@ def ref(*args, **kwargs):
 
 	
 
-		if DEBUG: print("found %s new images" % len(keepList))
+		if kwargs["verbose"]: print("found %s new images" % len(keepList))
 		if len(compareList) > 0:
-			if DEBUG: print("comparing %s existing images" % len(compareList))
-			treshold = .3 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
+			if kwargs["verbose"]: print("comparing %s existing images" % len(compareList))
+			treshold = .03 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
 			#print(treshold)
 			#compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]))
 			m = mp.Manager()
@@ -221,27 +220,27 @@ def ref(*args, **kwargs):
 
 			newList = [x[1] for x in [x for x in resultList if x[0]]]
 			firstRemoveList += [x[1] for x in [x for x in resultList if not x[0]]]
-			if DEBUG: print("found %s changed in %s images" % (len(newList), len(compareList)))
+			if kwargs["verbose"]: print("found %s changed in %s images" % (len(newList), len(compareList)))
 			keepList += newList
 			print("\rref  {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 		
 
-		if DEBUG: print("scanning %s chunks for neighbour cropping" % len(firstRemoveList))
+		if kwargs["verbose"]: print("scanning %s chunks for neighbour cropping" % len(firstRemoveList))
 		resultList = pool.map(partial(neighbourScan, keepList=keepList, cropList=cropList), firstRemoveList, 64)
 		neighbourList = [x[1] for x in [x for x in resultList if x[0]]]
 		removeList = [x[1] for x in [x for x in resultList if not x[0]]]
-		if DEBUG: print("keeping %s neighbouring images" % len(neighbourList))
+		if kwargs["verbose"]: print("keeping %s neighbouring images" % len(neighbourList))
 
 
-		if DEBUG: print("deleting %s, keeping %s of %s existing images" % (len(removeList), len(keepList) + len(neighbourList), len(keepList) + len(neighbourList) + len(removeList)))
+		if kwargs["verbose"]: print("deleting %s, keeping %s of %s existing images" % (len(removeList), len(keepList) + len(neighbourList), len(keepList) + len(neighbourList) + len(removeList)))
 
 
-		if DEBUG: print("removing identical images")
+		if kwargs["verbose"]: print("removing identical images")
 		for x in removeList:
 			os.remove(os.path.join(toppath, "Images", newMap["path"], *x))
 
 
-		if DEBUG: print("creating render index")
+		if kwargs["verbose"]: print("creating render index")
 		for surfaceName, daytime in newComparedSurfaces:
 			z = surface["zoom"]["max"]
 			with open(os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, "ref.txt"), "w") as f:
@@ -253,7 +252,7 @@ def ref(*args, **kwargs):
 
 
 
-		if DEBUG: print("creating client index")
+		if kwargs["verbose"]: print("creating client index")
 		for aList in (keepList, neighbourList):
 			for coord in aList:
 				x = int(coord[3])
@@ -303,11 +302,11 @@ def ref(*args, **kwargs):
 
 
 	if changed:
-		if DEBUG: print("writing mapInfo.out.json")
+		if kwargs["verbose"]: print("writing mapInfo.out.json")
 		with open(datapath[:-5] + ".out.json", "w+") as f:
 			json.dump(outdata, f)
 
-		if DEBUG: print("deleting empty folders")
+		if kwargs["verbose"]: print("deleting empty folders")
 		for curdir, subdirs, files in os.walk(toppath, *args[1:4]):
 			if len(subdirs) == 0 and len(files) == 0:
 				os.rmdir(curdir)

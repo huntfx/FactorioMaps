@@ -14,8 +14,9 @@ urlList = (
 	"https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js",
 	"https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css",
 	"https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js",
-	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@1/Control.Opacity.css",
-	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@1/Control.Opacity.js",
+	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@2/Control.Opacity.css",
+	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@2/Control.Opacity.js",
+	"https://cdn.jsdelivr.net/npm/js-natural-sort@0.8.1/dist/naturalsort.min.js",
 	"https://factorio.com/static/img/favicon.ico",
 	"https://i.factoriomaps.com/t92kw.png",
 )
@@ -23,7 +24,7 @@ urlList = (
 
 
 
-CURRENTVERSION = 1
+CURRENTVERSION = 2
 
 
 
