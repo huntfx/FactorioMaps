@@ -41,10 +41,12 @@ Heres a list of flags that `auto.py` can accept:
 | `--build-range=5.2` | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
 | `--connect-range=1.2` | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
 | `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. |
+| `--surface=nauvis` | Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: `--surface=nauvis --surface="Factory floor 1"`. To find out the names of surfaces, use the command `/c for _,s in pairs(game.surfaces) do game.print(s.name) end`. |
 | `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
 | `--modpath=PATH` | Use *PATH* as the mod folder. |
 | `--basepath=RELPATH` | Output to `script-output\RELPATH` instead of `script-output\FactorioMaps`. (Factorio cannot output outside of `script-output`) |
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
+| `--verbose` | Displays factoriomaps script logs. |
 | `--verbosegame` | Displays *all* game logs. |
 | `--noupdate` | Skips the update check. |
 | `--maxthreads=N` | Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available. |
@@ -52,7 +54,6 @@ Heres a list of flags that `auto.py` can accept:
 | `--refthreads=N` | Sets the number of threads used for the crossreferencing step. |
 | `--zoomthreads=N` | Sets the number of threads used for the zoom step. |
 | `--screenshotthreads=N` | Set the number of screenshotting threads factorio uses. |
-| `--screenshotqueuesize=N` | Set the size of the factorio screenshotting queue. Too high values may cause high RAM usage and I haven't found any benefits to high values so I recommend not changing this. |
 | `--delete` | Deletes the output folder specified before running the script. |
 | `--dry` | Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script. |
  

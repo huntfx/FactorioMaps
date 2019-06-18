@@ -1,0 +1,12 @@
+{
+    "name": "API_ExampleMod",
+    "version": "0.0.1",
+    "title": "FactorioMaps API ExampleMod",
+    "author": "L0laapk3",
+    "contact": "https://github.com/L0laapk3/",
+    "homepage": "https://github.com/L0laapk3/FactorioMaps",
+    "description": "Example API mod for factoriomaps",
+    "license": "CC BY-NC-SA 4.0",
+    "factorio_version": "0.17",
+    "dependencies": []
+}

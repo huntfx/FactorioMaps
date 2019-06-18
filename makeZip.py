@@ -24,12 +24,13 @@ os.mkdir(tempPath)
 excludeDirs = (
 	".git",
 	".vscode",
-	"__pycache__"
+	"__pycache__",
+	"API_ExampleMod_0.0.1",
 )
 excludeFiles = (
 	".gitignore",
 	".gitattributes",
-	"makezip.py"
+	"makezip.py",
 )
 
 updateLib(False)
