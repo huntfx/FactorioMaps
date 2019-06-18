@@ -33,7 +33,7 @@ CURRENTVERSION = 2
 
 def update(Force=True):
 
-	targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+	targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web/lib")
 	
 	if not Force:
 		try:
