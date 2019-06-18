@@ -197,15 +197,15 @@ map-marker.map-marker-default:before {
 map-link {
     display: block;
 	box-shadow: inset 0 0 6px 3px #0099ff;
+	will-change: width, height, margin-left, margin-top;
 	transition: width		0.25s cubic-bezier(0,0,0.25,1),
 				height		0.25s cubic-bezier(0,0,0.25,1),
 				margin-left	0.25s cubic-bezier(0,0,0.25,1),
 				margin-top	0.25s cubic-bezier(0,0,0.25,1);
-	will-change: width height margin-left margin-top;
-	width:	calc(1px*var(--scale)*var(--y));
-	height:	calc(1px*var(--scale)*var(--x));
-	margin-left: calc(-.5px*var(--scale)*var(--y));
-	margin-top:  calc(-.5px*var(--scale)*var(--x));
+	width:	calc(1px/var(--devicepixelratio)*var(--scale)*var(--y));
+	height:	calc(1px/var(--devicepixelratio)*var(--scale)*var(--x));
+	margin-left: calc(-.5px/var(--devicepixelratio)*var(--scale)*var(--y));
+	margin-top:  calc(-.5px/var(--devicepixelratio)*var(--scale)*var(--x));
 	cursor: pointer;
 }
 

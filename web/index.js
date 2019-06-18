@@ -169,7 +169,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 
 
 
-
+document.body.style.setProperty("--devicepixelratio", window.devicePixelRatio);
 function updateLabelScaling(e) {
 	document.getElementById("map").style.setProperty("--scale", Math.pow(2, e.zoom - 15));
 }
