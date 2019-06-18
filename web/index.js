@@ -189,9 +189,32 @@ function updateLabels() {
 	for (const label of labels) {
 		let shouldBeVisible = currentSurface == label.surface && (label.time == next || label.time == previous);
 
-		if (shouldBeVisible && !label.visible)
+		if (shouldBeVisible && !label.visible) {
 			label.marker.addTo(map);
-		else if (!shouldBeVisible && label.visible)
+			if (label.link)
+				label.marker._icon.onmousedown = function() {
+					if (label.link.toSurface != currentSurface)
+						Array.from(surfaceSlider._container.children[0].children).find(e => e.innerText == label.link.toSurface).click();
+
+					switch (label.link.type) {
+						case "link_box_point":
+							if (label.link.toSurface != currentSurface)
+								map.panTo(convertCoordinates(label.link.to));
+							else
+								map.setView(convertCoordinates(label.link.to), map.getZoom());
+							break;
+						case "link_box_area":
+						case "link_renderbox_area":
+							if (label.link.toSurface != currentSurface)
+								map.flyToBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])]);
+							else
+								map.fitBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])], map.getZoom());
+							break;
+					}
+					
+
+				}
+		} else if (!shouldBeVisible && label.visible)
 			map.removeLayer(label.marker);
 		else
 			continue;
@@ -462,8 +485,8 @@ for (const [surfaceName, surface] of Object.entries(layers))
 				marker: L.marker(convertCoordinates(tag.position), {
 					icon: new L.DivIcon({
 						className: 'map-tag',
-						html: 	tag.iconPath ? '<img class="map-marker" src="' + tag.iconPath + '"/>' : '<map-marker-default class="map-marker"/>' +
-								'<span class="map-marker-text">' + tag.text + '</span>',
+						html: 	(tag.iconPath ? '<map-marker><img src="' + tag.iconPath + '"/>' : '<map-marker class="map-marker-default">') +
+								'<span>' + tag.text + '</span></map-marker>',
 						iconSize: null,
 					})
 				}),
