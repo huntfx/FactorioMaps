@@ -146,10 +146,9 @@ def auto(*args):
 				if not onlyStall and psutil.pid_exists(pid):
 
 					if os.name == 'nt':
-						cmd = ("taskkill", "/pid", str(pid))
+						subprocess.check_call(("taskkill", "/pid", str(pid)), stdout=subprocess.DEVNULL, shell=True)
 					else:
-						cmd = ("kill", str(pid))
-					subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
+						subprocess.check_call(("killall", "factorio"), stdout=subprocess.DEVNULL)	# TODO: kill correct process instead of just killing all
 
 					while psutil.pid_exists(pid):
 						time.sleep(0.1)
