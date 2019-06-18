@@ -642,7 +642,8 @@
 		map.zoomControl.setPosition('bottomleft')
 		
 		
-		for (const surface of layers)
+		console.log(window.layers = layers)
+		for (const surface of Object.values(layers))
 			for (const layer of Object.values(surface)) {
 				layer.tags.sort((a, b) => a.position.y - b.position.y)
 				for (const tag of layer.tags) {
