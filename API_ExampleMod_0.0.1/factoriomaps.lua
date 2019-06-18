@@ -4,7 +4,9 @@
 
 local function handle_factoriomaps()
 	if remote.interfaces.factoriomaps then
-		script.on_event(remote.call("factoriomaps", "get_start_event"), function() 
+		script.on_event(remote.call("factoriomaps", "get_start_capture_event"), function() 
+
+			-- note that this event only gets called when it starts capturing the world, so speed optimalisation of the code in this function is not important.
 			
 			
 			-- example parameters:

@@ -18,13 +18,9 @@ urlList = (
 	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@2/Control.Opacity.js",
 	"https://cdn.jsdelivr.net/npm/js-natural-sort@0.8.1/dist/naturalsort.min.js",
 	"https://factorio.com/static/img/favicon.ico",
-	"https://i.factoriomaps.com/t92kw.png",
 )
 
-
-
-
-CURRENTVERSION = 2
+CURRENTVERSION = 3
 
 
 

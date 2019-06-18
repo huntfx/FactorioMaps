@@ -520,10 +520,11 @@ def auto(*args):
 
 
 				def refZoom():
+					needsThumbnail = index + 1 == len(savenames)
 					#print("Crossreferencing %s images" % screenshot)
 					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 					#print("downsampling %s images" % screenshot)
-					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
+					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, needsThumbnail, **kwargs)
 
 				if screenshot != latest[-1]:
 					refZoom()
