@@ -307,10 +307,10 @@ def auto(*args):
 
 	def linkDir(src, dest):
 		if os.name == 'nt':
-			cmd = ("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest))
+			subprocess.check_call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), stdout=subprocess.DEVNULL, shell=True)
 		else:
-			cmd = ("ln", "-s", os.path.abspath(src), os.path.abspath(dest))
-		subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
+			os.symlink(os.path.abspath(dest), os.path.abspath(src))
+		
 
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json")
