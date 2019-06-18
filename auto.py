@@ -146,10 +146,9 @@ def auto(*args):
 				if not onlyStall and psutil.pid_exists(pid):
 
 					if os.name == 'nt':
-						cmd = ("taskkill", "/pid", str(pid))
+						subprocess.check_call(("taskkill", "/pid", str(pid)), stdout=subprocess.DEVNULL, shell=True)
 					else:
-						cmd = ("kill", str(pid))
-					subprocess.check_call(cmd, stdout=subprocess.DEVNULL, shell=True)
+						subprocess.check_call(("killall", "factorio"), stdout=subprocess.DEVNULL)	# TODO: kill correct process instead of just killing all
 
 					while psutil.pid_exists(pid):
 						time.sleep(0.1)
@@ -289,7 +288,7 @@ def auto(*args):
 					sys.exit(1)(1)
 
 
-		except urllib.error.URLError as e:
+		except (urllib.error.URLError, urllib.socket.timeout) as e:
 			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
@@ -521,10 +520,11 @@ def auto(*args):
 
 
 				def refZoom():
+					needsThumbnail = index + 1 == len(savenames)
 					#print("Crossreferencing %s images" % screenshot)
 					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 					#print("downsampling %s images" % screenshot)
-					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
+					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, needsThumbnail, **kwargs)
 
 				if screenshot != latest[-1]:
 					refZoom()
@@ -653,12 +653,14 @@ def auto(*args):
 			
 			
 		print("creating index.html")
-		copy("index.html.template", os.path.join(workfolder, "index.html"))
+		copy("web/index.html", os.path.join(workfolder, "index.html"))
+		copy("web/index.css", os.path.join(workfolder, "index.css"))
+		copy("web/index.js", os.path.join(workfolder, "index.js"))
 		try:
 			rmtree(os.path.join(workfolder, "lib"))
 		except (FileNotFoundError, NotADirectoryError):
 			pass
-		copytree("web", os.path.join(workfolder, "lib"))
+		copytree("web/lib", os.path.join(workfolder, "lib"))
 
 
 
