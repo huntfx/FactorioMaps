@@ -653,12 +653,14 @@ def auto(*args):
 			
 			
 		print("creating index.html")
-		copy("index.html.template", os.path.join(workfolder, "index.html"))
+		copy("web/index.html", os.path.join(workfolder, "index.html"))
+		copy("web/index.css", os.path.join(workfolder, "index.css"))
+		copy("web/index.js", os.path.join(workfolder, "index.js"))
 		try:
 			rmtree(os.path.join(workfolder, "lib"))
 		except (FileNotFoundError, NotADirectoryError):
 			pass
-		copytree("web", os.path.join(workfolder, "lib"))
+		copytree("web/lib", os.path.join(workfolder, "lib"))
 
 
 
