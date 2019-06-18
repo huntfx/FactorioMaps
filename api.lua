@@ -128,7 +128,7 @@ end
 
 
 remote.add_interface("factoriomaps", {
-	get_start_event = function()
+	get_start_capture_event = function()
 		return fm.API.startEvent
 	end,
 	link_box_point = function(options)

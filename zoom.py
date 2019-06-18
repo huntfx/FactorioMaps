@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageChops
 import multiprocessing as mp
 import os, math, sys, time, math, json, psutil, subprocess
 from shutil import get_terminal_size as tsize
@@ -9,8 +9,22 @@ useBetterEncoder = True 	# Slower encoder that generates smaller images.
 
 quality = 80
 	
-ext = ".bmp"
-outext = ".jpg"     		# format='JPEG' is hardcoded in places, meed to modify those, too. Most parameters are not supported outside jpeg.
+EXT = ".bmp"
+OUTEXT = ".jpg"     		# format='JPEG' is hardcoded in places, meed to modify those, too. Most parameters are not supported outside jpeg.
+THUMBNAILEXT = ".png"
+
+BACKGROUNDCOLOR = (27, 45, 51)
+THUMBNAILSCALE = 2
+
+
+
+def printErase(arg):
+	try:
+		tsiz = tsize()[0]
+		print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg) - 1)), end="", flush=True)
+	except e:
+		#raise
+		pass
 
 
 def saveCompress(img, path, inpath=None):
@@ -27,8 +41,7 @@ def saveCompress(img, path, inpath=None):
 	else:
 		img.save(path, format='JPEG', optimize=True, subsampling=0, quality=quality, progressive=True)
 
-
-def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
+def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chunk, keepLast=False):
 	chunksize = 2**(start-stop)
 	if start > stop:
 		for k in range(start, stop, -1):
@@ -38,7 +51,7 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 				for i in range(x, x + chunksize, 2):
 
 					coords = [(0,0), (1,0), (0,1), (1,1)]
-					paths = [os.path.join(basepath, pathList[0], surfaceName, daytime, str(k), str(i+coord[0]), str(j+coord[1]) + ext) for coord in coords]
+					paths = [os.path.join(basepath, pathList[0], surfaceName, daytime, str(k), str(i+coord[0]), str(j+coord[1]) + EXT) for coord in coords]
 
 					if any(os.path.isfile(path) for path in paths):
 
@@ -53,49 +66,43 @@ def work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk):
 							isOriginal.append(os.path.isfile(paths[m]))
 							if not isOriginal[m]:
 								for n in range(1, len(pathList)):
-									paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + outext)
+									paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + OUTEXT)
 									if os.path.isfile(paths[m]):
 										break
 
 
-						result = None
-						size = 0
+						result = Image.new('RGB', (size, size), BACKGROUNDCOLOR)
 
 						imgs = []
 						for m in range(len(coords)):
 							if (os.path.isfile(paths[m])):
 								img = Image.open(paths[m], mode='r').convert("RGB")
-								if size == 0:
-									size = img.size[0]
-									result = Image.new('RGB', (size, size), (27, 45, 51))
 								result.paste(box=(coords[m][0]*size//2, coords[m][1]*size//2), im=img.resize((size//2, size//2), Image.ANTIALIAS))
 
 								if isOriginal[m]:
 									imgs.append((img, paths[m]))
 
 
-						if outext != ext and k == last+1:
-							saveCompress(result, os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + outext))
-						else:
-							result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + ext)) 
+						if k == last+1:
+							saveCompress(result, os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + OUTEXT))
+						if OUTEXT != EXT and (k != last+1 or keepLast):
+							result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + EXT)) 
 							
-						
-						if outext != ext:
+						if OUTEXT != EXT:
 							for img, path in imgs:
-								saveCompress(img, path.replace(ext, outext), path)
-								os.remove(path)   
+								saveCompress(img, path.replace(EXT, OUTEXT), path)
+								os.remove(path)
 
 
 			chunksize = chunksize // 2
 	elif stop == last:
 		path = os.path.join(basepath, pathList[0], surfaceName, daytime, str(start), str(chunk[0]), str(chunk[1]))
-		img = Image.open(path + ext, mode='r').convert("RGB")
-		saveCompress(img, path + outext, path + ext)
-		os.remove(path + ext)   
+		img = Image.open(path + EXT, mode='r').convert("RGB")
+		saveCompress(img, path + OUTEXT, path + EXT)
+		os.remove(path + EXT)   
 		
 
-
-def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunks, counter, resultQueue):
+def thread(basepath, pathList, surfaceName, daytime, size, start, stop, last, allChunks, counter, resultQueue, keepLast=False):
 	#print(start, stop, chunks)
 	while True:
 		with counter.get_lock():
@@ -104,7 +111,7 @@ def thread(basepath, pathList, surfaceName, daytime, start, stop, last, allChunk
 				return
 			counter.value = i
 		chunk = allChunks[i]
-		work(basepath, pathList, surfaceName, daytime, start, stop, last, chunk)
+		work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chunk, keepLast)
 		resultQueue.put(True)
 		
 
@@ -123,6 +130,7 @@ def zoom(*args, **kwargs):
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 
 
+	needsThumbnail = (str(args[5]).lower() != "false") if len(args) > 5 else True
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 	datapath = os.path.join(toppath, "mapInfo.json")
 	basepath = os.path.join(toppath, "Images")
@@ -138,8 +146,8 @@ def zoom(*args, **kwargs):
 		if len(args) <= 1 or map["path"] == args[1]:
 			for surfaceName, surface in map["surfaces"].items():
 				if len(args) <= 2 or surfaceName == args[2]:
-					start = surface["zoom"]["max"]
-					stop = surface["zoom"]["min"]
+					maxzoom = surface["zoom"]["max"]
+					minzoom = surface["zoom"]["min"]
 
 					daytimes = []
 					try:
@@ -150,14 +158,33 @@ def zoom(*args, **kwargs):
 					except KeyError: pass
 					for daytime in daytimes:
 						if len(args) <= 3 or daytime == args[3]:
-							if not os.path.isdir(os.path.join(toppath, "Images", str(map["path"]), surfaceName, daytime, str(start - 1))):
+							if not os.path.isdir(os.path.join(toppath, "Images", str(map["path"]), surfaceName, daytime, str(maxzoom - 1))):
 
 								print("zoom {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
 
+								generateThumbnail = needsThumbnail \
+												and mapIndex == len(data["maps"]) - 1 \
+												and surfaceName == ("nauvis" if "nauvis" in map["surfaces"] else sorted(map["surfaces"].keys())[0]) \
+												and daytime == daytimes[0]
+
 								allBigChunks = {}
-								for x in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(surface["zoom"]["max"]))):
-									for y in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(surface["zoom"]["max"]), x)):
-										allBigChunks[(int(x) >> start - stop, int(y.split('.', 2)[0]) >> start - stop)] = True
+								minX = float("inf")
+								maxX = float("-inf")
+								minY = float("inf")
+								maxY = float("-inf")
+								imageSize = None
+								for xStr in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(maxzoom))):
+									x = int(xStr)
+									minX = min(minX, x)
+									maxX = max(maxX, x)
+									for yStr in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr)):
+										if imageSize is None:
+											imageSize = Image.open(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr, yStr), mode='r').size[0]
+										y = int(yStr.split('.', 2)[0])
+										minY = min(minY, y)
+										maxY = max(maxY, y)
+										allBigChunks[(x >> maxzoom - minzoom, y >> maxzoom - minzoom)] = True
+
 
 								pathList = []
 								for otherMapIndex in range(mapIndex, -1, -1):
@@ -166,7 +193,7 @@ def zoom(*args, **kwargs):
 								threadsplit = 0
 								while 4**threadsplit * len(allBigChunks) < maxthreads:
 									threadsplit = threadsplit + 1
-								threadsplit = min(max(start - stop - 3, 0), threadsplit + 3)
+								threadsplit = min(max(maxzoom - minzoom - 3, 0), threadsplit + 3)
 								allChunks = []
 								for pos in list(allBigChunks):
 									for i in range(2**threadsplit):
@@ -182,7 +209,7 @@ def zoom(*args, **kwargs):
 								counter = mp.Value('i', originalSize)
 								resultQueue = mp.Queue()
 								for _ in range(0, threads):
-									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, start, stop + threadsplit, stop, allChunks, counter, resultQueue))
+									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, imageSize, maxzoom, minzoom + threadsplit, minzoom, allChunks, counter, resultQueue, generateThumbnail))
 									p.start()
 									processes.append(p)
 								
@@ -203,14 +230,42 @@ def zoom(*args, **kwargs):
 									processes = []
 									i = len(allBigChunks) - 1
 									for chunk in list(allBigChunks):
-										p = mp.Process(target=work, args=(basepath, pathList, surfaceName, daytime, stop + threadsplit, stop, stop, chunk))
+										p = mp.Process(target=work, args=(basepath, pathList, surfaceName, daytime, imageSize, minzoom + threadsplit, minzoom, minzoom, chunk, generateThumbnail))
 										i = i - 1
 										p.start()
 										processes.append(p)
 									for p in processes:
 										p.join()
+
+
+								if generateThumbnail:
+									printErase("generating thumbnail")
+									minzoompath = os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(minzoom))
+
+
+									thumbnail = Image.new('RGB', ((maxX-minX+1) * imageSize >> maxzoom-minzoom, (maxY-minY+1) * imageSize >> maxzoom-minzoom), BACKGROUNDCOLOR)
+									bigMinX = minX >> maxzoom-minzoom
+									bigMinY = minY >> maxzoom-minzoom
+									xOffset = ((bigMinX * imageSize << maxzoom-minzoom) - minX * imageSize) >> maxzoom-minzoom
+									yOffset = ((bigMinY * imageSize << maxzoom-minzoom) - minY * imageSize) >> maxzoom-minzoom
+									for chunk in list(allBigChunks):
+										path = os.path.join(minzoompath, str(chunk[0]), str(chunk[1]) + EXT)
+										thumbnail.paste(box=(xOffset+(chunk[0]-bigMinX)*imageSize, yOffset+(chunk[1]-bigMinY)*imageSize), im=Image.open(path, mode='r').convert("RGB").resize((imageSize, imageSize), Image.ANTIALIAS))
+
+										if OUTEXT != EXT:
+											os.remove(path)
+
+									thumbnail.save(os.path.join(basepath, "thumbnail" + THUMBNAILEXT))
+									
+
+
 									
 								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
+
+
+
+						
+
 				
 
 
