@@ -81,16 +81,29 @@ local function testChainCausality(link, sourceSurface, sourceIndex)
 	end
 	return true
 end
+local function updateMaxZoomDifference(link, preZoom)
+	local newZoomDifference = preZoom * link.zoomDifference
+	if newZoomDifference > link.maxZoomDifference then
+		link.maxZoomDifference = newZoomDifference
+		for _, nextLinkIndex in pairs(link.chain or {}) do
+			updateMaxZoomDifference(fm.API.linkData[link.toSurface][nextLinkIndex+1], newZoomDifference)
+		end
+	end
+end
 local function populateRenderChain(newLink, newLinkIndex, fromSurface)
+
+	local maxPreZoom = 0
 
 	-- scan if other links contain this link in their destination and update them
 	for _, linkList in pairs(fm.API.linkData or {}) do
 		for i, link in pairs(linkList) do
 			if link.chain and link.toSurface == fromSurface and hasPartialOverlap(link.to, newLink.from) then
 				link.chain[#link.chain+1] = newLinkIndex
+				maxPreZoom = math.max(maxPreZoom, link.maxZoomDifference)
 			end
 		end
 	end
+	newLink.maxZoomDifference = newLink.zoomDifference * maxPreZoom
 
 	-- find other links that are in the destination of this link
 	newLink.chain = {}
@@ -100,6 +113,7 @@ local function populateRenderChain(newLink, newLinkIndex, fromSurface)
 			if not testChainCausality(link, fromSurface, newLinkIndex) then
 				error(ERRORPRETEXT .. "Renderbox bad causality: can cause an infinite rendering loop\n")
 			end
+			updateMaxZoomDifference(link, newLink.maxZoomDifference)
 		end
 	end
 end
@@ -115,6 +129,23 @@ local function addLink(type, from, fromSurface, to, toSurface)
 		to = to,
 		toSurface = toSurface.name
 	}
+
+	if type == "link_renderbox_area" then
+		local centerX = (from[1].x + from[2].x) / 2
+		local centerY = (from[1].y + from[2].y) / 2
+		local fromSizeX = from[2].x-from[1].x
+		local fromSizeY = from[2].y-from[1].y
+		local toSizeX = to[2].x-to[1].x
+		local toSizeY = to[2].y-to[1].y
+		newLink.zoomDifference = math.ceil(math.log(math.max(toSizeX/fromSizeX, toSizeY/fromSizeY)) / math.log(2))
+		local sizeMul = math.pow(2, -newLink.zoomDifference-1) -- -1 for additional division by 2
+		newLink.renderFrom = {
+			{ x = centerX - toSizeX * sizeMul, y = centerY - toSizeY * sizeMul },
+			{ x = centerX + toSizeX * sizeMul, y = centerY + toSizeY * sizeMul }
+		}
+		newLink.path = False
+	end
+
 	log("adding link type " .. type .. " from " .. fromSurface.name .. " to " .. toSurface.name)
 	local linkIndex = #fm.API.linkData[fromSurface.name]
 	fm.API.linkData[fromSurface.name][linkIndex+1] = newLink
@@ -147,7 +178,7 @@ remote.add_interface("factoriomaps", {
 		local from, fromSurface = parseLocation(options, "from", true, true)
 		local to, toSurface =     parseLocation(options, "to", true, true, fromSurface)
 
-		local link = addLink("link_renderbox_area", from, fromSurface, to, toSurface)
+		addLink("link_renderbox_area", from, fromSurface, to, toSurface)
 	end,
 	surface_set_hidden = function(surface, isHidden)
 		surface = resolveSurface(surface)
@@ -177,7 +208,5 @@ function fm.API.pull()
 	script.raise_event(fm.API.startEvent, {})
 
 	remote.remove_interface("factoriomaps")
-
-	log(serpent.block(fm.API.linkData))
 end
 

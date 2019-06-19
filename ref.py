@@ -139,18 +139,30 @@ def ref(*args, **kwargs):
 						if surfaceName in data["maps"][old]["surfaces"]:
 							oldMapsList.append(old)
 
-					for old in oldMapsList:
-						with open(os.path.join(toppath, "Images", data["maps"][old]["path"], surfaceName, daytime, "crop.txt"), "r") as f:
-							next(f)
+
+					def readCropList(path, combinePrevious):
+						with open(path, "r") as f:
+							first = f.readline().rstrip('\n').split(" ")
+							version = 1 if len(first) == 1 else int(first[1])
 							for line in f:
-								split = line.rstrip("\n").split(" ", 5)
-								cropList[(surfaceName, daytime, str(z), int(split[0]), int(os.path.splitext(split[1])[0]))] = int(split[4], 16)
+								if version == 1:
+									split = line.rstrip("\n").split(" ", 5)
+									key = (surfaceName, daytime, str(z), int(split[0]), int(os.path.splitext(split[1])[0]))
+									value = split[4]
+								else:
+									split = line.rstrip("\n").split(" ", 3)
+									pathSplit = split[3].split("/", 2)
+									if pathSplit[0] != str(z):
+										continue
+									key = (surfaceName, daytime, str(z), int(pathSplit[1]), int(os.path.splitext(pathSplit[2])[0]))
+									value = split[2]
 								
-					with open(os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, "crop.txt"), "r") as f:
-						next(f)
-						for line in f:
-							split = line.rstrip("\n").split(" ", 5)
-							cropList[(surfaceName, daytime, str(z), int(split[0]), int(os.path.splitext(split[1])[0]))] = int(split[4], 16) | cropList.get((surfaceName, daytime, str(z), int(split[0]), int(os.path.splitext(split[1])[0])), 0)
+								cropList[key] = int(value, 16) | cropList.get(key, 0) if combinePrevious else int(value, 16)
+
+					for old in oldMapsList:
+						readCropList(os.path.join(toppath, "Images", data["maps"][old]["path"], surfaceName, daytime, "crop.txt"), False)
+								
+					readCropList(os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, "crop.txt"), True)
 
 
 

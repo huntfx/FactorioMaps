@@ -192,27 +192,30 @@ function updateLabels() {
 		if (shouldBeVisible && !label.visible) {
 			label.marker.addTo(map);
 			if (label.link)
-				label.marker._icon.onmousedown = function() {
-					if (label.link.toSurface != currentSurface)
-						Array.from(surfaceSlider._container.children[0].children).find(e => e.innerText == label.link.toSurface).click();
+				switch (label.link.type) {
+					case "link_box_point":
+					case "link_box_area":
+						label.marker._icon.onmousedown = function() {
+							if (label.link.toSurface != currentSurface)
+								Array.from(surfaceSlider._container.children[0].children).find(e => e.innerText == label.link.toSurface).click();
 
-					switch (label.link.type) {
-						case "link_box_point":
-							if (label.link.toSurface != currentSurface)
-								map.panTo(convertCoordinates(label.link.to));
-							else
-								map.setView(convertCoordinates(label.link.to), map.getZoom());
-							break;
-						case "link_box_area":
-						case "link_renderbox_area":
-							if (label.link.toSurface != currentSurface)
-								map.flyToBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])]);
-							else
-								map.fitBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])], map.getZoom());
-							break;
-					}
+							switch (label.link.type) {
+								case "link_box_point":
+									if (label.link.toSurface != currentSurface)
+										map.panTo(convertCoordinates(label.link.to));
+									else
+										map.setView(convertCoordinates(label.link.to), map.getZoom());
+									break;
+								case "link_box_area":
+									if (label.link.toSurface != currentSurface)
+										map.flyToBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])]);
+									else
+										map.fitBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])], map.getZoom());
+									break;
+							}
+						}
+						break;
 					
-
 				}
 		} else if (!shouldBeVisible && label.visible)
 			map.removeLayer(label.marker);
@@ -497,18 +500,25 @@ for (const [surfaceName, surface] of Object.entries(layers))
 
 		for (const link of layer.links) {
 
-			let label = {
-				surface: surfaceName,
-				time: layer.path,
-				visible: false,
-				link: link,
-				marker: L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}), {
+			let marker;
+			if (link.type == "link_renderbox_area") {
+				marker = L.imageOverlay("Images/" + layer.path + "/" + surfaceName + "/day/" + link.path, [convertCoordinates(link.renderFrom[0]), convertCoordinates(link.renderFrom[1])]).addTo(map);
+			} else {
+				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}), {
 					icon: new L.DivIcon({
 						className: 'map-link',
 						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x) + ';--y:' + (link.from[1].y-link.from[0].y) + '"/>',
 						iconSize: null,
 					})
-				}),
+				});
+			}
+
+			let label = {
+				surface: surfaceName,
+				time: layer.path,
+				visible: false,
+				link: link,
+				marker: marker,
 			}
 
 			labels.push(label);

@@ -71,7 +71,7 @@ script.on_event(defines.events.on_tick, function(event)
 			
 			
 			if fm.autorun.surfaces == nil then
-				fm.autorun.surfaces = {player.surface.name}
+				fm.autorun.surfaces = { "nauvis" }
 			else
 				for index, surfaceName in pairs(fm.autorun.surfaces) do
 					if player.surface.name == surfaceName then	-- move surface the player is on to first
@@ -97,24 +97,26 @@ script.on_event(defines.events.on_tick, function(event)
 				for _, surfaceName in pairs(fm.autorun.surfaces) do
 					if fm.API.linkData[surfaceName] then
 						for _, link in pairs(fm.API.linkData[surfaceName]) do
-							local otherSurfaceAlreadyInList = false
-							for _, otherSurfaceName in pairs(newSurfaces) do
-								if link.toSurface == otherSurfaceName then
-									otherSurfaceAlreadyInList = true
-									break
-								end
-							end
-							if not otherSurfaceAlreadyInList then
-								for _, otherSurfaceName in pairs(fm.autorun.surfaces) do
+							if link.type == "link_box_point" or link.type == "link_box_area" then
+								local otherSurfaceAlreadyInList = false
+								for _, otherSurfaceName in pairs(newSurfaces) do
 									if link.toSurface == otherSurfaceName then
 										otherSurfaceAlreadyInList = true
 										break
 									end
 								end
-							end
-							if not otherSurfaceAlreadyInList then
-								newSurfaces[#newSurfaces+1] = link.toSurface
-								log("Discovered surface: " .. link.toSurface)
+								if not otherSurfaceAlreadyInList then
+									for _, otherSurfaceName in pairs(fm.autorun.surfaces) do
+										if link.toSurface == otherSurfaceName then
+											otherSurfaceAlreadyInList = true
+											break
+										end
+									end
+								end
+								if not otherSurfaceAlreadyInList then
+									newSurfaces[#newSurfaces+1] = link.toSurface
+									log("Discovered surface: " .. link.toSurface)
+								end
 							end
 						end
 					end

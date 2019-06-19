@@ -69,6 +69,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
 
 	printingStackTraceback = False
+	# TODO: keep printing multiline stuff until new print detected
 	def handleGameLine(line):
 		line = line.rstrip('\n')
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)

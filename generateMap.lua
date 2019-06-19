@@ -38,7 +38,6 @@ end
 function fm.generateMap(data)
 
 	local player = game.players[data.player_index]
-	local surface = fm.currentSurface
 
 	local forces = {}
 	local forceStats = {}
@@ -63,7 +62,7 @@ function fm.generateMap(data)
 
 	-- delete folder (if it already exists)
 	local basePath = fm.topfolder
-	local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. fm.subfolder
+	local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder
 	game.remove_path(subPath)
 	subPath = subPath .. "/"
 
@@ -123,7 +122,7 @@ function fm.generateMap(data)
 
 	
 
-	local spawn = player.force.get_spawn_position(surface)
+	local spawn = player.force.get_spawn_position(fm.currentSurface)
 
 
 	
@@ -139,8 +138,8 @@ function fm.generateMap(data)
 	if fm.autorun.chunkCache then
 		for mapTick, v in pairs(fm.autorun.chunkCache) do
 			if tonumber(mapTick) <= fm.autorun.tick then
-				if v[surface.name] ~= nil then
-					for s in v[surface.name]:gmatch("%-?%d+ %-?%d+") do
+				if v[fm.currentSurface.name] ~= nil then
+					for s in v[fm.currentSurface.name]:gmatch("%-?%d+ %-?%d+") do
 						local gridX, gridY = s:match("(%-?%d+) (%-?%d+)")
 						gridX = tonumber(gridX)
 						gridY = tonumber(gridY)
@@ -156,7 +155,7 @@ function fm.generateMap(data)
 				if tonumber(mapTick) == fm.autorun.tick then
 					for i, map in pairs(fm.autorun.mapInfo.maps) do
 						if map.tick == mapTick then
-							surfaceWasScanned = v[surface.name] ~= nil
+							surfaceWasScanned = v[fm.currentSurface.name] ~= nil
 							mapIndex = i
 							break
 						end
@@ -179,11 +178,11 @@ function fm.generateMap(data)
 	}
 	if not surfaceWasScanned then
 
-		log("[info]Surface prescan " .. fm.savename .. fm.autorun.filePath .. "/" .. surface.name)
+		log("[info]Surface prescan " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name)
 		
-		for chunk in surface.get_chunks() do
+		for chunk in fm.currentSurface.get_chunks() do
 			for _, force in pairs(game.forces) do
-				if #force.players > 0 and force.is_chunk_charted(surface, chunk) then
+				if #force.players > 0 and force.is_chunk_charted(fm.currentSurface, chunk) then
 					forceStats[force.name] = forceStats[force.name] + 1
 					imageStats.charted = imageStats.charted + 1
 					for gridX = (chunk.x) * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
@@ -204,10 +203,10 @@ function fm.generateMap(data)
 													if buildChunks[x .. " " .. y] == nil then
 														local powerCount = 0
 														if fm.autorun.smaller_types and #fm.autorun.smaller_types > 0 then
-															powerCount = surface.count_entities_filtered({ force=forces, area=area, type=fm.autorun.smaller_types })
+															powerCount = fm.currentSurface.count_entities_filtered({ force=forces, area=area, type=fm.autorun.smaller_types })
 														end
-														local excludeCount = powerCount + surface.count_entities_filtered({ force=forces, area=area, type={"player"} })
-														if surface.count_entities_filtered({ force=forces, area=area, limit=excludeCount + 1 }) > excludeCount or surface.count_tiles_filtered({ force=forces, area=area, limit=excludeCount + 1, name=fm.tilenames }) > 0 then
+														local excludeCount = powerCount + fm.currentSurface.count_entities_filtered({ force=forces, area=area, type={"player"} })
+														if fm.currentSurface.count_entities_filtered({ force=forces, area=area, limit=excludeCount + 1 }) > excludeCount or fm.currentSurface.count_tiles_filtered({ force=forces, area=area, limit=excludeCount + 1, name=fm.tilenames }) > 0 then
 															buildChunks[x .. " " .. y] = 2
 														elseif powerCount > 0 then
 															buildChunks[x .. " " .. y] = 1
@@ -251,7 +250,7 @@ function fm.generateMap(data)
 		-- tag range
 		for _, force in pairs(game.forces) do
 			if #force.players > 0 then
-				for _, tag in pairs(force.find_chart_tags(surface)) do
+				for _, tag in pairs(force.find_chart_tags(fm.currentSurface)) do
 					for k = 0, fm.autorun.around_tag_range * pixelsPerTile / tilesPerChunk, 1 do
 						for l = 0, fm.autorun.around_tag_range * pixelsPerTile / tilesPerChunk, 1 do
 							for m = 1, k > 0 and -1 or 1, -2 do
@@ -262,7 +261,7 @@ function fm.generateMap(data)
 									local y = tag.position.y / gridPixelSize + j
 									local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
 									local chunk = {x = math.floor(x * gridPixelSize / tilesPerChunk), y = math.floor(y * gridPixelSize / tilesPerChunk)}
-									if dist <= math.pow(fm.autorun.around_tag_range + 0.5, 2) and force.is_chunk_charted(surface, chunk) then
+									if dist <= math.pow(fm.autorun.around_tag_range + 0.5, 2) and force.is_chunk_charted(fm.currentSurface, chunk) then
 										local gridX = math.floor(x)
 										local gridY = math.floor(y)
 										allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY}
@@ -396,32 +395,32 @@ function fm.generateMap(data)
 	local maxImagesNextToEachotherOnLargestZoom = 2
 	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(maxImagesNextToEachotherOnLargestZoom))))
 
-	if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] == nil then
+	if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name] == nil then
 		
 
-		fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name] = {
+		fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name] = {
 			spawn = spawn, -- this only includes spawn point of the player taking the screenshots
 			zoom = { min = minZoom, max = maxZoom },
 			tags = {},
 			hidden = false,
-			links = fm.API.linkData[surface.name] or {}
+			links = fm.API.linkData[fm.currentSurface.name] or {}
 		}
 
 		for _, s in pairs(fm.API.hiddenSurfaces) do
-			if s.name == surface.name then
-				fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].hidden = true
+			if s.name == fm.currentSurface.name then
+				fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].hidden = true
 				break
 			end
 		end
 
 		if fm.currentSurface == player.surface then
-			fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].playerPosition = player.position
+			fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].playerPosition = player.position
 		end
 		for _, force in pairs(game.forces) do
 			if #force.players > 0 then
-				for i, tag in pairs(force.find_chart_tags(surface)) do
+				for i, tag in pairs(force.find_chart_tags(fm.currentSurface)) do
 					if tag.icon == nil then
-						fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
+						fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].tags[i] = {
 							position 	= tag.position,
 							text 		= tag.text,
 							last_user	= tag.last_user and tag.last_user.name,
@@ -429,7 +428,7 @@ function fm.generateMap(data)
 						}
 					else
 						name = tag.icon["name"] or tag.icon.type
-						fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].tags[i] = {
+						fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].tags[i] = {
 							iconType 	= tag.icon.type,
 							iconName 	= name,
 							iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. name .. ".png",
@@ -446,53 +445,91 @@ function fm.generateMap(data)
 		if fm.autorun.chunkCache[fm.autorun.tick] == nil then
 			fm.autorun.chunkCache[fm.autorun.tick] = {}
 		end
-		fm.autorun.chunkCache[fm.autorun.tick][surface.name] = allGridString:sub(1, -2)
+		fm.autorun.chunkCache[fm.autorun.tick][fm.currentSurface.name] = allGridString:sub(1, -2)
 		game.write_file(basePath .. "chunkCache.json", prettyjson(fm.autorun.chunkCache), false, data.player_index)
 	
 	end
-	fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name][fm.subfolder] = true
+	fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name][fm.subfolder] = true
 
 
-	-- todo: if fm.autorun.mapInfo.maps[mapIndex].surfaces[surface.name].hidden is true, only care about the chunks linked to by renderboxes.
+	-- todo: if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].hidden is true, only care about the chunks linked to by renderboxes.
 
    
 	local extension = "bmp"
 
 
 	
-	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. surface.name .. "/" .. fm.subfolder)
+	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder)
 
 	game.write_file(basePath .. "mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
 
-
 	local cropText = ""
-	for _, chunk in pairs(allGrid) do   
-		local positionTable = {(chunk.x + 0.5) * gridPixelSize, (chunk.y + 0.5) * gridPixelSize}
-
-		local box = { positionTable[1], positionTable[2], positionTable[1] + gridPixelSize, positionTable[2] + gridPixelSize } -- -X -Y X Y
+	local function capture(positionTable, surface, path)
+		local box = { positionTable[1].x, positionTable[1].y, positionTable[2].x, positionTable[2].y } -- -X -Y X Y
 		local initialBox = { box[1], box[2], box[3], box[4] }
 		local area = {{box[1] - 16, box[2] - 16}, {box[3] + 16, box[4] + 16}}
 		
 		local corners = {0, 0, 0, 0}
 
-		for _, t in pairs(surface.find_entities_filtered{area=area, name="big-electric-pole"}) do 
+		for _, t in pairs(fm.currentSurface.find_entities_filtered{area=area, name="big-electric-pole"}) do 
 			adjustBox(t, box, initialBox, corners)
 		end
-		for _, t in pairs(surface.find_entities_filtered{area=area, type="lamp"}) do 
+		for _, t in pairs(fm.currentSurface.find_entities_filtered{area=area, type="lamp"}) do 
 			local control = t.get_control_behavior()
-			if t.energy > 1 and (control and not control.disabled) or (not control and surface.darkness > 0.3) then
+			if t.energy > 1 and (control and not control.disabled) or (not control and fm.currentSurface.darkness > 0.3) then
 				adjustBox(t, box, initialBox, corners)
 			end
 		end
-		if box[1] < positionTable[1] or box[2] < positionTable[2] or box[3] > positionTable[1] + gridPixelSize or box[4] > positionTable[2] + gridPixelSize then
-			cropText = cropText .. "\n" .. chunk.x .. " " .. chunk.y .. " " .. (positionTable[1] - box[1])*pixelsPerTile .. " " .. (positionTable[2] - box[2])*pixelsPerTile .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4])
+		if box[1] < positionTable[1].x or box[2] < positionTable[1].y or box[3] > positionTable[2].x or box[4] > positionTable[2].y then
+			cropText = cropText .. "\n" .. (positionTable[1].x - box[1])*pixelsPerTile .. " " .. (positionTable[1].y - box[2])*pixelsPerTile .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4]) .. " " .. path
 		end
 
-		local pathText = subPath .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension
-		game.take_screenshot({by_player=player, surface = fm.currentSurface, position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2}, resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile}, zoom = fm.autorun.HD and 2 or 1, path = pathText, show_entity_info = fm.autorun.alt_mode})                        
+		game.take_screenshot({
+			by_player = player,
+			surface = surface,
+			position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2},
+			resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile},
+			zoom = fm.autorun.HD and 2 or 1,
+			path = subPath .. path,
+			show_entity_info = fm.autorun.alt_mode
+		})                        
+	end
+
+	for _, chunk in pairs(allGrid) do   
+		local positionTable = {
+			{ x = (chunk.x + 0.5)  * gridPixelSize, y = (chunk.y + 0.5) * gridPixelSize  },
+			{ x = (chunk.x + 1.5)  * gridPixelSize, y = (chunk.y + 1.5) * gridPixelSize  }
+		}
+
+		capture(positionTable, fm.currentSurface, maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
 	end 
+
+	local linkWorkList = {}
+	for _, link in pairs(fm.API.linkData[fm.currentSurface.name] or {}) do
+		if link.type == "link_renderbox_area" then
+			linkWorkList[#linkWorkList+1] = link
+		end
+	end
+
+	local i = 0
+	while #linkWorkList > 0 do
+		local link = table.remove(linkWorkList)
+
+		if link.path == False then
+
+			local path = "renderboxes" .. "/" .. maxZoom .. "/" .. i .. "." .. extension
+			capture(link.to, link.toSurface, path)
+			i = i + 1
+
+			link.path = path
+
+			for _, index in pairs(link.chain) do
+				linkWorkList[#linkWorkList+1] = fm.API.linkData[link.toSurface][index+1]
+			end
+		end
+	end
 	
 	
-	game.write_file(subPath .. "crop.txt", gridSize .. cropText, false, data.player_index)
+	game.write_file(subPath .. "crop.txt", gridSize .. " 2" .. cropText, false, data.player_index)
 	
 end
