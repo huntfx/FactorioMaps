@@ -574,9 +574,10 @@ def auto(*args):
 			data = json.load(mapInfoJson)
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
-					for tag in surfaceStuff["tags"]:
-						if "iconType" in tag:
-							tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
+					if "tags" is surfaceStuff:
+						for tag in surfaceStuff["tags"]:
+							if "iconType" in tag:
+								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
 
 		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
 		

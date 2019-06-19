@@ -374,6 +374,13 @@ function fm.generateMap(data)
 
 
 	end
+	
+
+	local maxZoom = 20
+	if fm.autorun.HD == true then
+		maxZoom = 21
+	end
+
 	if mapIndex == 0 then
 
 		mapIndex = #fm.autorun.mapInfo.maps + 1
@@ -384,18 +391,20 @@ function fm.generateMap(data)
 			mods = game.active_mods,
 			surfaces = {}
 		}
-	end
 
-	local maxZoom = 20
-	if fm.autorun.HD == true then
-		maxZoom = 21
+		for surfaceName, links in pairs(fm.API.linkData) do
+			fm.autorun.mapInfo.maps[mapIndex].surfaces[surfaceName] = {
+				zoom = { max = maxZoom },
+				links = links
+			}
+		end
 	end
 	
 
 	local maxImagesNextToEachotherOnLargestZoom = 2
 	local minZoom = (maxZoom - math.max(2, math.ceil(math.min(math.log2(maxX - minX), math.log2(maxY - minY)) + 0.01 - math.log2(maxImagesNextToEachotherOnLargestZoom))))
 
-	if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name] == nil then
+	if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name] == nil or not fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].captured then
 		
 
 		fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name] = {
@@ -403,6 +412,7 @@ function fm.generateMap(data)
 			zoom = { min = minZoom, max = maxZoom },
 			tags = {},
 			hidden = false,
+			captured = true,
 			links = fm.API.linkData[fm.currentSurface.name] or {}
 		}
 
@@ -481,7 +491,7 @@ function fm.generateMap(data)
 			end
 		end
 		if box[1] < positionTable[1].x or box[2] < positionTable[1].y or box[3] > positionTable[2].x or box[4] > positionTable[2].y then
-			cropText = cropText .. "\n" .. (positionTable[1].x - box[1])*pixelsPerTile .. " " .. (positionTable[1].y - box[2])*pixelsPerTile .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4]) .. " " .. path
+			cropText = cropText .. "\n" .. (positionTable[1].x - box[1])*pixelsPerTile .. " " .. (positionTable[1].y - box[2])*pixelsPerTile .. " " .. (positionTable[2].x - positionTable[1].x)*pixelsPerTile .. " " .. (positionTable[2].y - positionTable[1].y)*pixelsPerTile .. " " .. string.format("%x", corners[1] + 2*corners[2] + 4*corners[3] + 8*corners[4]) .. " " .. path
 		end
 
 		game.take_screenshot({
@@ -530,6 +540,6 @@ function fm.generateMap(data)
 	end
 	
 	
-	game.write_file(subPath .. "crop.txt", gridSize .. " 2" .. cropText, false, data.player_index)
+	game.write_file(subPath .. "crop.txt", "v2" .. cropText, false, data.player_index)
 	
 end

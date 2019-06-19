@@ -31,6 +31,11 @@ local function resolveSurface(surface, default, errorText)
 	end
 end
 
+local roundMultiplier = 32
+if fm.autorun.HD then
+	roundMultiplier = 64
+end
+
 local function parseLocation(options, optionName, isArea, canHaveSurface, defaultSurface)
 
 	assert(options, "no options specified")
@@ -55,7 +60,7 @@ local function parseLocation(options, optionName, isArea, canHaveSurface, defaul
 		if isArea then
 			return { parseLocation(obj, 1), parseLocation(obj, 2) }, surface
 		else
-			return { x = obj[1], y = obj[2] }, surface
+			return { x = math.floor(obj[1] * roundMultiplier + 0.5) / roundMultiplier, y = math.floor(obj[2] * roundMultiplier + 0.5) / roundMultiplier }, surface
 		end
 	else
 		error(ERRORPRETEXT .. "option '" .. optionName .. "': invalid " .. (isArea and "area" or "point") .. " '" .. serpent.block(obj) .. "'\n")
@@ -90,11 +95,27 @@ local function updateMaxZoomDifference(link, preZoom)
 		end
 	end
 end
+local function updateShowOnSurfaces(link, surfaces)
+	local newSurfaces = nil
+	for surfaceName, _ in pairs(surfaces) do
+		if link.showOnSurfaces[surfaceName] ~= true then
+			if newSurfaces == nil then
+				newSurfaces = {}
+			end
+			newSurfaces[surfaceName] = true
+		end
+	end
+	if newSurfaces then
+		for _, nextLinkIndex in pairs(link.chain or {}) do
+			updateShowOnSurfaces(fm.API.linkData[link.toSurface][nextLinkIndex+1], newSurfaces)
+		end
+	end
+end
 local function populateRenderChain(newLink, newLinkIndex, fromSurface)
 
-	local maxPreZoom = 0
 
-	-- scan if other links contain this link in their destination and update them
+	-- scan if other links contain this link in their destination and update them (for max zoom scale)
+	local maxPreZoom = 0
 	for _, linkList in pairs(fm.API.linkData or {}) do
 		for i, link in pairs(linkList) do
 			if link.chain and link.toSurface == fromSurface and hasPartialOverlap(link.to, newLink.from) then
@@ -103,7 +124,20 @@ local function populateRenderChain(newLink, newLinkIndex, fromSurface)
 			end
 		end
 	end
-	newLink.maxZoomDifference = newLink.zoomDifference * maxPreZoom
+	newLink.maxZoomDifference = newLink.zoomDifference + maxPreZoom
+
+	-- update list with surfaces to show this link on (for min zoom scale)
+	newLink.showOnSurfaces = { fromSurface = true }
+	for _, linkList in pairs(fm.API.linkData or {}) do
+		for i, link in pairs(linkList) do
+			for surfaceName, _ in pairs(link.showOnSurfaces or {}) do
+				newLink.showOnSurfaces[surfaceName] = true
+			end
+		end
+	end
+
+
+
 
 	-- find other links that are in the destination of this link
 	newLink.chain = {}
@@ -114,6 +148,7 @@ local function populateRenderChain(newLink, newLinkIndex, fromSurface)
 				error(ERRORPRETEXT .. "Renderbox bad causality: can cause an infinite rendering loop\n")
 			end
 			updateMaxZoomDifference(link, newLink.maxZoomDifference)
+			updateShowOnSurfaces(link, newLink.showOnSurfaces)
 		end
 	end
 end

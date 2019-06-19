@@ -24,6 +24,7 @@ L.TileLayer.prototype.getTileUrl = function(c) {
 let layers = [], saves = [], countAvailableSaves = 0, layersByTimestamp = [];
 let globalTileIndex = {};
 let globalTileNightIndex = {};
+const maxZoomExtra = 101 + Math.round(Math.log2(window.devicePixelRatio));
 
 
 for (let i = 0; i < mapInfo.maps.length; i++) {
@@ -37,6 +38,11 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 
 	for (const surface of Object.keys(map.surfaces)) {
 		let layer = map.surfaces[surface];
+
+		
+		if (!layer.captured)
+			continue;
+
 		if (!(surface in layers))
 			layers[surface] = {};
 		layers[surface][i] = {};
@@ -126,7 +132,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 					minNativeZoom: DEBUG ? 20 : layer.zoom.min,
 					maxNativeZoom: layer.zoom.max,
 					minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,
-					maxZoom: 23, //layer.zoom.max + 2,
+					maxZoom: layer.zoom.max + maxZoomExtra,
 					noWrap: true,
 					tileSize: 512 / window.devicePixelRatio,
 					keepBuffer: 3
@@ -190,7 +196,8 @@ function updateLabels() {
 		let shouldBeVisible = currentSurface == label.surface && (label.time == next || label.time == previous);
 
 		if (shouldBeVisible && !label.visible) {
-			label.marker.addTo(map);
+			for (const marker of [label.marker, ...label.subMarkers || []])
+				marker.addTo(map);
 			if (label.link)
 				switch (label.link.type) {
 					case "link_box_point":
@@ -218,15 +225,26 @@ function updateLabels() {
 					
 				}
 		} else if (!shouldBeVisible && label.visible)
-			map.removeLayer(label.marker);
+			for (const marker of [label.marker, ...label.subMarkers || []])
+				map.removeLayer(marker);
 		else
 			continue;
 		label.visible = shouldBeVisible;
 	}
 }
 
-function convertCoordinates(pos) {
+function convertCoordinates(pos, recursion) {
+	recursion = recursion || [];
+	for (const [offset, scaleLevel, origin] of recursion) {
+		pos = {
+			x: (pos.x - origin.x) / Math.pow(2, scaleLevel) + offset.x,
+			y: (pos.y - origin.y) / Math.pow(2, scaleLevel) + offset.y,
+		}
+	}
 	return [-(pos.y - 1 - TILESPERIMAGE/2) / coordScale, (pos.x - TILESPERIMAGE/2) / coordScale]
+}
+function convertCoordinateSet(set, recursion) {
+	return set.map(p => convertCoordinates(p, recursion));
 }
 
 
@@ -498,30 +516,50 @@ for (const [surfaceName, surface] of Object.entries(layers))
 			labels.push(label);
 		}
 
-		for (const link of layer.links) {
 
+		for (const link of layer.links)
+			createLink(link);
+		function createLink(link, recursion, subMarkers) {
 			let marker;
+			recursion = recursion || [];
+			const scale = Math.pow(2, recursion.reduce((p, a) => p + a[1], 0));
 			if (link.type == "link_renderbox_area") {
-				marker = L.imageOverlay("Images/" + layer.path + "/" + surfaceName + "/day/" + link.path, [convertCoordinates(link.renderFrom[0]), convertCoordinates(link.renderFrom[1])]).addTo(map);
+				marker = L.imageOverlay("Images/" + layer.path + "/" + surfaceName + "/day/" + link.path,
+										convertCoordinateSet(link.renderFrom, recursion),
+										{ zIndex: recursion.length+1 }
+				).addTo(map);
 			} else {
-				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}), {
+				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
 					icon: new L.DivIcon({
 						className: 'map-link',
-						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x) + ';--y:' + (link.from[1].y-link.from[0].y) + '"/>',
+						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x)/scale + ';--y:' + (link.from[1].y-link.from[0].y)/scale + '"/>',
 						iconSize: null,
 					})
 				});
 			}
+			
+			if (subMarkers) {
+				subMarkers.push(marker);
+			} else {
+				subMarkers = [];
+				let label = {
+					surface: surfaceName,
+					time: layer.path,
+					visible: false,
+					link: link,
+					marker: marker,
+					subMarkers: subMarkers,
+				}
 
-			let label = {
-				surface: surfaceName,
-				time: layer.path,
-				visible: false,
-				link: link,
-				marker: marker,
+				labels.push(label);
 			}
 
-			labels.push(label);
+			if (link.chain) {
+				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
+				for (let nextIndex of link.chain) {
+					createLink(Object.values(mapInfo.maps).find(m => m.path == layer.path).surfaces[link.toSurface].links[nextIndex], recursion, subMarkers);
+				}
+			}
 		}
 }
 updateLabels();

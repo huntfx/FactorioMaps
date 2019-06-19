@@ -2,8 +2,9 @@
 
 
 fm = {}
-require "generateMap"
 require "autorun"
+
+require "generateMap"
 require "api"
 
 
@@ -157,11 +158,6 @@ script.on_event(defines.events.on_tick, function(event)
 			-- 	player.teleport({0, 0}, currentSurface)
 			-- 	fm.teleportedPlayer = true
 			-- end
-
-			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-			for key, entity in pairs(fm.currentSurface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
-				entity.active = false
-			end
 			
 			-- remove no path sign and ghost entities
 			for key, entity in pairs(fm.currentSurface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
