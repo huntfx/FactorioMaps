@@ -497,7 +497,8 @@ map.zoomControl.setPosition('bottomleft')
 let labels = [];
 for (const [surfaceName, surface] of Object.entries(layers))
 	for (const layer of Object.values(surface)) {
-		layer.tags.sort((a, b) => a.position.y - b.position.y)
+		layer.tags.sort((a, b) => a.position.y - b.position.y);
+		const mapInfoTimeLayer = Object.values(mapInfo.maps).find(m => m.path == layer.path);
 		for (const tag of layer.tags) {
 
 			let label = {
@@ -523,12 +524,14 @@ for (const [surfaceName, surface] of Object.entries(layers))
 		function createLink(link, recursion, subMarkers) {
 			let marker;
 			recursion = recursion || [];
-			const scale = Math.pow(2, recursion.reduce((p, a) => p + a[1], 0));
+			const zOffset = recursion.reduce((p, a) => p + a[1], 0);
+			const scale = Math.pow(2, zOffset);
 			if (link.type == "link_renderbox_area") {
-				marker = L.imageOverlay("Images/" + link.folder + link.startZ + "/" + link.filename + ".jpg",
+				const z = Math.min(link.zoom.max, Math.max(link.zoom.min, startZ - zOffset));
+				marker = L.imageOverlay("Images/" + link.folder + z + "/" + link.filename + ".jpg",
 										convertCoordinateSet(link.renderFrom, recursion),
 										{ zIndex: recursion.length+1 }
-				).addTo(map);
+				);
 			} else {
 				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
 					icon: new L.DivIcon({
@@ -558,7 +561,7 @@ for (const [surfaceName, surface] of Object.entries(layers))
 			if (link.chain) {
 				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
 				for (let nextIndex of link.chain) {
-					createLink(Object.values(mapInfo.maps).find(m => m.path == layer.path).surfaces[link.toSurface].links[nextIndex], recursion, subMarkers);
+					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], recursion, subMarkers);
 				}
 			}
 		}

@@ -571,9 +571,7 @@ def auto(*args):
 
 
 			print("zooming renderboxes")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r') as f:
-				mapInfo = json.load(f)
-			zoomRenderboxes(daytimeSurfaces, next(mapLayer for mapLayer in mapInfo["maps"] if mapLayer["path"] == timestamp), os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
+			zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
 			
 
 

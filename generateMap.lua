@@ -517,7 +517,7 @@ function fm.generateMap(data)
 	end 
 
 
-	
+
 	print("capturing renderboxes")
 	local linkWorkList = {}
 	for _, link in pairs(fm.API.linkData[fm.currentSurface.name] or {}) do
@@ -533,9 +533,9 @@ function fm.generateMap(data)
 		if link.filename == nil then
 
 			link.folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.subfolder .. "/" .. "renderboxes" .. "/"
-			link.startZ = maxZoom
+			link.zoom = { max = maxZoom }
 			link.filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
-			local path = link.folder .. maxZoom .. "/"  .. link.filename
+			local path = link.folder .. link.zoom.max .. "/"  .. link.filename
 			
 			if doneLinkPaths[path] == nil then
 				capture(link.to, link.toSurface, path .. "." .. extension)

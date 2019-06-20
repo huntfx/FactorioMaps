@@ -64,24 +64,34 @@ def simpleZoom(workQueue):
 			saveCompress(img, os.path.join(zFolder, filename + OUTEXT))
 
 
-def zoomRenderboxes(daytimeSurfaces, map, subpath, **kwargs):
-	zoomWork = []
-	for daytime, activeSurfaces in daytimeSurfaces.items():
-		surfaceZoomLevels = {}
-		for surfaceName in activeSurfaces:
+def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
+	with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as mapInfoFile:
+		mapInfo = json.load(mapInfoFile)
+		mapLayer = next(mapLayer for mapLayer in mapInfo["maps"] if mapLayer["path"] == timestamp)
 
-			surfaceZoomLevels[surfaceName] = map["surfaces"][surfaceName]["zoom"]["max"] - map["surfaces"][surfaceName]["zoom"]["min"]
+		zoomWork = []
+		for daytime, activeSurfaces in daytimeSurfaces.items():
+			surfaceZoomLevels = {}
+			for surfaceName in activeSurfaces:
+				surfaceZoomLevels[surfaceName] = mapLayer["surfaces"][surfaceName]["zoom"]["max"] - mapLayer["surfaces"][surfaceName]["zoom"]["min"]
 
-		for fromSurface, surface in map["surfaces"].items():
-			if "links" in surface:
-				for _, link in enumerate(surface["links"]):
-					if link["type"] == "link_renderbox_area":
-						totalZoomLevelsRequired = 0
-						for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
-							if zoomSurface in surfaceZoomLevels:
-								totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
+			for fromSurface, surface in mapLayer["surfaces"].items():
+				if "links" in surface:
+					for _, link in enumerate(surface["links"]):
+						if link["type"] == "link_renderbox_area":
+							totalZoomLevelsRequired = 0
+							for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
+								if zoomSurface in surfaceZoomLevels:
+									totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
 
-						zoomWork.append((os.path.abspath(os.path.join(subpath, link["folder"])), link["startZ"], link["startZ"] - totalZoomLevelsRequired, link["filename"]))
+							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
+							zoomWork.append((os.path.abspath(os.path.join(subpath, link["folder"])), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
+
+		
+		mapInfoFile.seek(0)
+		json.dump(mapInfo, mapInfoFile)
+		mapInfoFile.truncate()
+							
 
 						
 	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
