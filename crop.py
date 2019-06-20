@@ -42,11 +42,11 @@ def crop(*args, **kwargs):
 	subname = os.path.join(*args[1:4])
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 
-	basepath = os.path.join(toppath, "Images", subname)
+	basepath = os.path.join(toppath, "Images")
 	
 
 
-	datapath = os.path.join(basepath, "crop.txt")
+	datapath = os.path.join(basepath, subname, "crop.txt")
 	maxthreads = int(kwargs["cropthreads" if kwargs["cropthreads"] else "maxthreads"])
 
 

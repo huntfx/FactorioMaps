@@ -1,5 +1,6 @@
 "use strict";
 let DEBUG = false;
+const EXT = ".jpg";
 
 
 
@@ -14,7 +15,7 @@ L.TileLayer.prototype.getTileUrl = function(c) {
 		mapIndex = this.tileIndex.fallback;
 	if (isNaN(mapIndex))
 		return "";
-	return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
+	return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + EXT;
 }
 
 //TODO: iterate over surfaces
@@ -524,7 +525,7 @@ for (const [surfaceName, surface] of Object.entries(layers))
 			recursion = recursion || [];
 			const scale = Math.pow(2, recursion.reduce((p, a) => p + a[1], 0));
 			if (link.type == "link_renderbox_area") {
-				marker = L.imageOverlay("Images/" + layer.path + "/" + surfaceName + "/day/" + link.path,
+				marker = L.imageOverlay("Images/" + link.folder + link.startZ + "/" + link.filename + ".jpg",
 										convertCoordinateSet(link.renderFrom, recursion),
 										{ zIndex: recursion.length+1 }
 				).addTo(map);

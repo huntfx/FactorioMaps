@@ -18,7 +18,7 @@ import multiprocessing as mp
 
 from crop import crop
 from ref import ref
-from zoom import zoom
+from zoom import zoom, zoomRenderboxes
 from updateLib import update as updateLib
 
 
@@ -70,8 +70,17 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 
 	printingStackTraceback = False
 	# TODO: keep printing multiline stuff until new print detected
+	prevPrinted = False
 	def handleGameLine(line):
+		nonlocal prevPrinted
 		line = line.rstrip('\n')
+		if re.match(r'^\ *\d+(?:\.\d+)? *[^\n]*$', line) is None:
+			if prevPrinted:
+				printErase(line)
+			return
+		
+		prevPrinted = False
+		
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
 		if m is not None:
 			rawTags[m.group(1)] = m.group(2)
@@ -80,14 +89,18 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 		else:
 			if printingStackTraceback or line == "stack traceback:":
 				printErase("[GAME] %s" % line)
+				prevPrinted = True
 				return True
 			m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/(.*?)(?:(\[info\]) ?(.*))?$', line, re.IGNORECASE)
 			if m is not None and m.group(2) is not None:
 				printErase(m.group(3))
+				prevPrinted = True
 			elif m is not None and kwargs["verbose"]:
 				printErase(m.group(1))
+				prevPrinted = True
 			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (kwargs["verbosegame"] and len(line) > 0):
 				printErase("[GAME] %s" % line)
+				prevPrinted = True
 		return False
 
 
@@ -506,10 +519,19 @@ def auto(*args):
 
 
 
+			timestamp = None
+			daytimeSurfaces = {}
 			for jindex, screenshot in enumerate(latest):
 				otherInputs = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
 				outFolder = otherInputs.pop(0).replace("/", " ")
 				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
+
+				timestamp = otherInputs[0]
+				if otherInputs[2] in daytimeSurfaces:
+					daytimeSurfaces[otherInputs[2]].append(otherInputs[1])
+				else:
+					daytimeSurfaces[otherInputs[2]] = [otherInputs[1]]
+
 				#print("Cropping %s images" % screenshot)
 				crop(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 				waitlocalfilename = os.path.join(basepath, outFolder, "Images", otherInputs[0], otherInputs[1], otherInputs[2], "done.txt")
@@ -548,9 +570,15 @@ def auto(*args):
 						workthread.start()
 
 
+			print("zooming renderboxes")
+			with open(os.path.join(workfolder, "mapInfo.json"), 'r') as f:
+				mapInfo = json.load(f)
+			zoomRenderboxes(daytimeSurfaces, next(mapLayer for mapLayer in mapInfo["maps"] if mapLayer["path"] == timestamp), os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
+			
+
+
 
 		
-
 
 			
 

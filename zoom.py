@@ -1,8 +1,14 @@
-from PIL import Image, ImageChops
+import json
+import math
 import multiprocessing as mp
-import os, math, sys, time, math, json, psutil, subprocess
+import os
+import subprocess
+import sys
+import time
 from shutil import get_terminal_size as tsize
 
+import psutil
+from PIL import Image, ImageChops
 
 maxQuality = False  		# Set this to true if you want to compress/postprocess the images yourself later
 useBetterEncoder = True 	# Slower encoder that generates smaller images.
@@ -40,6 +46,58 @@ def saveCompress(img, path, inpath=None):
 			os.remove(tmp)
 	else:
 		img.save(path, format='JPEG', optimize=True, subsampling=0, quality=quality, progressive=True)
+
+def simpleZoom(workQueue):
+	for (folder, start, stop, filename) in workQueue:
+		path = os.path.join(folder, str(start), filename)
+		img = Image.open(path + EXT, mode='r').convert("RGB")
+		if OUTEXT != EXT:
+			saveCompress(img, path + OUTEXT, path + EXT)
+			os.remove(path + EXT)
+
+		for z in range(start - 1, stop - 1, -1):
+			if img.size[0] > 1 and img.size[1] > 1:
+				img = img.resize((img.size[0]//2, img.size[1]//2), Image.ANTIALIAS)
+			zFolder = os.path.join(folder, str(z))
+			if not os.path.exists(zFolder):
+				os.mkdir(zFolder)
+			saveCompress(img, os.path.join(zFolder, filename + OUTEXT))
+
+
+def zoomRenderboxes(daytimeSurfaces, map, subpath, **kwargs):
+	zoomWork = []
+	for daytime, activeSurfaces in daytimeSurfaces.items():
+		surfaceZoomLevels = {}
+		for surfaceName in activeSurfaces:
+
+			surfaceZoomLevels[surfaceName] = map["surfaces"][surfaceName]["zoom"]["max"] - map["surfaces"][surfaceName]["zoom"]["min"]
+
+		for fromSurface, surface in map["surfaces"].items():
+			if "links" in surface:
+				for _, link in enumerate(surface["links"]):
+					if link["type"] == "link_renderbox_area":
+						totalZoomLevelsRequired = 0
+						for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
+							if zoomSurface in surfaceZoomLevels:
+								totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
+
+						zoomWork.append((os.path.abspath(os.path.join(subpath, link["folder"])), link["startZ"], link["startZ"] - totalZoomLevelsRequired, link["filename"]))
+
+						
+	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
+	processes = []
+	for i in range(0, min(maxthreads, len(zoomWork))):
+		p = mp.Process(target=simpleZoom, args=(zoomWork[i::maxthreads],))
+		p.start()
+		processes.append(p)
+	for p in processes:
+		p.join()
+					
+
+
+
+
+
 
 def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chunk, keepLast=False):
 	chunksize = 2**(start-stop)
@@ -219,11 +277,13 @@ def zoom(*args, **kwargs):
 									doneSize += 1
 									progress = float(doneSize) / originalSize
 									tsiz = tsize()[0]-15
-									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 99, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 98, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
 
 								for p in processes:
 									p.join()
-									
+								
+
+								
 
 								if threadsplit > 0:
 									#print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))

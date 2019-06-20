@@ -471,7 +471,7 @@ function fm.generateMap(data)
 	
 	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder)
 
-	game.write_file(basePath .. "mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
+
 
 	local cropText = ""
 	local function capture(positionTable, surface, path)
@@ -500,10 +500,12 @@ function fm.generateMap(data)
 			position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2},
 			resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile},
 			zoom = fm.autorun.HD and 2 or 1,
-			path = subPath .. path,
+			path = basePath .. "Images/" .. path,
 			show_entity_info = fm.autorun.alt_mode
 		})                        
 	end
+
+
 
 	for _, chunk in pairs(allGrid) do   
 		local positionTable = {
@@ -511,9 +513,12 @@ function fm.generateMap(data)
 			{ x = (chunk.x + 1.5)  * gridPixelSize, y = (chunk.y + 1.5) * gridPixelSize  }
 		}
 
-		capture(positionTable, fm.currentSurface, maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
+		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
 	end 
 
+
+	
+	print("capturing renderboxes")
 	local linkWorkList = {}
 	for _, link in pairs(fm.API.linkData[fm.currentSurface.name] or {}) do
 		if link.type == "link_renderbox_area" then
@@ -521,25 +526,31 @@ function fm.generateMap(data)
 		end
 	end
 
-	local i = 0
+	local doneLinkPaths = {}
 	while #linkWorkList > 0 do
 		local link = table.remove(linkWorkList)
 
-		if link.path == False then
+		if link.filename == nil then
 
-			local path = "renderboxes" .. "/" .. maxZoom .. "/" .. i .. "." .. extension
-			capture(link.to, link.toSurface, path)
-			i = i + 1
-
-			link.path = path
+			link.folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.subfolder .. "/" .. "renderboxes" .. "/"
+			link.startZ = maxZoom
+			link.filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
+			local path = link.folder .. maxZoom .. "/"  .. link.filename
+			
+			if doneLinkPaths[path] == nil then
+				capture(link.to, link.toSurface, path .. "." .. extension)
+				doneLinkPaths[path] = true
+			end
 
 			for _, index in pairs(link.chain) do
 				linkWorkList[#linkWorkList+1] = fm.API.linkData[link.toSurface][index+1]
 			end
 		end
 	end
+
 	
 	
+	game.write_file(basePath .. "mapInfo.json", json(fm.autorun.mapInfo), false, data.player_index)
 	game.write_file(subPath .. "crop.txt", "v2" .. cropText, false, data.player_index)
 	
 end
