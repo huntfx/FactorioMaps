@@ -232,6 +232,13 @@ function updateLabels() {
 			continue;
 		label.visible = shouldBeVisible;
 	}
+	updateRenderboxUrls();
+}
+function updateRenderboxUrls() {
+	for (const label of labels)
+		if (label.visible && label.link && label.link.type == "link_renderbox_area")
+			for (const marker of [label.marker, ...label.subMarkers || []])
+				marker.setUrl("Images/" + marker.link.folder + Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset)) + "/" + marker.link.filename + ".jpg")
 }
 
 function convertCoordinates(pos, recursion) {
@@ -335,8 +342,6 @@ try {
 		window.location.reload();
 }
 
-updateLabelScaling({zoom: startZ});
-
 
 let lastHash = "";
 function updateHash() {
@@ -364,6 +369,7 @@ let map = L.map('map', {
 });
 map.on("zoomanim", updateLabelScaling);
 map.on("zoomend moveend", updateHash);
+map.on("zoomend moveend", updateRenderboxUrls);
 
 
 let daylightSlider, timeSlider, surfaceSlider;
@@ -527,12 +533,14 @@ for (const [surfaceName, surface] of Object.entries(layers))
 			const zOffset = recursion.reduce((p, a) => p + a[1], 0);
 			const scale = Math.pow(2, zOffset);
 			if (link.type == "link_renderbox_area") {
-				const z = Math.min(link.zoom.max, Math.max(link.zoom.min, startZ - zOffset));
-				marker = L.imageOverlay("Images/" + link.folder + z + "/" + link.filename + ".jpg",
+				// TODO: implement as tilelayer? (ugh)
+				marker = L.imageOverlay("",
 										convertCoordinateSet(link.renderFrom, recursion),
 										{ zIndex: recursion.length+1 }
 				);
+				marker.zOffset = zOffset;
 			} else {
+				// TODO: implement as overlay?
 				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
 					icon: new L.DivIcon({
 						className: 'map-link',
@@ -541,6 +549,7 @@ for (const [surfaceName, surface] of Object.entries(layers))
 					})
 				});
 			}
+			marker.link = link;
 			
 			if (subMarkers) {
 				subMarkers.push(marker);
@@ -558,7 +567,8 @@ for (const [surfaceName, surface] of Object.entries(layers))
 				labels.push(label);
 			}
 
-			if (link.chain) {
+			if (link.type == "link_renderbox_area") {
+
 				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
 				for (let nextIndex of link.chain) {
 					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], recursion, subMarkers);
@@ -567,6 +577,7 @@ for (const [surfaceName, surface] of Object.entries(layers))
 		}
 }
 updateLabels();
+updateLabelScaling({ zoom: startZ });
 
 
 if (daylightSlider)
