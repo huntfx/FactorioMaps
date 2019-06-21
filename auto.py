@@ -600,7 +600,7 @@ def auto(*args):
 			data = json.load(mapInfoJson)
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
-					if "tags" is surfaceStuff:
+					if "tags" in surfaceStuff:
 						for tag in surfaceStuff["tags"]:
 							if "iconType" in tag:
 								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
