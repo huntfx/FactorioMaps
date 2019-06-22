@@ -31,16 +31,17 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # Configuration
 Heres a list of flags that `auto.py` can accept:
+*Options with a \* do not have an effect when appending to existing timelapses.*
 
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | --- | --- |
-| `--dayonly` | Do not take nighttime screenshots (For now, this setting needs to be the same across one timeline). |
-| `--nightonly` | Do not take daytime screenshots. |
-| `--hd` | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
+| `--dayonly`*\** | Do not take nighttime screenshots (For now, this setting needs to be the same across one timeline). |
+| `--nightonly`*\** | Do not take daytime screenshots. |
+| `--hd=false|true`*\** | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. Default is now true as of 4.0.0 |
 | `--no-altmode` | Hides entity info (alt mode) |
-| `--build-range=5.2` | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). Only works on creating new timelapse, not when appending to an existing one. |
-| `--connect-range=1.2` | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. Only works on creating new timelapse, not when appending to an existing one. |
-| `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. Only works on creating new timelapse, not when appending to an existing one. |
+| `--build-range=5.2`*\** | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
+| `--connect-range=1.2`*\** | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
+| `--tag-range=5.2`*\** | The maximum range from mapview tags around which pictures are saved. |
 | `--surface=nauvis` | Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: `--surface=nauvis --surface="Factory floor 1"`. To find out the names of surfaces, use the command `/c for _,s in pairs(game.surfaces) do game.print(s.name) end`. |
 | `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
 | `--modpath=PATH` | Use *PATH* as the mod folder. |

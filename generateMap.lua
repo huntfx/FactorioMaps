@@ -50,20 +50,6 @@ function fm.generateMap(data)
 
 	game.set_wait_for_screenshots_to_finish()
 	
-	if fm.autorun.mapInfo.maps == nil then
-		fm.autorun.mapInfo = {
-			seed = game.default_map_gen_settings.seed,
-			mapExchangeString = game.get_map_exchange_string(),
-			maps = {}
-		}
-	end
-	if fm.autorun.mapInfo.ranges == nil then
-		fm.autorun.mapInfo.ranges = {
-			build = fm.autorun.around_build_range,
-			connect = fm.autorun.around_connect_range,
-			tag = fm.autorun.around_tag_range
-		}
-	end
 
 
 	-- delete folder (if it already exists)
@@ -81,7 +67,7 @@ function fm.generateMap(data)
 	local tilesPerChunk = 32    --hardcoded
 	
 	local pixelsPerTile = 32
-	if fm.autorun.HD == true then
+	if fm.autorun.mapInfo.options.HD == true then
 		pixelsPerTile = 64   -- HD textures have 64 pixels/tile
 	end
 
@@ -217,8 +203,8 @@ function fm.generateMap(data)
 
 					imageStats.tags = imageStats.tags + 1
 
-					for k = 0, fm.autorun.mapInfo.ranges.tag * pixelsPerTile / tilesPerChunk, 1 do
-						for l = 0, fm.autorun.mapInfo.ranges.tag * pixelsPerTile / tilesPerChunk, 1 do
+					for k = 0, fm.autorun.mapInfo.options.ranges.tag * pixelsPerTile / tilesPerChunk, 1 do
+						for l = 0, fm.autorun.mapInfo.options.ranges.tag * pixelsPerTile / tilesPerChunk, 1 do
 							for m = 1, k > 0 and -1 or 1, -2 do
 								for n = 1, l > 0 and -1 or 1, -2 do
 									local i = k * m
@@ -229,7 +215,7 @@ function fm.generateMap(data)
 										local chunk = { x = math.floor(x * gridPixelSize / tilesPerChunk), y = math.floor(y * gridPixelSize / tilesPerChunk) }
 										if fm.currentSurface.is_chunk_generated(chunk) then
 											local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
-											if dist <= math.pow(fm.autorun.mapInfo.ranges.tag + 0.5, 2) then
+											if dist <= math.pow(fm.autorun.mapInfo.options.ranges.tag + 0.5, 2) then
 
 												allGrid[x .. " " .. y] = {x = x, y = y, scan = bit32.bor(allGrid[x .. " " .. y] and allGrid[x .. " " .. y].scan or 0, ENUMSCAN.RANGE) }
 
@@ -267,13 +253,13 @@ function fm.generateMap(data)
 									local previousScan = (allGrid[gridX .. " " .. gridY] and allGrid[gridX .. " " .. gridY].scan or 0)
 									
 									if bit32.band(previousScan, ENUMSCAN.TAG) > 0 then
-										scanRange = fm.autorun.mapInfo.ranges.tag
+										scanRange = fm.autorun.mapInfo.options.ranges.tag
 									end
 									if bit32.band(previousScan, ENUMSCAN.BUILD) > 0 then
-										scanRange = math.max(scanRange, fm.autorun.mapInfo.ranges.build)
+										scanRange = math.max(scanRange, fm.autorun.mapInfo.options.ranges.build)
 									end
 									if bit32.band(previousScan, ENUMSCAN.CONNECT) > 0 then
-										scanRange = math.max(scanRange, fm.autorun.mapInfo.ranges.connect)
+										scanRange = math.max(scanRange, fm.autorun.mapInfo.options.ranges.connect)
 									end
 									
 									local oldScanRange = scanRange
@@ -281,7 +267,7 @@ function fm.generateMap(data)
 									local area = nil
 									local connectTypeCount = nil
 									local byBigType = false
-									if scanRange < fm.autorun.mapInfo.ranges.build then
+									if scanRange < fm.autorun.mapInfo.options.ranges.build then
 										if area == nil then
 											area = {{gridPixelSize * gridX, gridPixelSize * gridY}, {gridPixelSize * (gridX+1), gridPixelSize * (gridY+1)}}
 											connectTypeCount = fm.currentSurface.count_entities_filtered({ force=forces, area=area, type=fm.autorun.connect_types })
@@ -291,14 +277,14 @@ function fm.generateMap(data)
 											or connectTypeCount + excludeCount < fm.currentSurface.count_entities_filtered({ force=forces, area=area, limit=connectTypeCount+excludeCount+1 }) then
 
 											allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY, scan = bit32.bor(allGrid[gridX .. " " .. gridY] and allGrid[gridX .. " " .. gridY].scan or 0, bit32.bor(ENUMSCAN.RANGE, ENUMSCAN.BUILD)) }
-											scanRange = fm.autorun.mapInfo.ranges.build
+											scanRange = fm.autorun.mapInfo.options.ranges.build
 
 											imageStats.build = imageStats.build + 1
 
 											byBigType = true
 										end
 									end
-									if scanRange < fm.autorun.mapInfo.ranges.connect then
+									if scanRange < fm.autorun.mapInfo.options.ranges.connect then
 										if area == nil then
 											area = {{gridPixelSize * gridX, gridPixelSize * gridY}, {gridPixelSize * (gridX+1), gridPixelSize * (gridY+1)}}
 											excludeCount = fm.currentSurface.count_entities_filtered({ force=forces, area=area, type={"player"} })
@@ -306,7 +292,7 @@ function fm.generateMap(data)
 										if excludeCount < (connectTypeCount or fm.currentSurface.count_entities_filtered({ force=forces, area=area, limit=excludeCount+1, type=fm.autorun.connect_types })) then
 
 											allGrid[gridX .. " " .. gridY] = {x = gridX, y = gridY, scan = bit32.bor(allGrid[gridX .. " " .. gridY] and allGrid[gridX .. " " .. gridY].scan or 0, bit32.bor(ENUMSCAN.RANGE, ENUMSCAN.CONNECT)) }
-											scanRange = fm.autorun.mapInfo.ranges.connect
+											scanRange = fm.autorun.mapInfo.options.ranges.connect
 
 											imageStats.connect = imageStats.connect + 1
 										end
@@ -465,7 +451,7 @@ function fm.generateMap(data)
 	
 
 	local maxZoom = 20
-	if fm.autorun.HD == true then
+	if fm.autorun.mapInfo.options.HD == true then
 		maxZoom = 21
 	end
 
@@ -587,7 +573,7 @@ function fm.generateMap(data)
 			surface = surface,
 			position = {(box[1] + box[3]) / 2, (box[2] + box[4]) / 2},
 			resolution = {(box[3] - box[1])*pixelsPerTile, (box[4] - box[2])*pixelsPerTile},
-			zoom = fm.autorun.HD and 2 or 1,
+			zoom = fm.autorun.mapInfo.options.HD and 2 or 1,
 			path = basePath .. "Images/" .. path,
 			show_entity_info = fm.autorun.alt_mode
 		})                        

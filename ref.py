@@ -125,7 +125,7 @@ def ref(*args, **kwargs):
 		didAnything = False
 		if len(args) <= 3 or daytime == args[3]:
 			for surfaceName, surface in newMap["surfaces"].items():
-				if (len(args) <= 2 or surfaceName == args[2]) and daytime in surface and str(surface[daytime]) == "true" and (len(args) <= 3 or daytime == args[3]):
+				if (len(args) <= 2 or surfaceName == args[2]) and daytime in surface and str(surface[daytime]) and (len(args) <= 3 or daytime == args[3]):
 					didAnything = True
 					z = surface["zoom"]["max"]
 
@@ -287,7 +287,7 @@ def ref(*args, **kwargs):
 		outdata["maps"][str(new)] = { "surfaces": {} }
 	for surfaceName, daytimeImageIndex in allImageIndex.items():
 		indexList = []
-		daytime = "night" if "night" in daytimeImageIndex and data["maps"][new]["surfaces"][surfaceName] and str(data["maps"][new]["surfaces"][surfaceName]["night"]) == "true" else "day"
+		daytime = "night" if "night" in daytimeImageIndex and data["maps"][new]["surfaces"][surfaceName] and str(data["maps"][new]["surfaces"][surfaceName]["night"]) else "day"
 		surfaceImageIndex = daytimeImageIndex[daytime]
 		for y, xList in surfaceImageIndex.items():
 			string = getBase64(y, False)

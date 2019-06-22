@@ -86,7 +86,7 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 
 							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
 							# "folder": "1/Factory floor 3/day/renderboxes/",
-							zoomWork.append((os.path.abspath(os.path.join(subpath, link["folder"])), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
+							zoomWork.append((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime, "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
 
 		
 		mapInfoFile.seek(0)

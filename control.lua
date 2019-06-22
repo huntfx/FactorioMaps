@@ -45,6 +45,22 @@ script.on_event(defines.events.on_tick, function(event)
 		if nil == fm.tmp then	-- non surface specific stuff.
 
 			log("Start world capture")
+
+			if fm.autorun.mapInfo.options == nil then
+				fm.autorun.mapInfo.options = {
+					ranges = {
+						build = fm.autorun.around_build_range,
+						connect = fm.autorun.around_connect_range,
+						tag = fm.autorun.around_tag_range
+					},
+					HD = fm.autorun.HD,
+					day = fm.autorun.day,
+					night = fm.autorun.night,
+				}
+				fm.autorun.mapInfo.seed = game.default_map_gen_settings.seed
+				fm.autorun.mapInfo.mapExchangeString = game.get_map_exchange_string()
+				fm.autorun.mapInfo.maps = {}
+			end
 		
 			fm.savename = fm.autorun.name or ""
 			fm.topfolder = "FactorioMaps/" .. fm.savename
@@ -131,10 +147,10 @@ script.on_event(defines.events.on_tick, function(event)
 
 			latest = ""
 			for _, surfaceName in pairs(fm.autorun.surfaces) do
-				if fm.autorun.night then
+				if fm.autorun.mapInfo.options.night then
 					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " night\n" .. latest
 				end
-				if fm.autorun.day then
+				if fm.autorun.mapInfo.options.day then
 					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " day\n" .. latest
 				end
 			end
@@ -179,9 +195,9 @@ script.on_event(defines.events.on_tick, function(event)
 
 
 
-			if fm.autorun.day then
+			if fm.autorun.mapInfo.options.day then
 				fm.currentSurface.daytime = 0
-				fm.subfolder = "day"
+				fm.daytime = "day"
 				fm.generateMap(event)
 			end
 			
@@ -189,7 +205,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 		elseif fm.ticks < 2 then
 			
-			if fm.autorun.day then
+			if fm.autorun.mapInfo.options.day then
 				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/day/done.txt", "", false, event.player_index)
 			end
 	
@@ -198,9 +214,9 @@ script.on_event(defines.events.on_tick, function(event)
 				entity.destroy()
 			end
 
-			if fm.autorun.night then
+			if fm.autorun.mapInfo.options.night then
 				fm.currentSurface.daytime = 0.5
-				fm.subfolder = "night"
+				fm.daytime = "night"
 				fm.generateMap(event)
 			end
 	
@@ -208,7 +224,7 @@ script.on_event(defines.events.on_tick, function(event)
 	
 		elseif fm.ticks < 3 then
 			
-			if fm.autorun.night then
+			if fm.autorun.mapInfo.options.night then
 				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/night/done.txt", "", false, event.player_index)
 			end
 			
@@ -228,7 +244,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 
 		else
-			fm.subfolder = nil
+			fm.daytime = nil
 			fm.topfolder = nil
 
 			fm.done = true

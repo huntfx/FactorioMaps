@@ -126,7 +126,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 		map.surfaces[surface].layers = {};
 
 		["day", "night"].forEach(function(daytime) {
-			if (layer[daytime] == "true") {
+			if (layer[daytime]) {
 				let LLayer = L.tileLayer(undefined, {
 					id: layer.path,
 					attribution: '<a href="https://github.com/L0laapk3/FactorioMaps">FactorioMaps</a>',

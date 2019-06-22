@@ -27,7 +27,7 @@ from updateLib import update as updateLib
 kwargs = {
 	'dayonly': False,
 	'nightonly': False,
-	'hd': False,
+	'hd': True,
 	'no-altmode': False,
 	'tag-range': 5.2,
 	'build-range': 5.2,
@@ -49,6 +49,7 @@ kwargs = {
 	'dry': False,
 	'surface': []
 }
+changedKwargs = []
 
 
 
@@ -58,7 +59,7 @@ def printErase(arg):
 	try:
 		tsiz = tsize()[0]
 		print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg) - 1)), end="", flush=True)
-	except e:
+	except:
 		#raise
 		pass
 
@@ -180,10 +181,15 @@ def auto(*args):
 			return True
 		key = arg[2:].split("=",2)[0].lower()
 		if key in kwargs:
+			changedKwargs.append(key)
 			if isinstance(kwargs[key], list):
 				kwargs[key].append(arg[2:].split("=",2)[1])
 			else:
 				kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
+				if kwargs[key] == "true":
+					kwargs[key] = True
+				if kwargs[key] == "false":
+					kwargs[key] = False
 		else:
 			print(f'Bad flag: "{key}"')
 			raise ValueError(f'Bad flag: "{key}"')
@@ -379,6 +385,8 @@ def auto(*args):
 	datapath = os.path.join(workfolder, "latest.txt")
 	allTmpDirs = []
 
+	isFirstSnapshot = True
+
 	try:
 
 		for index, savename in () if kwargs["dry"] else enumerate(savenames):
@@ -395,8 +403,19 @@ def auto(*args):
 			if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
 				with open(os.path.join(workfolder, "mapInfo.json"), "r") as f:
 					mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
+					if isFirstSnapshot:
+						f.seek(0)
+						mapInfo = json.load(f)
+						if "options" in mapInfo:
+							for kwarg in changedKwargs:
+								if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
+									printErase("Warning: flag '" + kwarg + "' will not do anything when appending to existing timelines.")
+						isFirstSnapshot = False
+
 			else:
 				mapInfoLua = "{}"
+				isFirstSnapshot = False
+
 			if (os.path.isfile(os.path.join(workfolder, "chunkCache.json"))):
 				with open(os.path.join(workfolder, "chunkCache.json"), "r") as f:
 					chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
