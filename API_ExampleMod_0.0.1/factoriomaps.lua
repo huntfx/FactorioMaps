@@ -42,7 +42,7 @@ local function handle_factoriomaps()
 			if game.tick == 42233 then
 				-- link_renderbox_area: clickable box that renders the 'to' surface on the place of the 'from' surface.
 				remote.call("factoriomaps", "link_renderbox_area", {
-					from = { {-2, -45}, {14, -29}, surface = "nauvis" },
+					from = { {-2, -46}, {14, -30}, surface = "nauvis" },
 					to =   { {-31, -31}, {31, 31}, surface = "Factory floor 1" }
 				})
 				
