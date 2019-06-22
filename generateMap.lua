@@ -258,8 +258,8 @@ function fm.generateMap(data)
 					if #force.players > 0 and force.is_chunk_charted(fm.currentSurface, chunk) then
 						forceStats[force.name] = forceStats[force.name] + 1
 						imageStats.charted = imageStats.charted + 1
-						for gridX = (chunk.x) * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
-							for gridY = (chunk.y) * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
+						for gridX = chunk.x * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
+							for gridY = chunk.y * tilesPerChunk / gridPixelSize, (chunk.y + 1) * tilesPerChunk / gridPixelSize - 1 do
 								if allGrid[gridX .. " " .. gridY] == nil or bit32.band(allGrid[gridX .. " " .. gridY].scan, bit32.bnot(ENUMSCAN.RANGE)) then
 									imageStats.not_cached = imageStats.not_cached + 1
 
@@ -283,9 +283,7 @@ function fm.generateMap(data)
 									local byBigType = false
 									if scanRange < fm.autorun.mapInfo.ranges.build then
 										if area == nil then
-											local x = gridX + (tilesPerChunk / gridPixelSize) / 2 - 1
-											local y = gridY + (tilesPerChunk / gridPixelSize) / 2 - 1
-											area = {{gridPixelSize * (x-.5), gridPixelSize * (y-.5)}, {gridPixelSize * (x+.5), gridPixelSize * (y+.5)}}
+											area = {{gridPixelSize * gridX, gridPixelSize * gridY}, {gridPixelSize * (gridX+1), gridPixelSize * (gridY+1)}}
 											connectTypeCount = fm.currentSurface.count_entities_filtered({ force=forces, area=area, type=fm.autorun.connect_types })
 											excludeCount = fm.currentSurface.count_entities_filtered({ force=forces, area=area, type={"player"} })
 										end
@@ -302,9 +300,7 @@ function fm.generateMap(data)
 									end
 									if scanRange < fm.autorun.mapInfo.ranges.connect then
 										if area == nil then
-											local x = gridX + (tilesPerChunk / gridPixelSize) / 2 - 1
-											local y = gridY + (tilesPerChunk / gridPixelSize) / 2 - 1
-											area = {{gridPixelSize * (x-.5), gridPixelSize * (y-.5)}, {gridPixelSize * (x+.5), gridPixelSize * (y+.5)}}
+											area = {{gridPixelSize * gridX, gridPixelSize * gridY}, {gridPixelSize * (gridX+1), gridPixelSize * (gridY+1)}}
 											excludeCount = fm.currentSurface.count_entities_filtered({ force=forces, area=area, type={"player"} })
 										end
 										if excludeCount < (connectTypeCount or fm.currentSurface.count_entities_filtered({ force=forces, area=area, limit=excludeCount+1, type=fm.autorun.connect_types })) then
@@ -327,7 +323,7 @@ function fm.generateMap(data)
 														local y = gridY + j
 														if allGrid[x .. " " .. y] == nil or not bit32.band(allGrid[x .. " " .. y].scan, ENUMSCAN.RANGE) then
 															local chunk = { x = math.floor(x * gridPixelSize / tilesPerChunk), y = math.floor(y * gridPixelSize / tilesPerChunk) }
-															--if fm.currentSurface.is_chunk_generated(chunk) then
+															if fm.currentSurface.is_chunk_generated(chunk) then
 																local dist = math.pow(i * tilesPerChunk / pixelsPerTile, 2) + math.pow(j * tilesPerChunk / pixelsPerTile, 2)
 																if dist <= math.pow(scanRange + 0.5, 2) then
 													
@@ -344,7 +340,7 @@ function fm.generateMap(data)
 																		imageStats.connect = imageStats.connect + 1
 																	end
 																end
-															--end
+															end
 														end
 													end
 												end
@@ -601,8 +597,8 @@ function fm.generateMap(data)
 
 	for _, chunk in pairs(allGrid) do   
 		local positionTable = {
-			{ x = (chunk.x + 0.5)  * gridPixelSize, y = (chunk.y + 0.5) * gridPixelSize  },
-			{ x = (chunk.x + 1.5)  * gridPixelSize, y = (chunk.y + 1.5) * gridPixelSize  }
+			{ x =  chunk.x    * gridPixelSize, y =  chunk.y    * gridPixelSize  },
+			{ x = (chunk.x+1) * gridPixelSize, y = (chunk.y+1) * gridPixelSize  }
 		}
 
 		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
