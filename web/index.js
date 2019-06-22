@@ -136,7 +136,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 					maxZoom: layer.zoom.max + maxZoomExtra,
 					noWrap: true,
 					tileSize: 512 / window.devicePixelRatio,
-					keepBuffer: 3
+					keepBuffer: 99
 				});
 				LLayer.surface = surface;
 				LLayer.daytime = daytime;
@@ -194,11 +194,17 @@ function updateLabels() {
 	let previous = allTimestamps[previousIndex].join("-");
 
 	for (const label of labels) {
-		let shouldBeVisible = currentSurface == label.surface && (label.time == next || label.time == previous);
+		let shouldBeVisible = currentSurface == label.surface
+						   && (label.path == next || label.path == previous)
+						   && (label.daytime != "night" || nightOpacity > 0)
+						   && (label.daytime != "day" || nightOpacity < 1);
 
 		if (shouldBeVisible && !label.visible) {
-			for (const marker of [label.marker, ...label.subMarkers || []])
+			for (const marker of [label.marker, ...label.subMarkers || []]) {
+				if (label.visible && label.daytime == "night")
+					marker.setOpacity(nightOpacity);
 				marker.addTo(map);
+			}
 			if (label.link)
 				switch (label.link.type) {
 					case "link_box_point":
@@ -233,13 +239,15 @@ function updateLabels() {
 		label.visible = shouldBeVisible;
 	}
 	updateRenderboxUrls();
+	updateRenderboxOpacities(true);
 }
 function updateRenderboxUrls() {
 	for (const label of labels)
 		if (label.visible && label.link && label.link.type == "link_renderbox_area")
 			for (const marker of [label.marker, ...label.subMarkers || []])
-				marker.setUrl("Images/" + marker.link.folder + Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset)) + "/" + marker.link.filename + ".jpg");
+				marker.setUrl("Images/" + label.path + "/" + marker.link.toSurface + "/" + (marker.link.daynight ? label.daytime : "day") + "/renderboxes/" + Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset)) + "/" + marker.link.filename + ".jpg");
 }
+
 
 function convertCoordinates(pos, recursion) {
 	recursion = recursion || [];
@@ -367,9 +375,21 @@ let map = L.map('map', {
 	zoomAnimation: true,
 	crs: L.CRS.Simple // the map is 2D by nature
 });
+let nightOverlayPane = map.createPane("overlayPaneNight");
+nightOverlayPane.style.zIndex = 450;
 map.on("zoomanim", updateLabelScaling);
 map.on("zoomend moveend", updateHash);
 map.on("zoomend moveend", updateRenderboxUrls);
+
+
+let lastRenderboxNightOpacity = nightOpacity;
+function updateRenderboxOpacities(noUpdateLabels) {
+	nightOverlayPane.style.opacity = nightOpacity;
+
+	if (((nightOpacity == 1 || nightOpacity == 0) != (lastRenderboxNightOpacity == 1 || lastRenderboxNightOpacity == 0)) && !noUpdateLabels)
+		updateLabels();
+	lastRenderboxNightOpacity = nightOpacity;
+}
 
 
 let daylightSlider, timeSlider, surfaceSlider;
@@ -381,9 +401,26 @@ if (Object.values(layers).some(s => Object.values(s).some(l => l.day)) && Object
 		initial: nightOpacity,
 		length: 135,
 		gravitate: 7,
-		labels: [ {name: "Day", position: 0, layers: Object.values(layers).map(s => Object.values(s).map(l => l.day)).flat()}, {name: "Nightvision", position: .42, gravitate: 5}, {name: "Night", position: 1, layers: Object.values(layers).map(s => Object.values(s).map(l => l.night)).flat()} ],
+		labels: [
+			{
+				name: "Day",
+				position: 0,
+				layers: Object.values(layers).map(s => Object.values(s).map(l => l.day)).flat()
+			},
+			{
+				name: "Nightvision",
+				position: .42,
+				gravitate: 5
+			},
+			{
+				name: "Night",
+				position: 1,
+				layers: Object.values(layers).map(s => Object.values(s).map(l => l.night)).flat()
+			}
+		],
 		onChange: function(value) {
 			nightOpacity = Math.round(value * 100) / 100;
+			updateRenderboxOpacities();
 			updateHash();
 		}
 	});
@@ -509,7 +546,7 @@ for (const [surfaceName, surface] of Object.entries(layers))
 
 			let label = {
 				surface: surfaceName,
-				time: layer.path,
+				path: layer.path,
 				visible: false,
 				marker: L.marker(convertCoordinates(tag.position), {
 					icon: new L.DivIcon({
@@ -525,19 +562,25 @@ for (const [surfaceName, surface] of Object.entries(layers))
 		}
 
 
-		for (const link of layer.links)
-			createLink(link);
-		function createLink(link, recursion, subMarkers) {
+		for (const link of layer.links) {
+			if (link.daynight) {
+				if (layer.day)
+					createLink(link, "day")
+				if (layer.night)
+					createLink(link, "night")
+			} else
+				createLink(link);
+		}
+		function createLink(link, daytime, recursion, subMarkers) {
 			let marker;
 			recursion = recursion || [];
 			const zOffset = recursion.reduce((p, a) => p + a[1], 0);
 			const scale = Math.pow(2, zOffset);
 			if (link.type == "link_renderbox_area") {
-				// TODO: implement as tilelayer? (ugh)
-				marker = L.imageOverlay("",
-										convertCoordinateSet(link.renderFrom, recursion),
-										{ zIndex: recursion.length+1 }
-				);
+				let options = { zIndex: recursion.length + 1 }
+				if (daytime == "night")
+					options.pane = nightOverlayPane;
+				marker = L.imageOverlay("", convertCoordinateSet(link.renderFrom, recursion), options );
 				marker.zOffset = zOffset;
 			} else {
 				// TODO: implement as overlay?
@@ -557,21 +600,21 @@ for (const [surfaceName, surface] of Object.entries(layers))
 				subMarkers = [];
 				let label = {
 					surface: surfaceName,
-					time: layer.path,
+					path: layer.path,
 					visible: false,
 					link: link,
 					marker: marker,
 					subMarkers: subMarkers,
+					daytime: daytime
 				}
 
 				labels.push(label);
 			}
 
 			if (link.type == "link_renderbox_area") {
-
 				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
 				for (let nextIndex of link.chain) {
-					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], recursion, subMarkers);
+					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], daytime, recursion, subMarkers);
 				}
 			}
 		}

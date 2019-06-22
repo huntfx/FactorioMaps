@@ -54,7 +54,7 @@ function fm.generateMap(data)
 
 	-- delete folder (if it already exists)
 	local basePath = fm.topfolder
-	local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder
+	local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime
 	game.remove_path(subPath)
 	subPath = subPath .. "/"
 
@@ -67,7 +67,7 @@ function fm.generateMap(data)
 	local tilesPerChunk = 32    --hardcoded
 	
 	local pixelsPerTile = 32
-	if fm.autorun.mapInfo.options.HD == true then
+	if fm.autorun.mapInfo.options.HD then
 		pixelsPerTile = 64   -- HD textures have 64 pixels/tile
 	end
 
@@ -450,8 +450,9 @@ function fm.generateMap(data)
 	end
 	
 
+	print(serpent.block(fm.autorun.mapInfo.options))
 	local maxZoom = 20
-	if fm.autorun.mapInfo.options.HD == true then
+	if fm.autorun.mapInfo.options.HD then
 		maxZoom = 21
 	end
 
@@ -533,7 +534,7 @@ function fm.generateMap(data)
 		game.write_file(basePath .. "chunkCache.json", prettyjson(fm.autorun.chunkCache), false, data.player_index)
 	
 	end
-	fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name][fm.subfolder] = true
+	fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name][fm.daytime] = true
 
 
 	-- todo: if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].hidden is true, only care about the chunks linked to by renderboxes.
@@ -543,7 +544,7 @@ function fm.generateMap(data)
 
 
 	
-	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder)
+	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime)
 
 
 
@@ -587,7 +588,7 @@ function fm.generateMap(data)
 			{ x = (chunk.x+1) * gridPixelSize, y = (chunk.y+1) * gridPixelSize  }
 		}
 
-		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.subfolder .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
+		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
 	end 
 
 
@@ -603,21 +604,18 @@ function fm.generateMap(data)
 	while #linkWorkList > 0 do
 		local link = table.remove(linkWorkList)
 
-		if link.filename == nil then
+		local folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.daytime .. "/" .. "renderboxes" .. "/"
+		link.zoom = { max = maxZoom }
+		link.filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
+		local path = folder .. link.zoom.max .. "/"  .. link.filename
+		
+		if doneLinkPaths[path] == nil then
+			capture(link.to, link.toSurface, path .. "." .. extension)
+			doneLinkPaths[path] = true
+		end
 
-			local folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.subfolder .. "/" .. "renderboxes" .. "/"
-			link.zoom = { max = maxZoom }
-			link.filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
-			local path = folder .. link.zoom.max .. "/"  .. link.filename
-			
-			if doneLinkPaths[path] == nil then
-				capture(link.to, link.toSurface, path .. "." .. extension)
-				doneLinkPaths[path] = true
-			end
-
-			for _, index in pairs(link.chain) do
-				linkWorkList[#linkWorkList+1] = fm.API.linkData[link.toSurface][index+1]
-			end
+		for _, index in pairs(link.chain) do
+			linkWorkList[#linkWorkList+1] = fm.API.linkData[link.toSurface][index+1]
 		end
 	end
 

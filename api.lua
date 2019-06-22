@@ -165,6 +165,7 @@ local function addLink(type, from, fromSurface, to, toSurface)
 			{ x = centerX - toSizeX * sizeMul, y = centerY - toSizeY * sizeMul },
 			{ x = centerX + toSizeX * sizeMul, y = centerY + toSizeY * sizeMul }
 		}
+		newLink.daynight = true
 	end
 
 	log("adding link type " .. type .. " from " .. fromSurface.name .. " to " .. toSurface.name)
