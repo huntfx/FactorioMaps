@@ -249,7 +249,7 @@ function convertCoordinates(pos, recursion) {
 			y: (pos.y - origin.y) / Math.pow(2, scaleLevel) + offset.y,
 		}
 	}
-	return [-(pos.y - 1) / coordScale, (pos.x) / coordScale]
+	return [-pos.y / coordScale, pos.x / coordScale]
 }
 function convertCoordinateSet(set, recursion) {
 	return set.map(p => convertCoordinates(p, recursion));
