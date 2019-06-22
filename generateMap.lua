@@ -162,7 +162,7 @@ function fm.generateMap(data)
 						gridX = tonumber(gridX)
 						gridY = tonumber(gridY)
 
-						allGrid[s] = {
+						allGrid[gridX .. " " .. gridY] = {
 							x = gridX,
 							y = gridY,
 							scan = BASE64:find(#prevScanResult > 0 and prevScanResult or "A") - 1,
