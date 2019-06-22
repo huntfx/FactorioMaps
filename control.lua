@@ -144,13 +144,13 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 			end
 
-
 			latest = ""
 			for _, surfaceName in pairs(fm.autorun.surfaces) do
-				if fm.autorun.mapInfo.options.night then
+				local surface = game.surfaces[surfaceName]
+				if fm.autorun.mapInfo.options.night and not surface.freeze_daytime then
 					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " night\n" .. latest
 				end
-				if fm.autorun.mapInfo.options.day then
+				if fm.autorun.mapInfo.options.day or (surface.freeze_daytime and fm.autorun.mapInfo.options.night) then
 					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " day\n" .. latest
 				end
 			end

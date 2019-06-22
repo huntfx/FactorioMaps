@@ -605,12 +605,23 @@ function fm.generateMap(data)
 		local link = table.remove(linkWorkList)
 
 		local folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.daytime .. "/" .. "renderboxes" .. "/"
-		link.zoom = { max = maxZoom }
-		link.filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
-		local path = folder .. link.zoom.max .. "/"  .. link.filename
+		local filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
+		local path = folder .. maxZoom .. "/"  .. filename
+
+		local surface = game.surfaces[link.toSurface]
+		link.daynight = not surface.freeze_daytime
+		if link.daynight then
+			surface.daytime = fm.daytime == "day" and 0 or 0.5
+		end
+		
 		
 		if doneLinkPaths[path] == nil then
-			capture(link.to, link.toSurface, path .. "." .. extension)
+			if link.daynight or not link.filename then
+				capture(link.to, link.toSurface, path .. "." .. extension)
+				link.filename = filename
+				link.zoom = { max = maxZoom }
+		
+			end
 			doneLinkPaths[path] = true
 		end
 

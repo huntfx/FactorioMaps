@@ -69,7 +69,7 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 		mapInfo = json.load(mapInfoFile)
 		mapLayer = next(mapLayer for mapLayer in mapInfo["maps"] if mapLayer["path"] == timestamp)
 
-		zoomWork = []
+		zoomWork = set()
 		for daytime, activeSurfaces in daytimeSurfaces.items():
 			surfaceZoomLevels = {}
 			for surfaceName in activeSurfaces:
@@ -85,7 +85,7 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 									totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
 
 							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
-							zoomWork.append((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime, "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
+							zoomWork.add((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime if link["daynight"] else "day", "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
 
 		
 		mapInfoFile.seek(0)
@@ -96,6 +96,7 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 						
 	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
 	processes = []
+	zoomWork = list(zoomWork)
 	for i in range(0, min(maxthreads, len(zoomWork))):
 		p = mp.Process(target=simpleZoom, args=(zoomWork[i::maxthreads],))
 		p.start()
