@@ -238,7 +238,7 @@ function updateRenderboxUrls() {
 	for (const label of labels)
 		if (label.visible && label.link && label.link.type == "link_renderbox_area")
 			for (const marker of [label.marker, ...label.subMarkers || []])
-				marker.setUrl("Images/" + marker.link.folder + Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset)) + "/" + marker.link.filename + ".jpg")
+				marker.setUrl("Images/" + marker.link.folder + Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset)) + "/" + marker.link.filename + ".jpg");
 }
 
 function convertCoordinates(pos, recursion) {

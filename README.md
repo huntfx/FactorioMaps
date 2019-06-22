@@ -38,9 +38,9 @@ Heres a list of flags that `auto.py` can accept:
 | `--nightonly` | Do not take daytime screenshots. |
 | `--hd` | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
 | `--no-altmode` | Hides entity info (alt mode) |
-| `--build-range=5.2` | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
-| `--connect-range=1.2` | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
-| `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. |
+| `--build-range=5.2` | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). Only works on creating new timelapse, not when appending to an existing one. |
+| `--connect-range=1.2` | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. Only works on creating new timelapse, not when appending to an existing one. |
+| `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. Only works on creating new timelapse, not when appending to an existing one. |
 | `--surface=nauvis` | Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: `--surface=nauvis --surface="Factory floor 1"`. To find out the names of surfaces, use the command `/c for _,s in pairs(game.surfaces) do game.print(s.name) end`. |
 | `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
 | `--modpath=PATH` | Use *PATH* as the mod folder. |

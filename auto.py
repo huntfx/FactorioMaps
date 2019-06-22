@@ -29,9 +29,9 @@ kwargs = {
 	'nightonly': False,
 	'hd': False,
 	'no-altmode': False,
+	'tag-range': 5.2,
 	'build-range': 5.2,
 	'connect-range': 1.2,
-	'tag-range': 5.2,
 	'factorio': None,
 	'modpath': "../../mods",
 	'basepath': "FactorioMaps",
@@ -413,8 +413,8 @@ def auto(*args):
 					f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
 					f'around_tag_range = {float(kwargs["tag-range"])},\n'
 					f'around_build_range = {float(kwargs["build-range"])},\n'
-					f'around_smaller_range = {float(kwargs["connect-range"])},\n'
-					f'smaller_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
+					f'around_connect_range = {float(kwargs["connect-range"])},\n'
+					f'connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
 					f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
 					f'surfaces = {surfaceString},\n'
 					f'name = "{foldername + "/"}",\n'
