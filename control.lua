@@ -108,12 +108,17 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 			
 			fm.API.pull()
+			fm.API.activeLinks = {}
 			local newSurfaces = {true} -- discover all surfaces linked to from the original surface list or any new surfaces found by this process.
 			while #newSurfaces > 0 do
 				newSurfaces = {}
 				for _, surfaceName in pairs(fm.autorun.surfaces) do
+					fm.API.activeLinks[surfaceName] = {}
+
 					if fm.API.linkData[surfaceName] then
 						for _, link in pairs(fm.API.linkData[surfaceName]) do
+							fm.API.activeLinks[surfaceName][#fm.API.activeLinks[surfaceName]+1] = link
+							
 							if link.type == "link_box_point" or link.type == "link_box_area" then
 								local otherSurfaceAlreadyInList = false
 								for _, otherSurfaceName in pairs(newSurfaces) do

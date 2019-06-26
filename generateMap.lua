@@ -434,23 +434,36 @@ function fm.generateMap(data)
 
 
 
+	local linkStats = {
+		link_box_point = 0,
+		link_box_area = 0,
+		link_renderbox_area = 0,
+	}
+	for _, links in pairs(fm.API.activeLinks) do
+		for _, link in pairs(links) do
+			linkStats[link.type] = linkStats[link.type] + 1
+		end
+	end
 
 	log("imageStats")
-	log("        remembered: " .. imageStats.remembered)
-	log("        charted:    " .. imageStats.charted * math.pow(tilesPerChunk / gridPixelSize, 2))
-	log("        not_cached: " .. imageStats.not_cached)
-	log("        tag:        " .. imageStats.tags)
-	log("        build:      " .. imageStats.build)
-	log("        connect:    " .. imageStats.connect)
-	log("        player:     " .. imageStats.player)
-	log("        smoothed:   " .. imageStats.smoothed)
+	log("        remembered:          " .. imageStats.remembered)
+	log("        charted:             " .. imageStats.charted * math.pow(tilesPerChunk / gridPixelSize, 2))
+	log("        not_cached:          " .. imageStats.not_cached)
+	log("        tag:                 " .. imageStats.tags)
+	log("        build:               " .. imageStats.build)
+	log("        connect:             " .. imageStats.connect)
+	log("        player:              " .. imageStats.player)
+	log("        smoothed:            " .. imageStats.smoothed)
+	log("linkStats")
+	log("        link_box_point:      " .. linkStats.link_box_point)
+	log("        link_box_area:       " .. linkStats.link_box_area)
+	log("        link_renderbox_area: " .. linkStats.link_renderbox_area)
 	log("forceStats")
 	for force, count in pairs(forceStats) do
 		log("        " .. force .. ": " .. count)
 	end
 	
 
-	print(serpent.block(fm.autorun.mapInfo.options))
 	local maxZoom = 20
 	if fm.autorun.mapInfo.options.HD then
 		maxZoom = 21
@@ -467,7 +480,7 @@ function fm.generateMap(data)
 			surfaces = {}
 		}
 
-		for surfaceName, links in pairs(fm.API.linkData) do
+		for surfaceName, links in pairs(fm.API.activeLinks) do
 			fm.autorun.mapInfo.maps[mapIndex].surfaces[surfaceName] = {
 				zoom = { max = maxZoom },
 				links = links
@@ -488,7 +501,7 @@ function fm.generateMap(data)
 			tags = {},
 			hidden = false,
 			captured = true,
-			links = fm.API.linkData[fm.currentSurface.name] or {}
+			links = fm.API.activeLinks[fm.currentSurface.name] or {}
 		}
 
 		for _, s in pairs(fm.API.hiddenSurfaces) do
@@ -594,7 +607,7 @@ function fm.generateMap(data)
 
  
 	local linkWorkList = {}
-	for _, link in pairs(fm.API.linkData[fm.currentSurface.name] or {}) do
+	for _, link in pairs(fm.API.activeLinks[fm.currentSurface.name] or {}) do
 		if link.type == "link_renderbox_area" then
 			linkWorkList[#linkWorkList+1] = link
 		end
@@ -626,7 +639,7 @@ function fm.generateMap(data)
 		end
 
 		for _, index in pairs(link.chain) do
-			linkWorkList[#linkWorkList+1] = fm.API.linkData[link.toSurface][index+1]
+			linkWorkList[#linkWorkList+1] = fm.API.activeLinks[link.toSurface][index+1]
 		end
 	end
 

@@ -78,8 +78,6 @@ end
 local function testChainCausality(link, sourceSurface, sourceIndex)
 	for _, nextLinkIndex in pairs(link.chain or {}) do
 		local nextLink = fm.API.linkData[link.toSurface][nextLinkIndex+1]
-		log(nextLinkIndex .. " " .. sourceIndex)
-		log(sourceSurface .. " " .. link.toSurface)
 		if (nextLinkIndex == sourceIndex and sourceSurface == link.toSurface) or not testChainCausality(nextLink, sourceSurface, sourceIndex) then
 			return false
 		end
@@ -181,7 +179,7 @@ end
 
 
 remote.add_interface("factoriomaps", {
-	get_start_capture_event = function()
+	get_start_capture_event_id = function()
 		return fm.API.startEvent
 	end,
 	link_box_point = function(options)

@@ -312,9 +312,6 @@ def auto(*args):
 			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
-	if os.path.isfile("autorun.lua"):
-		os.remove("autorun.lua")
-
 
 
 	updateLib(False)
@@ -438,12 +435,12 @@ def auto(*args):
 					f'surfaces = {surfaceString},\n'
 					f'name = "{foldername + "/"}",\n'
 					f'mapInfo = {mapInfoLua},\n'
-					f'chunkCache = {chunkCache}\n'
+					f'chunkCache = {chunkCache},\n'
 					f'}}'
 				)
 
 
-			printErase("starting factorio")
+			printErase("building config.ini")
 			tmpDir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
 			allTmpDirs.append(tmpDir)
 			try:
@@ -481,6 +478,7 @@ def auto(*args):
 
 			results = manager.list()
 
+			printErase("starting factorio")
 			startLogProcess = mp.Process(target=startGameAndReadGameLogs, args=(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags), kwargs=kwargs)
 			startLogProcess.daemon = True
 			startLogProcess.start()
@@ -489,6 +487,9 @@ def auto(*args):
 			with condition:
 				condition.wait()
 			isSteam, pid = results[:]
+			
+
+			open("autorun.lua", 'w').close()
 
 
 			if isSteam is None:
@@ -501,6 +502,8 @@ def auto(*args):
 
 			while not os.path.exists(datapath):
 				time.sleep(0.4)
+
+				
 
 			latest = []
 			with open(datapath, 'r') as f:
@@ -729,7 +732,6 @@ def auto(*args):
 
 
 		print("cleaning up")
-		open("autorun.lua", 'w').close()
 		for tmpDir in allTmpDirs:
 			try:
 				os.unlink(os.path.join(tmpDir, "script-output"))
