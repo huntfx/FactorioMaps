@@ -487,9 +487,6 @@ def auto(*args):
 			with condition:
 				condition.wait()
 			isSteam, pid = results[:]
-			
-
-			open("autorun.lua", 'w').close()
 
 
 			if isSteam is None:
@@ -502,6 +499,9 @@ def auto(*args):
 
 			while not os.path.exists(datapath):
 				time.sleep(0.4)
+			
+
+			open("autorun.lua", 'w').close()
 
 				
 
