@@ -439,7 +439,7 @@ function fm.generateMap(data)
 		link_box_area = 0,
 		link_renderbox_area = 0,
 	}
-	for _, links in pairs(fm.API.activeLinks) do
+	for _, links in pairs(fm.API.linkData) do
 		for _, link in pairs(links) do
 			linkStats[link.type] = linkStats[link.type] + 1
 		end
@@ -480,7 +480,7 @@ function fm.generateMap(data)
 			surfaces = {}
 		}
 
-		for surfaceName, links in pairs(fm.API.activeLinks) do
+		for surfaceName, links in pairs(fm.API.linkData) do
 			fm.autorun.mapInfo.maps[mapIndex].surfaces[surfaceName] = {
 				zoom = { max = maxZoom },
 				links = links
@@ -501,7 +501,7 @@ function fm.generateMap(data)
 			tags = {},
 			hidden = false,
 			captured = true,
-			links = fm.API.activeLinks[fm.currentSurface.name] or {}
+			links = fm.API.linkData[fm.currentSurface.name] or {}
 		}
 
 		for _, s in pairs(fm.API.hiddenSurfaces) do
@@ -607,7 +607,7 @@ function fm.generateMap(data)
 
  
 	local linkWorkList = {}
-	for _, link in pairs(fm.API.activeLinks[fm.currentSurface.name] or {}) do
+	for _, link in pairs(fm.API.linkData[fm.currentSurface.name] or {}) do
 		if link.type == "link_renderbox_area" then
 			linkWorkList[#linkWorkList+1] = link
 		end
@@ -639,7 +639,7 @@ function fm.generateMap(data)
 		end
 
 		for _, index in pairs(link.chain) do
-			linkWorkList[#linkWorkList+1] = fm.API.activeLinks[link.toSurface][index+1]
+			linkWorkList[#linkWorkList+1] = fm.API.linkData[link.toSurface][index+1]
 		end
 	end
 

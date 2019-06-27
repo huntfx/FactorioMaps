@@ -5,6 +5,8 @@ import os
 import subprocess
 import sys
 import time
+import cv2, numpy
+from turbojpeg import TurboJPEG
 from shutil import get_terminal_size as tsize
 
 import psutil
@@ -33,19 +35,20 @@ def printErase(arg):
 		pass
 
 
+if os.name == 'nt':
+	jpeg = TurboJPEG('mozjpeg/turbojpeg x64.dll' if sys.maxsize > 2**32  else 'mozjpeg/turbojpeg x86.dll')
+else:
+	jpeg = TurboJPEG()
+
+
 def saveCompress(img, path, inpath=None):
 	if maxQuality:  # do not waste any time compressing the image
-		img.save(path, subsampling=0, quality=100)
+		return img.save(path, subsampling=0, quality=100)
 
-	elif os.name == 'nt' and useBetterEncoder: #mozjpeg only supported on windows for now, feel free to make a pull request
-		if not inpath:
-			tmp = img._dump()
-		# mozjpeg version used is 3.3.1
-		subprocess.check_call(["cjpeg", "-quality", str(quality), "-optimize", "-progressive", "-sample", "1x1", "-outfile", path, inpath if inpath else tmp]) # This software is based in part on the work of the Independent JPEG Group.
-		if not inpath:
-			os.remove(tmp)
-	else:
-		img.save(path, format='JPEG', optimize=True, subsampling=0, quality=quality, progressive=True)
+	
+	out_file = open(path, 'wb')
+	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy() ))
+	out_file.close()
 
 def simpleZoom(workQueue):
 	for (folder, start, stop, filename) in workQueue:
@@ -78,7 +81,7 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 			for fromSurface, surface in mapLayer["surfaces"].items():
 				if "links" in surface:
 					for _, link in enumerate(surface["links"]):
-						if link["type"] == "link_renderbox_area":
+						if link["type"] == "link_renderbox_area" and "zoom" in link:
 							totalZoomLevelsRequired = 0
 							for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
 								if zoomSurface in surfaceZoomLevels:
