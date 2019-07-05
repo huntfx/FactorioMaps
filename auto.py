@@ -657,7 +657,7 @@ def auto(*args):
 				iconColor = m.group(2).split("?")
 				icon = iconColor[0]
 				if m.group(1) in ("base", "core"):
-					src = os.path.join(factorioPath, "../../../data", m.group(1), icon + ".png")
+					src = os.path.join(os.path.split(factorioPath)[0], "../../data", m.group(1), icon + ".png")
 				else:
 					mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
 					if not mod[1][3]: #true if mod is zip
