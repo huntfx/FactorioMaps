@@ -17,7 +17,7 @@ useBetterEncoder = True 	# Slower encoder that generates smaller images.
 
 quality = 80
 	
-EXT = ".bmp"
+EXT = ".png"
 OUTEXT = ".jpg"     		# format='JPEG' is hardcoded in places, meed to modify those, too. Most parameters are not supported outside jpeg.
 THUMBNAILEXT = ".png"
 

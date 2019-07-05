@@ -553,7 +553,7 @@ function fm.generateMap(data)
 	-- todo: if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].hidden is true, only care about the chunks linked to by renderboxes.
 
    
-	local extension = "bmp"
+	local extension = ".png"
 
 
 	
@@ -601,7 +601,7 @@ function fm.generateMap(data)
 			{ x = (chunk.x+1) * gridPixelSize, y = (chunk.y+1) * gridPixelSize  }
 		}
 
-		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. "." .. extension)
+		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. extension)
 	end 
 
 
@@ -630,7 +630,7 @@ function fm.generateMap(data)
 		
 		if doneLinkPaths[path] == nil then
 			if link.daynight or not link.filename then
-				capture(link.to, link.toSurface, path .. "." .. extension)
+				capture(link.to, link.toSurface, path .. extension)
 				link.filename = filename
 				link.zoom = { max = maxZoom }
 		

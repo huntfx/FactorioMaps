@@ -6,7 +6,7 @@ from shutil import get_terminal_size as tsize
 
 
 
-ext = ".bmp"
+ext = ".png"
 outext = ".jpg"
 
 
