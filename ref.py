@@ -3,6 +3,7 @@ from PIL import Image, ImageChops, ImageStat
 import multiprocessing as mp
 from functools import partial
 from shutil import get_terminal_size as tsize
+import traceback
 
 
 
@@ -15,8 +16,9 @@ outext = ".jpg"
 def compare(path, basePath, new, treshold, progressQueue):
 	
 	try:
-		newImg = Image.open(os.path.join(basePath, new, *path[1:]), mode='r')
-		oldImg = Image.open(os.path.join(basePath, *path).replace(ext, outext), mode='r')
+		# jpeg artifacts always average out perfectly over 8x8 sections, we take advantage of that and scale down by 8 before we compare.
+		newImg = Image.open(os.path.join(basePath, new, *path[1:]), mode='r').convert("RGB")
+		oldImg = Image.open(os.path.join(basePath, *path).replace(ext, outext), mode='r').convert("RGB")
 		size = (oldImg.size[0] / 8, oldImg.size[0] / 8)
 		newImg.thumbnail(size, Image.BILINEAR)
 		oldImg.thumbnail(size, Image.BILINEAR)
@@ -27,6 +29,11 @@ def compare(path, basePath, new, treshold, progressQueue):
 	except IOError:
 		print("\rerror   ")
 		pass
+	except:
+		print("\r")
+		traceback.print_exc()
+		print("\n")
+		raise
 	finally:
 		progressQueue.put(True, True)
 	return (False, path[1:])
@@ -214,9 +221,9 @@ def ref(*args, **kwargs):
 			if kwargs["verbose"]: print("comparing %s existing images" % len(compareList))
 			treshold = .03 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
 			#print(treshold)
-			#compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]))
 			m = mp.Manager()
 			progressQueue = m.Queue()
+			#compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue)
 			workers = pool.map_async(partial(compare, treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue), compareList, 128)
 			doneSize = 0
 			print("ref  {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
