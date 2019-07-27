@@ -1,4 +1,19 @@
-import os, sys
+
+
+import traceback, os, sys, pkg_resources
+from pkg_resources import DistributionNotFound, VersionConflict
+
+try:
+	with open('packages.txt') as f:
+		pkg_resources.require(f.read().splitlines())
+except (DistributionNotFound, VersionConflict) as ex:
+	traceback.print_exc()
+	print("\nDependencies not met. Run `pip install -r packages.txt` to install all dependencies.")
+	sys.exit();
+	
+
+
+
 import subprocess, signal
 import json
 import threading, psutil
@@ -20,7 +35,6 @@ from crop import crop
 from ref import ref
 from zoom import zoom, zoomRenderboxes
 from updateLib import update as updateLib
-
 
 
 

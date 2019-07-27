@@ -12,7 +12,7 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 1. Install the latest version of [python 3.7](https://www.python.org/downloads/). (Do not install python 2.)
 1. Recommended: [Add python to your environment variables](https://stackoverflow.com/a/4855685/3185280).
 1. Install pip: Download the latest [get-pip.py](https://bootstrap.pypa.io/get-pip.py), and run it (`python get-pip.py` in the command line).
-1. Install the following pip packages: `pip install Pillow psutil`.
+1. Install the following pip packages: `pip install -r packages.txt`.
 
 # How to Use
 1. Make sure you close factorio before starting the process.
