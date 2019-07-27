@@ -424,7 +424,7 @@ def auto(*args):
 						if "options" in mapInfo:
 							for kwarg in changedKwargs:
 								if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
-									printErase("Warning: flag '" + kwarg + "' will not do anything when appending to existing timelines.")
+									printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
 						isFirstSnapshot = False
 
 			else:
