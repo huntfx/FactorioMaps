@@ -45,7 +45,7 @@ from updateLib import update as updateLib
 kwargs = {
 	'dayonly': False,
 	'nightonly': False,
-	'hd': True,
+	'hd': False,
 	'no-altmode': False,
 	'tag-range': 5.2,
 	'build-range': 5.2,

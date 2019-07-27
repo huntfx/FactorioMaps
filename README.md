@@ -37,7 +37,7 @@ Heres a list of flags that `auto.py` can accept:
 | --- | --- |
 | `--dayonly`*\** | Do not take nighttime screenshots (For now, this setting needs to be the same across one timeline). |
 | `--nightonly`*\** | Do not take daytime screenshots. |
-| `--hd=false|true`*\** | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. Default is now true as of 4.0.0 |
+| `--hd`*\** | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
 | `--no-altmode` | Hides entity info (alt mode) |
 | `--build-range=5.2`*\** | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
 | `--connect-range=1.2`*\** | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
