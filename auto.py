@@ -1,6 +1,10 @@
 
+import sys
 
-import traceback, os, sys, pkg_resources
+if sys.hexversion < 0x3060000:
+	raise Exception("Python 3.6 or higher is required for this script.")
+
+import traceback, os, pkg_resources
 from pkg_resources import DistributionNotFound, VersionConflict
 
 try:
