@@ -13,7 +13,7 @@ try:
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
 	print("\nDependencies not met. Run `pip install -r packages.txt` to install all dependencies.")
-	sys.exit();
+	sys.exit(1)
 	
 
 
