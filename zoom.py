@@ -36,7 +36,7 @@ def printErase(arg):
 
 
 if os.name == 'nt':
-	jpeg = TurboJPEG('mozjpeg/turbojpeg x64.dll' if sys.maxsize > 2**32  else 'mozjpeg/turbojpeg x86.dll')
+	jpeg = TurboJPEG('mozjpeg/turbojpeg x64.dll')
 else:
 	jpeg = TurboJPEG()
 
