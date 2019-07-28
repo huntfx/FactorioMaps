@@ -70,7 +70,8 @@ If you wish to host your map for other people to a server, you need to take into
     All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
 
 # Known mods that make use of the API to improve compability
-    * Factorissimo: Able to render the inside of factory buildings recursively.
+    * **Factorissimo**: Able to render the inside of factory buildings recursively.
+    * Your mod? If you want to have a chat, you can always find me on discord: L0laapk3#2010
 
 # Known limitations
 * If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. The only way to get around this is to install the standalone version of factorio.
