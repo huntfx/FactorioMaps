@@ -8,6 +8,7 @@ import time
 import cv2, numpy
 from turbojpeg import TurboJPEG
 from shutil import get_terminal_size as tsize
+from sys import platform as _platform
 
 import psutil
 from PIL import Image, ImageChops
@@ -23,6 +24,8 @@ THUMBNAILEXT = ".png"
 
 BACKGROUNDCOLOR = (27, 45, 51)
 THUMBNAILSCALE = 2
+
+MINRENDERBOXSIZE = 8
 
 
 
@@ -59,7 +62,7 @@ def simpleZoom(workQueue):
 			os.remove(path + EXT)
 
 		for z in range(start - 1, stop - 1, -1):
-			if img.size[0] > 1 and img.size[1] > 1:
+			if img.size[0] >= MINRENDERBOXSIZE*2 and img.size[1] >= MINRENDERBOXSIZE*2:
 				img = img.resize((img.size[0]//2, img.size[1]//2), Image.ANTIALIAS)
 			zFolder = os.path.join(folder, str(z))
 			if not os.path.exists(zFolder):
