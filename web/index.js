@@ -243,13 +243,14 @@ function updateLabels() {
 }
 
 function updateRenderboxUrls() {
-	asyncRenderBoxUpdateList = [];
 	for (const label of labels)
 		if (label.visible && label.link && label.link.type == "link_renderbox_area")
 			for (const marker of [label.marker, ...label.subMarkers || []]) {
-				const url = "Images/" + label.path + "/" + marker.link.toSurface + "/" + (marker.link.daynight ? label.daytime : "day") + "/renderboxes/" + Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset)) + "/" + marker.link.filename + ".jpg";
-				if (marker._url != url)
-					marker.setUrl(url);
+				const z = Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset));
+				if (marker._lastZ != z) {
+					marker._lastZ = z;
+					marker.setUrl("Images/" + label.path + "/" + marker.link.toSurface + "/" + (marker.link.daynight ? label.daytime : "day") + "/renderboxes/" + z + "/" + marker.link.filename + ".jpg");
+				}
 			}
 }
 
