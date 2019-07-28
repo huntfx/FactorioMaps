@@ -60,6 +60,9 @@ Heres a list of flags that `auto.py` can accept:
  
 Image quality settings can be changed in the top of `zoom.py`.
 
+# Result folder estimates
+You can expect the resulting folders to take up approx. (very rough estimate) 15 times the savefile size per timestamp per daytime for day images and 10 times for night images. The intermediate total disk usage will be much higher, 10 times the final result or more. If this is a problem for you, go put a +1 on [#46](https://github.com/L0laapk3/FactorioMaps/issues/46).
+
 # Hosting this on a server
 If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
 1. Of the files that this program generates, the files required to be hosted are:
