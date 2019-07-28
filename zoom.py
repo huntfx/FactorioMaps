@@ -41,10 +41,10 @@ def printErase(arg):
 # note that these are all 64 bit libraries since factorio doesnt support 32 bit.
 if os.name == "nt":
 	jpeg = TurboJPEG("mozjpeg/turbojpeg.dll")
-elif _platform == "darwin":
-	jpeg = TurboJPEG("mozjpeg/libturbojpeg.dylib")	# todo: actually compile and add this file to the repo
+# elif _platform == "darwin":						# I'm not actually sure if mac can run linux libraries or not.
+# 	jpeg = TurboJPEG("mozjpeg/libturbojpeg.dylib")	# If anyone on mac has problems with the line below please make an issue :)
 else:
-	jpeg = TurboJPEG("mozjpeg/libturbojpeg.so")		# todo: actually compile and add this file to the repo
+	jpeg = TurboJPEG("mozjpeg/libturbojpeg.so")
 
 
 def saveCompress(img, path, inpath=None):
