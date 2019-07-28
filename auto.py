@@ -387,6 +387,7 @@ def auto(*args):
 
 			
 	if kwargs["delete"]:
+		print("deleting output folder")
 		try:
 			rmtree(workfolder)
 		except (FileNotFoundError, NotADirectoryError):
