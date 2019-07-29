@@ -12,7 +12,7 @@ try:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
-	print("\nDependencies not met. Run `pip install -r packages.txt` to install all dependencies.")
+	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
 	sys.exit(1)
 	
 

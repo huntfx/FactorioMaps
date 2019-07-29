@@ -74,7 +74,7 @@ If you wish to host your map for other people to a server, you need to take into
     All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
 
 # Known mods that make use of the API to improve compability
-    * **Factorissimo**: Able to render the inside of factory buildings recursively.
+    * **Factorissimo** ⩾2.3.5: Able to render the inside of factory buildings recursively.
     * Your mod? If you want to have a chat, you can always find me on discord: L0laapk3#2010
 
 # Known limitations
