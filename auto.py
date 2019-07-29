@@ -270,7 +270,7 @@ def auto(*args):
 	if not kwargs["noupdate"]:
 		try:
 			print("checking for updates")
-			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=10).read())
+			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
 			with open("updates.json", "r") as f:
 				currentUpdates = json.load(f)
 			if kwargs["reverseupdatetest"]:

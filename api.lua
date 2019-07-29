@@ -88,12 +88,17 @@ local function updateMaxZoomDifference(link, prevZoomFromSurfaces)
 	local newSurfaceZooms = {}
 	for surfaceName, prevZoom in pairs(prevZoomFromSurfaces) do
 		local newZoomDifference = prevZoom * link.zoomDifference
+			
 		if link.maxZoomFromSurfaces[surfaceName] == nil or link.maxZoomFromSurfaces[surfaceName] < newZoomDifference then
 			newSurfaceZooms[surfaceName] = newZoomDifference
 		end
 	end
 
-	for _, _ in pairs(newSurfaceZooms) do
+	for surfaceName, newZoomDifference in pairs(newSurfaceZooms) do
+		link.maxZoomFromSurfaces[surfaceName] = newZoomDifference
+	end
+
+	for _, _ in pairs(newSurfaceZooms) do	-- break right after, its like length > 0 but for objects
 		for _, nextLinkIndex in pairs(link.chain or {}) do
 			updateMaxZoomDifference(fm.API.linkData[link.toSurface][nextLinkIndex+1], newSurfaceZooms)
 		end
