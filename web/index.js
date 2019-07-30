@@ -6,6 +6,8 @@ const EXT = ".jpg";
 
 let TILESPERIMAGE = 16;
 
+let COORDSCALE = 2**19 / 16 * window.devicePixelRatio;
+
 //let _getTileUrl = L.TileLayer.prototype.getTileUrl;
 //L.TileLayer.prototype.getTileUrl = function(coords) { return _getTileUrl.call(this, {x: coords.x - 1 * Math.pow(2, coords.z - 2), y: coords.y, z: coords.z}); };
 
@@ -22,11 +24,11 @@ L.TileLayer.prototype.getTileUrl = function(c) {
 //let surface = Object.keys(mapInfo.maps[0].surfaces)[0];
 
 
-let layers = [], saves = [], countAvailableSaves = 0, layersByTimestamp = [];
+let layers = [], saves = [], countAvailableSaves = 0, layersByTimestamp = [], labels = [];
 let globalTileIndex = {};
 let globalTileNightIndex = {};
-const maxZoomExtra = 101 + Math.round(Math.log2(window.devicePixelRatio));
-
+const maxZoomExtra = 2 + Math.round(Math.log2(window.devicePixelRatio));
+let globalMaxZoom = NaN;
 
 for (let i = 0; i < mapInfo.maps.length; i++) {
 	if (DEBUG) {
@@ -125,15 +127,104 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 		layersByTimestamp[i][surface] = {};
 		map.surfaces[surface].layers = {};
 
+		
+		layer.tags.sort((a, b) => a.position.y - b.position.y);
+		const mapInfoTimeLayer = Object.values(mapInfo.maps).find(m => m.path == map.path);
+		for (const tag of layer.tags) {
+
+			let label = {
+				surface: surface,
+				path: map.path,
+				visible: false,
+				marker: L.marker(convertCoordinates(tag.position), {
+					icon: new L.DivIcon({
+						className: 'map-tag',
+						html: 	(tag.iconPath ? '<map-marker><img src="' + tag.iconPath + '"/>' : '<map-marker class="map-marker-default">') +
+								'<span>' + tag.text + '</span></map-marker>',
+						iconSize: null,
+					})
+				}),
+			};
+
+			labels.push(label);
+		}
+
+
+		let maxZOffset;
+		for (const link of layer.links) {
+			if (link.daynight) {
+				if (layer.day)
+					createLink(link, "day")
+				if (layer.night)
+					createLink(link, "night")
+			} else
+				createLink(link);
+		}
+		function createLink(link, daytime, recursion, subMarkers) {
+			let marker;
+			recursion = recursion || [];
+			const totalZ = recursion.reduce((p, a) => p + a[1], 0);
+			const scale = Math.pow(2, totalZ);
+			if (link.type == "link_renderbox_area") {
+				let options = { zIndex: recursion.length + 1 }
+				if (daytime == "night")
+					options.pane = nightOverlayPane;
+				marker = L.imageOverlay("", convertCoordinateSet(link.renderFrom, recursion), options );
+				marker.zOffset = totalZ + link.zoomDifference;
+				if (!(marker.zOffset <= maxZOffset))
+					maxZOffset = marker.zOffset;
+			} else {
+				// TODO: implement as overlay?
+				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
+					icon: new L.DivIcon({
+						className: 'map-link',
+						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x)/scale + ';--y:' + (link.from[1].y-link.from[0].y)/scale + '"/>',
+						iconSize: null,
+					})
+				});
+			}
+			marker.link = link;
+			
+			if (subMarkers) {
+				subMarkers.push(marker);
+			} else {
+				subMarkers = [];
+				let label = {
+					surface: surface,
+					path: map.path,
+					visible: false,
+					link: link,
+					marker: marker,
+					subMarkers: subMarkers,
+					daytime: daytime
+				}
+
+				labels.push(label);
+			}
+
+			if (link.type == "link_renderbox_area") {
+				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
+				for (let nextIndex of link.chain) {
+					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], daytime, recursion, subMarkers);
+				}
+			}
+		}
+
+
+
 		["day", "night"].forEach(function(daytime) {
 			if (layer[daytime]) {
+				let maxZoom = layer.zoom.max + maxZoomExtra;
+				if (!(maxZoom <= globalMaxZoom))
+					globalMaxZoom = maxZoom;
+				console.log(maxZoom + maxZOffset);
 				let LLayer = L.tileLayer(undefined, {
 					id: layer.path,
 					attribution: '<a href="https://github.com/L0laapk3/FactorioMaps">FactorioMaps</a>',
 					minNativeZoom: DEBUG ? 20 : layer.zoom.min,
 					maxNativeZoom: layer.zoom.max,
 					minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,
-					maxZoom: layer.zoom.max + maxZoomExtra,
+					maxZoom: maxZoom + maxZOffset,
 					noWrap: true,
 					tileSize: 512 / window.devicePixelRatio,
 					keepBuffer: 99
@@ -263,7 +354,7 @@ function convertCoordinates(pos, recursion) {
 			y: (pos.y - origin.y) / Math.pow(2, scaleLevel) + offset.y,
 		}
 	}
-	return [-pos.y / coordScale, pos.x / coordScale]
+	return [-pos.y / COORDSCALE, pos.x / COORDSCALE]
 }
 function convertCoordinateSet(set, recursion) {
 	return set.map(p => convertCoordinates(p, recursion));
@@ -335,15 +426,14 @@ let loadLayer = someSurfaces[currentSurface].layers;
 let timestamp = (loadLayer.day || loadLayer.night).path;
 
 let startZ = 16, startX = 0, startY = 0;
-let coordScale = 2**19 / 16 * window.devicePixelRatio;
 try {
 	let split = window.location.hash.substr(1).split('/').map(decodeURIComponent);
 	if (window.location.hash[0] == '#' && split[0] == "1") {
 		currentSurface = split[1];
 		loadLayer = someSurfaces[currentSurface].layers;
 		if (!isNaN(parseInt(split[2]))) startZ = parseInt(split[2]);
-		startX = parseInt(split[3]) / coordScale || startX;
-		startY = parseInt(split[4]) / coordScale || startY;
+		startX = parseInt(split[3]) / COORDSCALE || startX;
+		startY = parseInt(split[4]) / COORDSCALE || startY;
 		nightOpacity = parseFloat(split[5]) || nightOpacity;
 		if (!isNaN(parseInt(split[6]))) {
 			timestamp = split[6];
@@ -359,7 +449,11 @@ try {
 
 let lastHash = "";
 function updateHash() {
-	const path = [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')];
+	const zoom = map.getZoom();
+	function condRound(x) {
+		return zoom > globalMaxZoom ? Math.round(x * 2**(zoom-globalMaxZoom)) / 2**(zoom-globalMaxZoom) : Math.round(x);
+	}
+	const path = [1, currentSurface, zoom, condRound(map.getCenter().lat * COORDSCALE), condRound(map.getCenter().lng * COORDSCALE), nightOpacity, timestamp.replace('-', '/')];
 	let hash = "#" + path.map(encodeURIComponent).join("/");
 	if (hash != lastHash) {
 		lastHash = hash;
@@ -379,7 +473,7 @@ let map = L.map('map', {
 	layers: [],
 	fadeAnimation: false,
 	zoomAnimation: true,
-	crs: L.CRS.Simple // the map is 2D by nature
+	crs: L.CRS.Simple, // the map is 2D by nature
 });
 let nightOverlayPane = map.createPane("overlayPaneNight");
 nightOverlayPane.style.zIndex = 450;
@@ -543,88 +637,6 @@ map.addControl(new L.Control.FullScreen().setPosition('bottomright'));
 map.zoomControl.setPosition('bottomleft')
 
 
-let labels = [];
-for (const [surfaceName, surface] of Object.entries(layers))
-	for (const layer of Object.values(surface)) {
-		layer.tags.sort((a, b) => a.position.y - b.position.y);
-		const mapInfoTimeLayer = Object.values(mapInfo.maps).find(m => m.path == layer.path);
-		for (const tag of layer.tags) {
-
-			let label = {
-				surface: surfaceName,
-				path: layer.path,
-				visible: false,
-				marker: L.marker(convertCoordinates(tag.position), {
-					icon: new L.DivIcon({
-						className: 'map-tag',
-						html: 	(tag.iconPath ? '<map-marker><img src="' + tag.iconPath + '"/>' : '<map-marker class="map-marker-default">') +
-								'<span>' + tag.text + '</span></map-marker>',
-						iconSize: null,
-					})
-				}),
-			};
-
-			labels.push(label);
-		}
-
-
-		for (const link of layer.links) {
-			if (link.daynight) {
-				if (layer.day)
-					createLink(link, "day")
-				if (layer.night)
-					createLink(link, "night")
-			} else
-				createLink(link);
-		}
-		function createLink(link, daytime, recursion, subMarkers) {
-			let marker;
-			recursion = recursion || [];
-			const totalZ = recursion.reduce((p, a) => p + a[1], 0);
-			const scale = Math.pow(2, totalZ);
-			if (link.type == "link_renderbox_area") {
-				let options = { zIndex: recursion.length + 1 }
-				if (daytime == "night")
-					options.pane = nightOverlayPane;
-				marker = L.imageOverlay("", convertCoordinateSet(link.renderFrom, recursion), options );
-				marker.zOffset = totalZ + link.zoomDifference;
-			} else {
-				// TODO: implement as overlay?
-				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
-					icon: new L.DivIcon({
-						className: 'map-link',
-						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x)/scale + ';--y:' + (link.from[1].y-link.from[0].y)/scale + '"/>',
-						iconSize: null,
-					})
-				});
-			}
-			marker.link = link;
-			
-			if (subMarkers) {
-				subMarkers.push(marker);
-			} else {
-				subMarkers = [];
-				let label = {
-					surface: surfaceName,
-					path: layer.path,
-					visible: false,
-					link: link,
-					marker: marker,
-					subMarkers: subMarkers,
-					daytime: daytime
-				}
-
-				labels.push(label);
-			}
-
-			if (link.type == "link_renderbox_area") {
-				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
-				for (let nextIndex of link.chain) {
-					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], daytime, recursion, subMarkers);
-				}
-			}
-		}
-}
 updateLabels();
 updateLabelScaling({ zoom: startZ });
 
