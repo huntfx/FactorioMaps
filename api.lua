@@ -87,7 +87,7 @@ end
 local function updateMaxZoomDifference(link, prevZoomFromSurfaces)
 	local newSurfaceZooms = {}
 	for surfaceName, prevZoom in pairs(prevZoomFromSurfaces) do
-		local newZoomDifference = prevZoom * link.zoomDifference
+		local newZoomDifference = prevZoom + link.zoomDifference
 			
 		if link.maxZoomFromSurfaces[surfaceName] == nil or link.maxZoomFromSurfaces[surfaceName] < newZoomDifference then
 			newSurfaceZooms[surfaceName] = newZoomDifference
