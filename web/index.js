@@ -580,14 +580,14 @@ for (const [surfaceName, surface] of Object.entries(layers))
 		function createLink(link, daytime, recursion, subMarkers) {
 			let marker;
 			recursion = recursion || [];
-			const zOffset = recursion.reduce((p, a) => p + a[1], 0);
-			const scale = Math.pow(2, zOffset);
+			const totalZ = recursion.reduce((p, a) => p + a[1], 0);
+			const scale = Math.pow(2, totalZ);
 			if (link.type == "link_renderbox_area") {
 				let options = { zIndex: recursion.length + 1 }
 				if (daytime == "night")
 					options.pane = nightOverlayPane;
 				marker = L.imageOverlay("", convertCoordinateSet(link.renderFrom, recursion), options );
-				marker.zOffset = zOffset;
+				marker.zOffset = totalZ + link.zoomDifference;
 			} else {
 				// TODO: implement as overlay?
 				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
