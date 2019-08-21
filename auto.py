@@ -648,14 +648,17 @@ def auto(*args):
 				data = json.load(outf)
 				for mapIndex, mapStuff in json.load(inf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
-						if "chunks" in data["maps"][int(mapIndex)]["surfaces"][surfaceName]:
+						if "chunks" in surfaceStuff:
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
+							print(data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"])
+							print(int(mapIndex), surfaceName)
 						for linkIndex, link in enumerate(surfaceStuff["links"]):
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 				outf.seek(0)
 				json.dump(data, outf)
 				outf.truncate()
+				print(json.dumps(data))
 			os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 

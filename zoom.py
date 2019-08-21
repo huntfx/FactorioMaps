@@ -81,7 +81,6 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 		mapInfoOutFile = open(os.path.join(workfolder, "mapInfo.out.json"), 'r+')
 		if outFileExists:
 			outInfo = json.load(mapInfoOutFile)
-			print("\n\nreading out file\n\n" + json.dumps(outInfo) + "\n\n")
 		else:
 			outInfo = { "maps": {} }
 

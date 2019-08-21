@@ -392,7 +392,6 @@ def ref(*args, **kwargs):
 
 
 
-
 	if changed:
 		if kwargs["verbose"]: print("writing mapInfo.out.json")
 		with open(datapath[:-5] + ".out.json", "w+") as f:
