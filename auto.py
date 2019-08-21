@@ -181,6 +181,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				line = pipef.readline()
 				printingStackTraceback = handleGameLine(line)
 
+				
+		psutil.Process(pid).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
+
 
 
 
