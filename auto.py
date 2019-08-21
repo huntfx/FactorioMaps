@@ -717,7 +717,7 @@ def auto(*args):
 		print("generating mapInfo.js")
 		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
 			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(\'')
-			outf.write(inf.read())
+			outf.write(inf.read().replace("'", "\'"))
 			outf.write("');")
 			
 			
