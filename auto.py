@@ -88,7 +88,7 @@ def printErase(arg):
 
 
 def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, **kwargs):
-	
+
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
 
@@ -469,6 +469,7 @@ def auto(*args):
 					f'day = {str(kwargs["nightonly"] != True).lower()},\n'
 					f'night = {str(kwargs["dayonly"] != True).lower()},\n'
 					f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
+					f'tags = {str(kwargs["no-tags"] != True).lower()},\n'
 					f'around_tag_range = {float(kwargs["tag-range"])},\n'
 					f'around_build_range = {float(kwargs["build-range"])},\n'
 					f'around_connect_range = {float(kwargs["connect-range"])},\n'

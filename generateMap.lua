@@ -514,27 +514,29 @@ function fm.generateMap(data)
 		if fm.currentSurface == player.surface then
 			fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].playerPosition = player.position
 		end
-		for _, force in pairs(game.forces) do
-			if #force.players > 0 then
-				for i, tag in pairs(force.find_chart_tags(fm.currentSurface)) do
-					if tag.icon == nil then
-						fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].tags[i] = {
-							position 	= tag.position,
-							text 		= tag.text,
-							last_user	= tag.last_user and tag.last_user.name,
-							force	    = force.name
-						}
-					else
-						name = tag.icon["name"] or tag.icon.type
-						fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].tags[i] = {
-							iconType 	= tag.icon.type,
-							iconName 	= name,
-							iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. name .. ".png",
-							position 	= tag.position,
-							text 		= tag.text,
-							last_user	= tag.last_user and tag.last_user.name,
-							force	    = force.name
-						}
+		if fm.autorun.tags then
+			for _, force in pairs(game.forces) do
+				if #force.players > 0 then
+					for i, tag in pairs(force.find_chart_tags(fm.currentSurface)) do
+						if tag.icon == nil then
+							fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].tags[i] = {
+								position 	= tag.position,
+								text 		= tag.text,
+								last_user	= tag.last_user and tag.last_user.name,
+								force	    = force.name
+							}
+						else
+							name = tag.icon["name"] or tag.icon.type
+							fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].tags[i] = {
+								iconType 	= tag.icon.type,
+								iconName 	= name,
+								iconPath    = "Images/labels/" .. tag.icon.type .. "/" .. name .. ".png",
+								position 	= tag.position,
+								text 		= tag.text,
+								last_user	= tag.last_user and tag.last_user.name,
+								force	    = force.name
+							}
+						end
 					end
 				end
 			end
