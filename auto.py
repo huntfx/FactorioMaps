@@ -128,10 +128,14 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-		
-		line = pipef.readline()
+				
+		line = pipef.readline().rstrip("\n")
 		printingStackTraceback = handleGameLine(line)
-		isSteam = line.rstrip("\n").endswith("Initializing Steam API.")
+		isSteam = False
+		if line.endswith("Initializing Steam API."):
+			isSteam = True
+		elif not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
+			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
 			print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to do this every time with the steam version)\n\t Also, if you have any default arguments set in steam for factorio, you'll have to remove them.")
