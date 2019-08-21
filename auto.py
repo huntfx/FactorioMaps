@@ -1,6 +1,9 @@
 
 import sys
 
+if sys.maxsize <= 2**32:
+	raise Exception("64 bit Python is required.")
+
 if sys.hexversion < 0x3060000:
 	raise Exception("Python 3.6 or higher is required for this script.")
 
