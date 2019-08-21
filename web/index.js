@@ -150,7 +150,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 		}
 
 
-		let maxZOffset;
+		let maxZOffset = 0;
 		for (const link of layer.links) {
 			if (link.daynight) {
 				if (layer.day)
@@ -217,7 +217,6 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 				let maxZoom = layer.zoom.max + maxZoomExtra;
 				if (!(maxZoom <= globalMaxZoom))
 					globalMaxZoom = maxZoom;
-				console.log(maxZoom + maxZOffset);
 				let LLayer = L.tileLayer(undefined, {
 					id: layer.path,
 					attribution: '<a href="https://github.com/L0laapk3/FactorioMaps">FactorioMaps</a>',

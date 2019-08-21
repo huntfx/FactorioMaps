@@ -650,15 +650,12 @@ def auto(*args):
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
 						if "chunks" in surfaceStuff:
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
-							print(data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"])
-							print(int(mapIndex), surfaceName)
 						for linkIndex, link in enumerate(surfaceStuff["links"]):
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 				outf.seek(0)
 				json.dump(data, outf)
 				outf.truncate()
-				print(json.dumps(data))
 			os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 
@@ -745,9 +742,9 @@ def auto(*args):
 
 		print("generating mapInfo.js")
 		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
-			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(\'')
-			outf.write(inf.read().replace("'", "\'"))
-			outf.write("');")
+			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(')
+			outf.write(json.dumps(inf.read()))
+			outf.write(");")
 			
 			
 		print("creating index.html")
