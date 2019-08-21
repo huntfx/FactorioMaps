@@ -138,8 +138,13 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
-			print("WARNING: running in limited support mode trough steam. Consider using standalone factorio instead.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to do this every time with the steam version)\n\t Also, if you have any default arguments set in steam for factorio, you'll have to remove them.")
+			print("WARNING: Running in limited support mode trough steam. Consider using standalone factorio instead.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to click this every time the game starts for the steam version)")
 			attrs = ('pid', 'name', 'create_time')
+
+			# on some devices, the previous check wasn't enough apparently, so explicitely wait until the log file is created.
+			while not os.path.exists(os.path.join(tmpDir, "factorio-current.log")):
+				time.sleep(0.4)
+
 			oldest = None
 			pid = None
 			while pid is None:
@@ -150,7 +155,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 						pid = pinfo["pid"]
 				if pid is None:
 					time.sleep(1)
-			print(f"PID: {pid}")
+			# print(f"PID: {pid}")
 		else:
 			pid = p.pid
 
