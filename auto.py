@@ -32,6 +32,7 @@ import configparser
 from subprocess import call
 import datetime
 import urllib.request, urllib.error, urllib.parse
+from socket import timeout
 from shutil import copy, copytree, rmtree, get_terminal_size as tsize
 from zipfile import ZipFile
 import tempfile
@@ -89,6 +90,7 @@ def printErase(arg):
 def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, **kwargs):
 	
 	pipeOut, pipeIn = os.pipe()
+	print(popenArgs)
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
 
 	printingStackTraceback = False
@@ -128,7 +130,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-				
+		
 		line = pipef.readline().rstrip("\n")
 		printingStackTraceback = handleGameLine(line)
 		isSteam = False
@@ -345,7 +347,7 @@ def auto(*args):
 					sys.exit(1)(1)
 
 
-		except (urllib.error.URLError, urllib.socket.timeout) as e:
+		except (urllib.error.URLError, timeout) as e:
 			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
