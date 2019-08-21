@@ -7,9 +7,9 @@ Live demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
 Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # How to Install
-**Note that since version 3, this program now only runs on python version 3.6 or higher instead of python 2.**
+**Note that since version 3, this program now only runs on 64 bit python version 3.6 or higher instead of python 2.**
 1. Download FactorioMaps to `%appdata%\mods\`, either from the [mod portal](https://mods.factorio.com/mod/L0laapk3_FactorioMaps) (The mod does not need to be enabled to work) and then unzipping it, or from [the github releases page](https://github.com/L0laapk3/FactorioMaps/releases). 
-1. Install the latest version of [python 3.7](https://www.python.org/downloads/). (Do not install python 2.)
+1. Install the latest version of [**64 bit** python 3.7](https://www.python.org/downloads/). (Do not install python 2.)
 1. Recommended: [Add python to your environment variables](https://stackoverflow.com/a/4855685/3185280).
 1. Install pip: Download the latest [get-pip.py](https://bootstrap.pypa.io/get-pip.py), and run it (`python get-pip.py` in the command line).
 1. Install the following pip packages: `pip install -r packages.txt`.
@@ -39,6 +39,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--nightonly`*\** | Do not take daytime screenshots. |
 | `--hd`*\** | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
 | `--no-altmode` | Hides entity info (alt mode) |
+| `--no-tags` | Hides map tags |
 | `--build-range=5.2`*\** | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
 | `--connect-range=1.2`*\** | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
 | `--tag-range=5.2`*\** | The maximum range from mapview tags around which pictures are saved. |

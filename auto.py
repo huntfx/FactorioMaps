@@ -50,6 +50,7 @@ kwargs = {
 	'nightonly': False,
 	'hd': False,
 	'no-altmode': False,
+	'no-tags': False,
 	'tag-range': 5.2,
 	'build-range': 5.2,
 	'connect-range': 1.2,
@@ -661,53 +662,54 @@ def auto(*args):
 
 
 		rawTags["__used"] = True
-		for _, tag in tags.items():
-			dest = os.path.join(workfolder, tag["iconPath"])
-			os.makedirs(os.path.dirname(dest), exist_ok=True)
-			
-
-			rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
-
-
-			icons = rawPath.split('|')
-			img = None
-			for i, path in enumerate(icons):
-				m = re.match(r"^__([^\/]+)__[\/\\](.*)$", path)
-				if m is None:
-					raise Exception("raw path of %s %s: %s not found" % (tag["iconType"], tag["iconName"], path))
-
-				iconColor = m.group(2).split("?")
-				icon = iconColor[0]
-				if m.group(1) in ("base", "core"):
-					src = os.path.join(os.path.split(factorioPath)[0], "../../data", m.group(1), icon + ".png")
-				else:
-					mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
-					if not mod[1][3]: #true if mod is zip
-						zipPath = os.path.join(basepath, kwargs["modpath"], mod[2] + ".zip")
-						with ZipFile(zipPath, 'r') as zipObj:
-							if len(icons) == 1:
-								zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
-								zipInfo.filename = os.path.basename(dest)
-								zipObj.extract(zipInfo, os.path.dirname(os.path.realpath(dest)))
-								src = None
-							else:
-								src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
-					else:
-						src = os.path.join(basepath, kwargs["modpath"], mod[2], icon + ".png")
+		if not kwargs["no-tags"]:
+			for _, tag in tags.items():
+				dest = os.path.join(workfolder, tag["iconPath"])
+				os.makedirs(os.path.dirname(dest), exist_ok=True)
 				
-				if len(icons) == 1:
-					if src is not None:
-						copy(src, dest)
-				else:
-					newImg = Image.open(src).convert("RGBA")
-					if len(iconColor) > 1:
-						newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
-					if i == 0:
-						img = newImg
+
+				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
+
+
+				icons = rawPath.split('|')
+				img = None
+				for i, path in enumerate(icons):
+					m = re.match(r"^__([^\/]+)__[\/\\](.*)$", path)
+					if m is None:
+						raise Exception("raw path of %s %s: %s not found" % (tag["iconType"], tag["iconName"], path))
+
+					iconColor = m.group(2).split("?")
+					icon = iconColor[0]
+					if m.group(1) in ("base", "core"):
+						src = os.path.join(os.path.split(factorioPath)[0], "../../data", m.group(1), icon + ".png")
 					else:
-						img.paste(newImg.convert("RGB"), (0, 0), newImg)
-			if len(icons) > 1:
-				img.save(dest)
+						mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
+						if not mod[1][3]: #true if mod is zip
+							zipPath = os.path.join(basepath, kwargs["modpath"], mod[2] + ".zip")
+							with ZipFile(zipPath, 'r') as zipObj:
+								if len(icons) == 1:
+									zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
+									zipInfo.filename = os.path.basename(dest)
+									zipObj.extract(zipInfo, os.path.dirname(os.path.realpath(dest)))
+									src = None
+								else:
+									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
+						else:
+							src = os.path.join(basepath, kwargs["modpath"], mod[2], icon + ".png")
+					
+					if len(icons) == 1:
+						if src is not None:
+							copy(src, dest)
+					else:
+						newImg = Image.open(src).convert("RGBA")
+						if len(iconColor) > 1:
+							newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
+						if i == 0:
+							img = newImg
+						else:
+							img.paste(newImg.convert("RGB"), (0, 0), newImg)
+				if len(icons) > 1:
+					img.save(dest)
 
 
 
