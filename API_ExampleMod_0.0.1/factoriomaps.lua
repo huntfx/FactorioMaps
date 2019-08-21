@@ -2,11 +2,16 @@
 -- require this file in control.lua
 
 
+-- this function is to be ran on script.on_init and on script.on_load.
 local function handle_factoriomaps()
 	if remote.interfaces.factoriomaps then
 		script.on_event(remote.call("factoriomaps", "get_start_capture_event"), function() 
 
 			-- note that this event only gets called when it starts capturing the world, so speed optimalisation of the code in this function is not important.
+
+			-- If you want to make the maps a bit more screenshot friendly, this is the place to do it.
+			-- Do not worry about being descructive to the map, if this event is called, FactorioMaps has already done
+			-- non-reversable damage to the map and every attempt is made to stop the player from overwriting their savefile.
 			
 			
 			-- example parameters:
@@ -28,24 +33,16 @@ local function handle_factoriomaps()
 			-- the 'to' parameter now has to be an area instead of a point, otherwise exactly the same.
 			remote.call("factoriomaps", "link_box_area", {
 				from = { {20, 10}, {30, 20}, surface = "nauvis" },
-				to = { surface = "Factory floor 1", {30, 30}, {40, 40} }	-- both notations work.
+				to = { {30, 30}, {40, 40} }
 			})
-
 
 
 			-- link_renderbox_area: clickable box that renders the 'to' surface on the place of the 'from' surface.
 			remote.call("factoriomaps", "link_renderbox_area", {
-				from = { {40, 10}, {50, 20}, surface = "nauvis" },
-				to =   { {30, 30}, {40, 40}, surface = "Factory floor 1" }
+				from = { {-2, -46}, {14, -30}, surface = "nauvis" },
+				to =   { {-31, -31}, {31, 31}, surface = "Factory floor 1" }
 			})
 			
-
-			
-			-- link_renderbox_area: clickable box that renders the 'to' surface on the place of the 'from' surface.
-			remote.call("factoriomaps", "link_renderbox_area", {
-				from = { {30, 30}, {40, 40}, surface = "Factory floor 1" },
-				to =   { {10, 10}, {40, 20}, surface = "nauvis" }
-			})
 
 
 
@@ -53,11 +50,10 @@ local function handle_factoriomaps()
 			-- Parts of the surface can still be rendered using renderboxes.
 			-- parameters: surface (id (prefered) or name), hidden: boolean, default to true.
 			remote.call("factoriomaps", "surface_set_hidden", "Factory floor 1", true)
+			remote.call("factoriomaps", "surface_set_hidden", "Factory floor 2", true)
+			remote.call("factoriomaps", "surface_set_hidden", "Factory floor 3", true)
+		end
 
 
-
-		end)
 	end
 end
-script.on_init(handle_factoriomaps)
-script.on_load(handle_factoriomaps)

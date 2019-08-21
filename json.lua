@@ -7,7 +7,13 @@ function prettyjson(o, i)
 		end
 		return s:sub(1, -2)..(#s>1 and tab..(o[1] and ']' or '}') or '[]')
 	end
-	return type(o) ~= 'number' and '"'..tostring(o)..'"' or tostring(o)
+	if type(o) == 'number' then
+		return tostring(o)
+	elseif type(o) == 'boolean' then
+		return o and "true" or "false"
+	else
+		return '"'..tostring(o)..'"'
+	end
 end
 function json(o, i)
 	if type(o) == 'table' then
@@ -17,5 +23,11 @@ function json(o, i)
 		end
 		return s:sub(1, -2)..(#s>1 and (o[1] and ']' or '}') or '[]')
 	end
-	return type(o) ~= 'number' and '"'..tostring(o)..'"' or tostring(o)
+	if type(o) == 'number' then
+		return tostring(o)
+	elseif type(o) == 'boolean' then
+		return o and "true" or "false"
+	else
+		return '"'..tostring(o)..'"'
+	end
 end

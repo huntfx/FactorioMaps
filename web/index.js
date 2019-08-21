@@ -1,9 +1,12 @@
 "use strict";
 let DEBUG = false;
+const EXT = ".jpg";
 
 
 
 let TILESPERIMAGE = 16;
+
+let COORDSCALE = 2**19 / 16 * window.devicePixelRatio;
 
 //let _getTileUrl = L.TileLayer.prototype.getTileUrl;
 //L.TileLayer.prototype.getTileUrl = function(coords) { return _getTileUrl.call(this, {x: coords.x - 1 * Math.pow(2, coords.z - 2), y: coords.y, z: coords.z}); };
@@ -14,17 +17,18 @@ L.TileLayer.prototype.getTileUrl = function(c) {
 		mapIndex = this.tileIndex.fallback;
 	if (isNaN(mapIndex))
 		return "";
-	return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + ".jpg";
+	return "Images/" + mapInfo.maps[mapIndex].path + "/" + this.surface + "/" + this.daytime + "/" + c.z + "/" + c.x + "/" + c.y + EXT;
 }
 
 //TODO: iterate over surfaces
 //let surface = Object.keys(mapInfo.maps[0].surfaces)[0];
 
 
-let layers = [], saves = [], countAvailableSaves = 0, layersByTimestamp = [];
+let layers = [], saves = [], countAvailableSaves = 0, layersByTimestamp = [], labels = [];
 let globalTileIndex = {};
 let globalTileNightIndex = {};
-
+const maxZoomExtra = 2 + Math.round(Math.log2(window.devicePixelRatio));
+let globalMaxZoom = NaN;
 
 for (let i = 0; i < mapInfo.maps.length; i++) {
 	if (DEBUG) {
@@ -37,6 +41,11 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 
 	for (const surface of Object.keys(map.surfaces)) {
 		let layer = map.surfaces[surface];
+
+		
+		if (!layer.captured)
+			continue;
+
 		if (!(surface in layers))
 			layers[surface] = {};
 		layers[surface][i] = {};
@@ -118,18 +127,106 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 		layersByTimestamp[i][surface] = {};
 		map.surfaces[surface].layers = {};
 
+		
+		layer.tags.sort((a, b) => a.position.y - b.position.y);
+		const mapInfoTimeLayer = Object.values(mapInfo.maps).find(m => m.path == map.path);
+		for (const tag of layer.tags) {
+
+			let label = {
+				surface: surface,
+				path: map.path,
+				visible: false,
+				marker: L.marker(convertCoordinates(tag.position), {
+					icon: new L.DivIcon({
+						className: 'map-tag',
+						html: 	(tag.iconPath ? '<map-marker><img src="' + tag.iconPath + '"/>' : '<map-marker class="map-marker-default">') +
+								'<span>' + tag.text + '</span></map-marker>',
+						iconSize: null,
+					})
+				}),
+			};
+
+			labels.push(label);
+		}
+
+
+		let maxZOffset = 0;
+		for (const link of layer.links) {
+			if (link.daynight) {
+				if (layer.day)
+					createLink(link, "day")
+				if (layer.night)
+					createLink(link, "night")
+			} else
+				createLink(link);
+		}
+		function createLink(link, daytime, recursion, subMarkers) {
+			let marker;
+			recursion = recursion || [];
+			const totalZ = recursion.reduce((p, a) => p + a[1], 0);
+			const scale = Math.pow(2, totalZ);
+			if (link.type == "link_renderbox_area") {
+				let options = { zIndex: recursion.length + 1 }
+				if (daytime == "night")
+					options.pane = nightOverlayPane;
+				marker = L.imageOverlay("", convertCoordinateSet(link.renderFrom, recursion), options );
+				marker.zOffset = totalZ + link.zoomDifference;
+				if (!(marker.zOffset <= maxZOffset))
+					maxZOffset = marker.zOffset;
+			} else {
+				// TODO: implement as overlay?
+				marker = L.marker(convertCoordinates({x: (link.from[0].x+link.from[1].x) / 2, y: (link.from[0].y+link.from[1].y) / 2}, recursion), {
+					icon: new L.DivIcon({
+						className: 'map-link',
+						html: 	'<map-link style="--x:' + (link.from[1].x-link.from[0].x)/scale + ';--y:' + (link.from[1].y-link.from[0].y)/scale + '"/>',
+						iconSize: null,
+					})
+				});
+			}
+			marker.link = link;
+			
+			if (subMarkers) {
+				subMarkers.push(marker);
+			} else {
+				subMarkers = [];
+				let label = {
+					surface: surface,
+					path: map.path,
+					visible: false,
+					link: link,
+					marker: marker,
+					subMarkers: subMarkers,
+					daytime: daytime
+				}
+
+				labels.push(label);
+			}
+
+			if (link.type == "link_renderbox_area") {
+				recursion = [[link.renderFrom[0], link.zoomDifference, link.to[0]], ...recursion];
+				for (let nextIndex of link.chain) {
+					createLink(mapInfoTimeLayer.surfaces[link.toSurface].links[nextIndex], daytime, recursion, subMarkers);
+				}
+			}
+		}
+
+
+
 		["day", "night"].forEach(function(daytime) {
-			if (layer[daytime] == "true") {
+			if (layer[daytime]) {
+				let maxZoom = layer.zoom.max + maxZoomExtra;
+				if (!(maxZoom <= globalMaxZoom))
+					globalMaxZoom = maxZoom;
 				let LLayer = L.tileLayer(undefined, {
 					id: layer.path,
 					attribution: '<a href="https://github.com/L0laapk3/FactorioMaps">FactorioMaps</a>',
 					minNativeZoom: DEBUG ? 20 : layer.zoom.min,
 					maxNativeZoom: layer.zoom.max,
 					minZoom: layer.zoom.min >= 1 ? layer.zoom.min - 1 : 1,
-					maxZoom: 23, //layer.zoom.max + 2,
+					maxZoom: maxZoom + maxZOffset,
 					noWrap: true,
 					tileSize: 512 / window.devicePixelRatio,
-					keepBuffer: 3
+					keepBuffer: 99
 				});
 				LLayer.surface = surface;
 				LLayer.daytime = daytime;
@@ -156,6 +253,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 
 
 		layers[surface][i].tags = layer.tags;
+		layers[surface][i].links = layer.links;
 		layers[surface][i].path = map.path;
 
 		// todo: group tags.. ?
@@ -167,6 +265,11 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 }
 
 
+
+document.body.style.setProperty("--devicepixelratio", window.devicePixelRatio);
+function updateLabelScaling(e) {
+	document.getElementById("map").style.setProperty("--scale", Math.pow(2, e.zoom - 15));
+}
 
 let allTimestamps = mapInfo.maps.map(m => m.path.split("-").map(parseFloat));
 function updateLabels() {
@@ -181,18 +284,80 @@ function updateLabels() {
 	let previous = allTimestamps[previousIndex].join("-");
 
 	for (const label of labels) {
-		let shouldBeVisible = currentSurface == label.surface && (label.time == next || label.time == previous);
+		let shouldBeVisible = currentSurface == label.surface
+						   && (label.path == next || label.path == previous)
+						   && (label.daytime != "night" || nightOpacity > 0)
+						   && (label.daytime != "day" || nightOpacity < 1);
 
-		if (shouldBeVisible && !label.visible)
-			label.marker.addTo(map);
-		else if (!shouldBeVisible && label.visible)
-			map.removeLayer(label.marker);
+		if (shouldBeVisible && !label.visible) {
+			for (const marker of [label.marker, ...label.subMarkers || []]) {
+				if (label.visible && label.daytime == "night")
+					marker.setOpacity(nightOpacity);
+				marker.addTo(map);
+			}
+			if (label.link)
+				switch (label.link.type) {
+					case "link_box_point":
+					case "link_box_area":
+						label.marker._icon.onmousedown = function() {
+							if (label.link.toSurface != currentSurface)
+								Array.from(surfaceSlider._container.children[0].children).find(e => e.innerText == label.link.toSurface).click();
+
+							switch (label.link.type) {
+								case "link_box_point":
+									if (label.link.toSurface != currentSurface)
+										map.panTo(convertCoordinates(label.link.to));
+									else
+										map.setView(convertCoordinates(label.link.to), map.getZoom());
+									break;
+								case "link_box_area":
+									if (label.link.toSurface != currentSurface)
+										map.flyToBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])]);
+									else
+										map.fitBounds([convertCoordinates(label.link.to[0]), convertCoordinates(label.link.to[1])], map.getZoom());
+									break;
+							}
+						}
+						break;
+					
+				}
+		} else if (!shouldBeVisible && label.visible)
+			for (const marker of [label.marker, ...label.subMarkers || []])
+				map.removeLayer(marker);
 		else
 			continue;
 		label.visible = shouldBeVisible;
 	}
+	updateRenderboxUrls();
+	updateRenderboxOpacities(true);
 }
 
+function updateRenderboxUrls() {
+	for (const label of labels)
+		if (label.visible && label.link && label.link.type == "link_renderbox_area")
+			for (const marker of [label.marker, ...label.subMarkers || []]) {
+				const z = Math.min(marker.link.zoom.max, Math.max(marker.link.zoom.min, map.getZoom() - marker.zOffset));
+				if (marker._lastZ != z) {
+					marker._lastZ = z;
+					marker.setUrl("Images/" + marker.link.path + "/" + marker.link.toSurface + "/" + (marker.link.daynight ? label.daytime : "day") + "/renderboxes/" + z + "/" + marker.link.filename + ".jpg");
+				}
+			}
+}
+
+
+function convertCoordinates(pos, recursion) {
+	recursion = recursion || [];
+	for (const [offset, scaleLevel, origin] of recursion) {
+		pos = {
+			x: (pos.x - origin.x) / Math.pow(2, scaleLevel) + offset.x,
+			y: (pos.y - origin.y) / Math.pow(2, scaleLevel) + offset.y,
+		}
+	}
+	return [-pos.y / COORDSCALE, pos.x / COORDSCALE]
+}
+function convertCoordinateSet(set, recursion) {
+	return set.map(p => convertCoordinates(p, recursion));
+}
 
 
 
@@ -260,32 +425,34 @@ let loadLayer = someSurfaces[currentSurface].layers;
 let timestamp = (loadLayer.day || loadLayer.night).path;
 
 let startZ = 16, startX = 0, startY = 0;
-let coordScale = 2**19 / 16 * window.devicePixelRatio;
 try {
 	let split = window.location.hash.substr(1).split('/').map(decodeURIComponent);
 	if (window.location.hash[0] == '#' && split[0] == "1") {
 		currentSurface = split[1];
 		loadLayer = someSurfaces[currentSurface].layers;
 		if (!isNaN(parseInt(split[2]))) startZ = parseInt(split[2]);
-		startX = parseInt(split[3]) / coordScale || startX;
-		startY = parseInt(split[4]) / coordScale || startY;
+		startX = parseInt(split[3]) / COORDSCALE || startX;
+		startY = parseInt(split[4]) / COORDSCALE || startY;
 		nightOpacity = parseFloat(split[5]) || nightOpacity;
 		if (!isNaN(parseInt(split[6]))) {
 			timestamp = split[6];
 			if (!isNaN(parseInt(split[7])))
 				timestamp += "-" + split[7];
-		}
-
-				
+		}		
 	}
 } catch (_) {
 		window.location.href = "#";
 		window.location.reload();
 }
 
+
 let lastHash = "";
 function updateHash() {
-	const path = [1, currentSurface, map.getZoom(), Math.round(map.getCenter().lat * coordScale), Math.round(map.getCenter().lng * coordScale), nightOpacity, timestamp.replace('-', '/')];
+	const zoom = map.getZoom();
+	function condRound(x) {
+		return zoom > globalMaxZoom ? Math.round(x * 2**(zoom-globalMaxZoom)) / 2**(zoom-globalMaxZoom) : Math.round(x);
+	}
+	const path = [1, currentSurface, zoom, condRound(map.getCenter().lat * COORDSCALE), condRound(map.getCenter().lng * COORDSCALE), nightOpacity, timestamp.replace('-', '/')];
 	let hash = "#" + path.map(encodeURIComponent).join("/");
 	if (hash != lastHash) {
 		lastHash = hash;
@@ -305,9 +472,23 @@ let map = L.map('map', {
 	layers: [],
 	fadeAnimation: false,
 	zoomAnimation: true,
-	crs: L.CRS.Simple // the map is 2D by nature
+	crs: L.CRS.Simple, // the map is 2D by nature
 });
+let nightOverlayPane = map.createPane("overlayPaneNight");
+nightOverlayPane.style.zIndex = 450;
+map.on("zoomanim", updateLabelScaling);
 map.on("zoomend moveend", updateHash);
+map.on("zoomend moveend", updateRenderboxUrls);
+
+
+let lastRenderboxNightOpacity = nightOpacity;
+function updateRenderboxOpacities(noUpdateLabels) {
+	nightOverlayPane.style.opacity = nightOpacity;
+
+	if (((nightOpacity == 1 || nightOpacity == 0) != (lastRenderboxNightOpacity == 1 || lastRenderboxNightOpacity == 0)) && !noUpdateLabels)
+		updateLabels();
+	lastRenderboxNightOpacity = nightOpacity;
+}
 
 
 let daylightSlider, timeSlider, surfaceSlider;
@@ -319,9 +500,26 @@ if (Object.values(layers).some(s => Object.values(s).some(l => l.day)) && Object
 		initial: nightOpacity,
 		length: 135,
 		gravitate: 7,
-		labels: [ {name: "Day", position: 0, layers: Object.values(layers).map(s => Object.values(s).map(l => l.day)).flat()}, {name: "Nightvision", position: .42, gravitate: 5}, {name: "Night", position: 1, layers: Object.values(layers).map(s => Object.values(s).map(l => l.night)).flat()} ],
+		labels: [
+			{
+				name: "Day",
+				position: 0,
+				layers: Object.values(layers).map(s => Object.values(s).map(l => l.day)).flat()
+			},
+			{
+				name: "Nightvision",
+				position: .42,
+				gravitate: 5
+			},
+			{
+				name: "Night",
+				position: 1,
+				layers: Object.values(layers).map(s => Object.values(s).map(l => l.night)).flat()
+			}
+		],
 		onChange: function(value) {
 			nightOpacity = Math.round(value * 100) / 100;
+			updateRenderboxOpacities();
 			updateHash();
 		}
 	});
@@ -438,29 +636,8 @@ map.addControl(new L.Control.FullScreen().setPosition('bottomright'));
 map.zoomControl.setPosition('bottomleft')
 
 
-let labels = [];
-for (const [surfaceName, surface] of Object.entries(layers))
-	for (const layer of Object.values(surface)) {
-		layer.tags.sort((a, b) => a.position.y - b.position.y)
-		for (const tag of layer.tags) {
-
-			let label = {
-				surface: surfaceName,
-				time: layer.path,
-				visible: false,
-				marker: L.marker([-(tag.position.y - TILESPERIMAGE/2) / coordScale, (tag.position.x - TILESPERIMAGE/2) / coordScale], {
-					icon: new L.DivIcon({
-						className: 'map-tag',
-						html: 	tag.iconPath ? '<img class="map-marker" src="' + tag.iconPath + '"/>' : '<map-marker-default class="map-marker"/>' +
-								'<span class="map-marker-text">' + tag.text + '</span>'
-					})
-				}),
-			};
-
-			labels.push(label);
-		}
-}
 updateLabels();
+updateLabelScaling({ zoom: startZ });
 
 
 if (daylightSlider)

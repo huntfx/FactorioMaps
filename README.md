@@ -7,12 +7,12 @@ Live demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
 Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # How to Install
-**Note that since version 3, this program now only runs on python version 3.6 or higher instead of python 2.**
-1. Download FactorioMaps to `%appdata%\mods\`, either from the [mod portal](https://mods.factorio.com/mod/L0laapk3_FactorioMaps) (The mod does not need to be enabled to work) and then unzipping it, or [downloading the git repo](https://github.com/L0laapk3/FactorioMaps/releases). 
-1. Install the latest version of [python 3.7](https://www.python.org/downloads/). (Do not install python 2.)
+**Note that this program now only runs on 64 bit python version 3.6 or higher.**
+1. Download FactorioMaps to `%appdata%\mods\`, either from the [mod portal](https://mods.factorio.com/mod/L0laapk3_FactorioMaps) (The mod does not need to be enabled to work) and then unzipping it, or from [the github releases page](https://github.com/L0laapk3/FactorioMaps/releases). 
+1. Install the latest version of [**64 bit** python 3.7](https://www.python.org/downloads/). (Do not install python 2.)
 1. Recommended: [Add python to your environment variables](https://stackoverflow.com/a/4855685/3185280).
 1. Install pip: Download the latest [get-pip.py](https://bootstrap.pypa.io/get-pip.py), and run it (`python get-pip.py` in the command line).
-1. Install the following pip packages: `pip install Pillow psutil`.
+1. Install the following pip packages: `pip install -r packages.txt`.
 
 # How to Use
 1. Make sure you close factorio before starting the process.
@@ -31,16 +31,18 @@ Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # Configuration
 Heres a list of flags that `auto.py` can accept:
+*Options with a \* do not have an effect when appending to existing timelapses.*
 
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;flag&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | --- | --- |
-| `--dayonly` | Do not take nighttime screenshots (For now, this setting needs to be the same across one timeline). |
-| `--nightonly` | Do not take daytime screenshots. |
-| `--hd` | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
+| `--dayonly`*\** | Do not take nighttime screenshots (For now, this setting needs to be the same across one timeline). |
+| `--nightonly`*\** | Do not take daytime screenshots. |
+| `--hd`*\** | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
 | `--no-altmode` | Hides entity info (alt mode) |
-| `--build-range=5.2` | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
-| `--connect-range=1.2` | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
-| `--tag-range=5.2` | The maximum range from mapview tags around which pictures are saved. |
+| `--no-tags` | Hides map tags |
+| `--build-range=5.2`*\** | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
+| `--connect-range=1.2`*\** | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
+| `--tag-range=5.2`*\** | The maximum range from mapview tags around which pictures are saved. |
 | `--surface=nauvis` | Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: `--surface=nauvis --surface="Factory floor 1"`. To find out the names of surfaces, use the command `/c for _,s in pairs(game.surfaces) do game.print(s.name) end`. |
 | `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
 | `--modpath=PATH` | Use *PATH* as the mod folder. |
@@ -59,6 +61,10 @@ Heres a list of flags that `auto.py` can accept:
  
 Image quality settings can be changed in the top of `zoom.py`.
 
+# Result folder estimates
+You can expect the resulting folders to take up approx. (very rough estimate) 15 times the savefile size per timestamp per daytime for day images and 10 times for night images. The intermediate total disk usage will be much higher, 10 times the final result or more. If this is a problem for you, go put a +1 on [#46](https://github.com/L0laapk3/FactorioMaps/issues/46).  
+Of course the processing time depends very heavely on your system specs, but a rough estimate is an hour per timestamp per daytime per 50 MB of savefile.
+
 # Hosting this on a server
 If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
 1. Of the files that this program generates, the files required to be hosted are:
@@ -67,6 +73,10 @@ If you wish to host your map for other people to a server, you need to take into
     * All __images__ in `Images\`.
     * All files in `lib\`.
     All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
+
+# Known mods that make use of the API to improve compability
+    * **Factorissimo** ⩾2.3.5: Able to render the inside of factory buildings recursively.
+    * Your mod? If you want to have a chat, you can always find me on discord: L0laapk3#2010
 
 # Known limitations
 * If you only have the steam version of factorio, steam will ask you to confirm the arguments everytime the script tries to start up. The popup window will sometimes not focus properly. Please press alt tab a couple of times until it shows up. The only way to get around this is to install the standalone version of factorio.

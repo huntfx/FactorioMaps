@@ -7,15 +7,18 @@ from shutil import get_terminal_size as tsize
 
 
 	
-ext = ".bmp"
+ext = ".png"
 
-def work(line, imgsize, folder, progressQueue):
-	arg = line.rstrip('\n').split(" ")
-	path = os.path.join(folder, arg[0], arg[1] + ext)
-	top = int(arg[2])
-	left = int(arg[3])
+def work(line, folder, progressQueue):
+	arg = line.rstrip('\n').split(" ", 5)
+	path = os.path.join(folder, arg[5])
+	top = int(arg[0])
+	left = int(arg[1])
+	width = int(arg[2])
+	height = int(arg[3])
+		
 	try:
-		Image.open(path).convert("RGB").crop((top, left, top + imgsize, left + imgsize)).save(path)
+		Image.open(path).convert("RGB").crop((top, left, top + width, left + height)).save(path)
 	except IOError:
 		progressQueue.put(False, True)
 		return line
@@ -39,14 +42,11 @@ def crop(*args, **kwargs):
 	subname = os.path.join(*args[1:4])
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 
-	basepath = os.path.join(toppath, "Images", subname)
+	basepath = os.path.join(toppath, "Images")
 	
 
 
-	while not os.path.isdir(basepath) or len(os.walk(basepath).__next__()[1]) == 0:
-		time.sleep(0.4)
-	folder = os.path.join(basepath, os.walk(basepath).__next__()[1][0])
-	datapath = os.path.join(basepath, "crop.txt")
+	datapath = os.path.join(basepath, subname, "crop.txt")
 	maxthreads = int(kwargs["cropthreads" if kwargs["cropthreads"] else "maxthreads"])
 
 
@@ -59,7 +59,7 @@ def crop(*args, **kwargs):
 	
 	files = []
 	with open(datapath, "r") as data:
-		imgsize = int(data.readline().rstrip('\n'))
+		assert(data.readline().rstrip('\n') == "v2")
 		for line in data:
 			files.append(line)
 	
@@ -71,7 +71,7 @@ def crop(*args, **kwargs):
 	doneSize = 0
 	try:
 		while len(files) > 0:
-			workers = pool.map_async(partial(work, imgsize=imgsize, folder=folder, progressQueue=progressQueue), files, 128)
+			workers = pool.map_async(partial(work, folder=basepath, progressQueue=progressQueue), files, 128)
 			for _ in range(len(files)):
 				if progressQueue.get(True):
 					doneSize += 1

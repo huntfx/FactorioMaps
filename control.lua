@@ -2,8 +2,9 @@
 
 
 fm = {}
-require "generateMap"
 require "autorun"
+
+require "generateMap"
 require "api"
 
 
@@ -44,6 +45,22 @@ script.on_event(defines.events.on_tick, function(event)
 		if nil == fm.tmp then	-- non surface specific stuff.
 
 			log("Start world capture")
+
+			if fm.autorun.mapInfo.options == nil then
+				fm.autorun.mapInfo.options = {
+					ranges = {
+						build = fm.autorun.around_build_range,
+						connect = fm.autorun.around_connect_range,
+						tag = fm.autorun.around_tag_range
+					},
+					HD = fm.autorun.HD,
+					day = fm.autorun.day,
+					night = fm.autorun.night,
+				}
+				fm.autorun.mapInfo.seed = game.default_map_gen_settings.seed
+				fm.autorun.mapInfo.mapExchangeString = game.get_map_exchange_string()
+				fm.autorun.mapInfo.maps = {}
+			end
 		
 			fm.savename = fm.autorun.name or ""
 			fm.topfolder = "FactorioMaps/" .. fm.savename
@@ -71,7 +88,7 @@ script.on_event(defines.events.on_tick, function(event)
 			
 			
 			if fm.autorun.surfaces == nil then
-				fm.autorun.surfaces = {player.surface.name}
+				fm.autorun.surfaces = { "nauvis" }
 			else
 				for index, surfaceName in pairs(fm.autorun.surfaces) do
 					if player.surface.name == surfaceName then	-- move surface the player is on to first
@@ -91,30 +108,35 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 			
 			fm.API.pull()
+			fm.API.activeLinks = {}
 			local newSurfaces = {true} -- discover all surfaces linked to from the original surface list or any new surfaces found by this process.
 			while #newSurfaces > 0 do
 				newSurfaces = {}
 				for _, surfaceName in pairs(fm.autorun.surfaces) do
+
 					if fm.API.linkData[surfaceName] then
 						for _, link in pairs(fm.API.linkData[surfaceName]) do
-							local otherSurfaceAlreadyInList = false
-							for _, otherSurfaceName in pairs(newSurfaces) do
-								if link.toSurface == otherSurfaceName then
-									otherSurfaceAlreadyInList = true
-									break
-								end
-							end
-							if not otherSurfaceAlreadyInList then
-								for _, otherSurfaceName in pairs(fm.autorun.surfaces) do
+
+							if link.type == "link_box_point" or link.type == "link_box_area" then
+								local otherSurfaceAlreadyInList = false
+								for _, otherSurfaceName in pairs(newSurfaces) do
 									if link.toSurface == otherSurfaceName then
 										otherSurfaceAlreadyInList = true
 										break
 									end
 								end
-							end
-							if not otherSurfaceAlreadyInList then
-								newSurfaces[#newSurfaces+1] = link.toSurface
-								log("Discovered surface: " .. link.toSurface)
+								if not otherSurfaceAlreadyInList then
+									for _, otherSurfaceName in pairs(fm.autorun.surfaces) do
+										if link.toSurface == otherSurfaceName then
+											otherSurfaceAlreadyInList = true
+											break
+										end
+									end
+								end
+								if not otherSurfaceAlreadyInList then
+									newSurfaces[#newSurfaces+1] = link.toSurface
+									log("Discovered surface: " .. link.toSurface)
+								end
 							end
 						end
 					end
@@ -125,13 +147,13 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 			end
 
-
 			latest = ""
 			for _, surfaceName in pairs(fm.autorun.surfaces) do
-				if fm.autorun.night then
+				local surface = game.surfaces[surfaceName]
+				if fm.autorun.mapInfo.options.night and not surface.freeze_daytime then
 					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " night\n" .. latest
 				end
-				if fm.autorun.day then
+				if fm.autorun.mapInfo.options.day or (surface.freeze_daytime and fm.autorun.mapInfo.options.night) then
 					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " day\n" .. latest
 				end
 			end
@@ -155,11 +177,6 @@ script.on_event(defines.events.on_tick, function(event)
 			-- 	player.teleport({0, 0}, currentSurface)
 			-- 	fm.teleportedPlayer = true
 			-- end
-
-			-- freeze all entities. Eventually, stuff will run out of power, but for just 2 ticks, it should be fine.
-			for key, entity in pairs(fm.currentSurface.find_entities_filtered({invert=true, name="hidden-electric-energy-interface"})) do
-				entity.active = false
-			end
 			
 			-- remove no path sign and ghost entities
 			for key, entity in pairs(fm.currentSurface.find_entities_filtered({type={"flying-text","entity-ghost","tile-ghost"}})) do
@@ -181,9 +198,9 @@ script.on_event(defines.events.on_tick, function(event)
 
 
 
-			if fm.autorun.day then
+			if fm.autorun.mapInfo.options.day then
 				fm.currentSurface.daytime = 0
-				fm.subfolder = "day"
+				fm.daytime = "day"
 				fm.generateMap(event)
 			end
 			
@@ -191,7 +208,7 @@ script.on_event(defines.events.on_tick, function(event)
 
 		elseif fm.ticks < 2 then
 			
-			if fm.autorun.day then
+			if fm.autorun.mapInfo.options.day then
 				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/day/done.txt", "", false, event.player_index)
 			end
 	
@@ -200,9 +217,9 @@ script.on_event(defines.events.on_tick, function(event)
 				entity.destroy()
 			end
 
-			if fm.autorun.night then
+			if fm.autorun.mapInfo.options.night then
 				fm.currentSurface.daytime = 0.5
-				fm.subfolder = "night"
+				fm.daytime = "night"
 				fm.generateMap(event)
 			end
 	
@@ -210,7 +227,7 @@ script.on_event(defines.events.on_tick, function(event)
 	
 		elseif fm.ticks < 3 then
 			
-			if fm.autorun.night then
+			if fm.autorun.mapInfo.options.night then
 				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/night/done.txt", "", false, event.player_index)
 			end
 			
@@ -230,7 +247,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 
 		else
-			fm.subfolder = nil
+			fm.daytime = nil
 			fm.topfolder = nil
 
 			fm.done = true

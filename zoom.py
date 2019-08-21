@@ -1,20 +1,31 @@
-from PIL import Image, ImageChops
+import json
+import math
 import multiprocessing as mp
-import os, math, sys, time, math, json, psutil, subprocess
+import os
+import subprocess
+import sys
+import time
+import cv2, numpy
+from turbojpeg import TurboJPEG
 from shutil import get_terminal_size as tsize
+from sys import platform as _platform
 
+import psutil
+from PIL import Image, ImageChops
 
 maxQuality = False  		# Set this to true if you want to compress/postprocess the images yourself later
 useBetterEncoder = True 	# Slower encoder that generates smaller images.
 
 quality = 80
 	
-EXT = ".bmp"
+EXT = ".png"
 OUTEXT = ".jpg"     		# format='JPEG' is hardcoded in places, meed to modify those, too. Most parameters are not supported outside jpeg.
 THUMBNAILEXT = ".png"
 
 BACKGROUNDCOLOR = (27, 45, 51)
 THUMBNAILSCALE = 2
+
+MINRENDERBOXSIZE = 8
 
 
 
@@ -27,19 +38,117 @@ def printErase(arg):
 		pass
 
 
+# note that these are all 64 bit libraries since factorio doesnt support 32 bit.
+if os.name == "nt":
+	jpeg = TurboJPEG("mozjpeg/turbojpeg.dll")
+# elif _platform == "darwin":						# I'm not actually sure if mac can run linux libraries or not.
+# 	jpeg = TurboJPEG("mozjpeg/libturbojpeg.dylib")	# If anyone on mac has problems with the line below please make an issue :)
+else:
+	jpeg = TurboJPEG("mozjpeg/libturbojpeg.so")
+
+
 def saveCompress(img, path, inpath=None):
 	if maxQuality:  # do not waste any time compressing the image
-		img.save(path, subsampling=0, quality=100)
+		return img.save(path, subsampling=0, quality=100)
 
-	elif os.name == 'nt' and useBetterEncoder: #mozjpeg only supported on windows for now, feel free to make a pull request
-		if not inpath:
-			tmp = img._dump()
-		# mozjpeg version used is 3.3.1
-		subprocess.check_call(["cjpeg", "-quality", str(quality), "-optimize", "-progressive", "-sample", "1x1", "-outfile", path, inpath if inpath else tmp]) # This software is based in part on the work of the Independent JPEG Group.
-		if not inpath:
-			os.remove(tmp)
-	else:
-		img.save(path, format='JPEG', optimize=True, subsampling=0, quality=quality, progressive=True)
+	
+	out_file = open(path, 'wb')
+	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy() ))
+	out_file.close()
+
+def simpleZoom(workQueue):
+	for (folder, start, stop, filename) in workQueue:
+		path = os.path.join(folder, str(start), filename)
+		img = Image.open(path + EXT, mode='r').convert("RGB")
+		if OUTEXT != EXT:
+			saveCompress(img, path + OUTEXT, path + EXT)
+			os.remove(path + EXT)
+
+		for z in range(start - 1, stop - 1, -1):
+			if img.size[0] >= MINRENDERBOXSIZE*2 and img.size[1] >= MINRENDERBOXSIZE*2:
+				img = img.resize((img.size[0]//2, img.size[1]//2), Image.ANTIALIAS)
+			zFolder = os.path.join(folder, str(z))
+			if not os.path.exists(zFolder):
+				os.mkdir(zFolder)
+			saveCompress(img, os.path.join(zFolder, filename + OUTEXT))
+
+
+def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
+	with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as mapInfoFile:
+		mapInfo = json.load(mapInfoFile)
+
+		outFileExists = os.path.isfile(os.path.join(workfolder, "mapInfo.out.json"))
+		mapInfoOutFile = open(os.path.join(workfolder, "mapInfo.out.json"), 'r+')
+		if outFileExists:
+			outInfo = json.load(mapInfoOutFile)
+		else:
+			outInfo = { "maps": {} }
+
+		for i, m in enumerate(mapInfo["maps"]):
+			if m["path"] == timestamp:
+				mapLayer = m
+				mapIndex = str(i)
+
+		if mapIndex not in outInfo["maps"]:
+			outInfo["maps"][mapIndex] = { "surfaces": {} }
+
+		zoomWork = set()
+		for daytime, activeSurfaces in daytimeSurfaces.items():
+			surfaceZoomLevels = {}
+			for surfaceName in activeSurfaces:
+				surfaceZoomLevels[surfaceName] = mapLayer["surfaces"][surfaceName]["zoom"]["max"] - mapLayer["surfaces"][surfaceName]["zoom"]["min"]
+
+			for surfaceName, surface in mapLayer["surfaces"].items():
+				if "links" in surface:
+
+					if surfaceName not in outInfo["maps"][mapIndex]["surfaces"]:
+						outInfo["maps"][mapIndex]["surfaces"][surfaceName] = {}
+					if "links" not in outInfo["maps"][mapIndex]["surfaces"][surfaceName]:
+						outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"] = []
+
+					for linkIndex, link in enumerate(surface["links"]):
+						if link["type"] == "link_renderbox_area" and "zoom" in link:
+							totalZoomLevelsRequired = 0
+							for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
+								if zoomSurface in surfaceZoomLevels:
+									totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
+
+							if not outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]:
+								outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex] = {}
+							if "zoom" not in outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]:
+								outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"] = {}
+
+
+							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
+							outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
+
+							
+							# an assumption is made that the total zoom levels required doesnt change between snapshots.
+							if (link if "path" in link else outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex])["path"] == timestamp:
+								zoomWork.add((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime if link["daynight"] else "day", "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
+
+		
+		mapInfoOutFile.seek(0)
+		json.dump(outInfo, mapInfoOutFile)
+		mapInfoOutFile.truncate()
+							
+
+						
+	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
+	processes = []
+	zoomWork = list(zoomWork)
+	for i in range(0, min(maxthreads, len(zoomWork))):
+		p = mp.Process(target=simpleZoom, args=(zoomWork[i::maxthreads],))
+		p.start()
+		processes.append(p)
+	for p in processes:
+		p.join()
+					
+
+
+
+
+
 
 def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chunk, keepLast=False):
 	chunksize = 2**(start-stop)
@@ -219,11 +328,13 @@ def zoom(*args, **kwargs):
 									doneSize += 1
 									progress = float(doneSize) / originalSize
 									tsiz = tsize()[0]-15
-									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 99, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 98, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
 
 								for p in processes:
 									p.join()
-									
+								
+
+								
 
 								if threadsplit > 0:
 									#print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
