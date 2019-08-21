@@ -24,5 +24,6 @@
     "3.3.0": ["Updated for 0.17", "Some minor bugfixes"],
     "3.3.1": "Fixed a bug where some parts of the map could be missing if multiple factions were used",
     "3.3.2": "Many bugfixes.",
-    "3.4.0": ["Separated map tags to surface and snapshot level", "Thumbnail generation of the map", "Added API for integration with i.a. Factorissimo", "Better dependency management"]
+    "3.4.0": ["Separated map tags to surface and snapshot level", "Thumbnail generation of the map"],
+    "3.5.0": ["Added API for integration with i.a. Factorissimo", "Better dependency management"]
 }

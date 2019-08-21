@@ -12,23 +12,22 @@ outext = ".jpg"
 
 
 
+def test(paths):
+	newImg = Image.open(paths[0], mode='r').convert("RGB")
+	oldImg = Image.open(paths[1], mode='r').convert("RGB")
+	treshold = .03 * newImg.size[0]**2
+	# jpeg artifacts always average out perfectly over 8x8 sections, we take advantage of that and scale down by 8 so we can compare compressed images with uncompressed images.
+	size = (newImg.size[0] / 8, newImg.size[0] / 8)
+	newImg.thumbnail(size, Image.BILINEAR)
+	oldImg.thumbnail(size, Image.BILINEAR)
+	diff = ImageChops.difference(newImg, oldImg)
+	return sum(ImageStat.Stat(diff).sum2) > treshold
 
-def compare(path, basePath, new, treshold, progressQueue):
-	
+
+def compare(path, basePath, new, progressQueue):
+	testResult = False
 	try:
-		# jpeg artifacts always average out perfectly over 8x8 sections, we take advantage of that and scale down by 8 before we compare.
-		newImg = Image.open(os.path.join(basePath, new, *path[1:]), mode='r').convert("RGB")
-		oldImg = Image.open(os.path.join(basePath, *path).replace(ext, outext), mode='r').convert("RGB")
-		size = (oldImg.size[0] / 8, oldImg.size[0] / 8)
-		newImg.thumbnail(size, Image.BILINEAR)
-		oldImg.thumbnail(size, Image.BILINEAR)
-		diff = ImageChops.difference(newImg, oldImg)
-		
-		if sum(ImageStat.Stat(diff).sum2) > treshold:
-			return (True, path[1:])
-	except IOError:
-		print("\rerror   ")
-		pass
+		testResult = test((os.path.join(basePath, new, *path[1:]), os.path.join(basePath, *path).replace(ext, outext)))
 	except:
 		print("\r")
 		traceback.print_exc()
@@ -36,7 +35,17 @@ def compare(path, basePath, new, treshold, progressQueue):
 		raise
 	finally:
 		progressQueue.put(True, True)
-	return (False, path[1:])
+	return (testResult, path[1:])
+
+def compare_renderbox(renderbox, basePath, new):
+	newPath = os.path.join(basePath, new, renderbox[0]) + ext
+	testResult = False
+	try:
+		testResult = test((newPath, os.path.join(basePath, renderbox[1], renderbox[0]) + outext))
+	except:
+		print("\r")
+		raise
+	return (testResult, newPath, renderbox[1], renderbox[2])
 
 
 def neighbourScan(coord, keepList, cropList):
@@ -45,7 +54,7 @@ def neighbourScan(coord, keepList, cropList):
 		corners:
 		2   1
 		X
-		4   3 
+		4   3
 		"""
 		surfaceName, daytime, z = coord[:3]
 		x, y = int(coord[3]), int(os.path.splitext(coord[4])[0])
@@ -119,6 +128,13 @@ def ref(*args, **kwargs):
 
 
 
+	changed = False
+	if "maps" not in outdata:
+		outdata["maps"] = {}
+	if str(new) not in outdata["maps"]:
+		outdata["maps"][str(new)] = { "surfaces": {} }
+
+
 	newMap = data["maps"][new]
 	allImageIndex = {}
 	allDayImages = {}
@@ -190,8 +206,6 @@ def ref(*args, **kwargs):
 							
 							with open(os.path.join(toppath, "Images", newMap["path"], surfaceName, "day", "ref.txt"), "r") as f:
 								for line in f:
-									
-									#if (line.rstrip("\n").split(" ", 2)[1] == "6"): print("YUP", line.rstrip("\n").split(" ", 2)[0])
 									dayImages.append(tuple(line.rstrip("\n").split(" ", 2)))
 									
 
@@ -201,7 +215,6 @@ def ref(*args, **kwargs):
 					path = os.path.join(toppath, "Images", newMap["path"], surfaceName, daytime, str(z))
 					for x in os.listdir(path):
 						for y in os.listdir(os.path.join(path, x)):
-							#if (y == "6.png"): print("hoi", x)
 							if (x, os.path.splitext(y)[0]) in dayImages or (x, y.replace(ext, outext)) not in oldImages:
 								keepList.append((surfaceName, daytime, str(z), x, y))
 							elif (x, y.replace(ext, outext)) in oldImages:
@@ -219,12 +232,10 @@ def ref(*args, **kwargs):
 		if kwargs["verbose"]: print("found %s new images" % len(keepList))
 		if len(compareList) > 0:
 			if kwargs["verbose"]: print("comparing %s existing images" % len(compareList))
-			treshold = .03 * Image.open(os.path.join(toppath, "Images", *compareList[0]).replace(ext, outext)).size[0] ** 2
-			#print(treshold)
 			m = mp.Manager()
 			progressQueue = m.Queue()
 			#compare(compareList[0], treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue)
-			workers = pool.map_async(partial(compare, treshold=treshold, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue), compareList, 128)
+			workers = pool.map_async(partial(compare, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue), compareList, 128)
 			doneSize = 0
 			print("ref  {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
 			for i in range(len(compareList)):
@@ -285,13 +296,74 @@ def ref(*args, **kwargs):
 					allImageIndex[coord[0]][coord[1]][y].append(x)
 
 
+					
+					
+
+
+
+		if kwargs["verbose"]: print("comparing renderboxes")
+		if "renderboxesCompared" not in newMap:
+			changed = True
+			outdata["maps"][str(new)]["renderboxesCompared"] = True
+
+			compareList = {}
+			totalCount = 0
+			for surfaceName, surface in newMap["surfaces"].items():
+				linksByPath = {}
+				for linkIndex, link in enumerate(surface["links"]):
+
+					if surfaceName not in outdata["maps"][str(new)]["surfaces"]:
+						outdata["maps"][str(new)]["surfaces"][surfaceName] = { "links": [] }
+					outdata["maps"][str(new)]["surfaces"][surfaceName]["links"].append({ "path": newMap["path"] })
+
+					for daytime in ("day", "night"):
+						if link["type"] == "link_renderbox_area" and (link["daynight"] or daytime == "day"):
+							path = os.path.join(link["toSurface"], daytime if link["daynight"] else "day", "renderboxes", str(surface["zoom"]["max"]), link["filename"])
+
+							if path not in linksByPath:
+								linksByPath[path] = [ (surfaceName, linkIndex) ]
+							else:
+								linksByPath[path].append((surfaceName, linkIndex))
+
+							totalCount += 1
+
+				for old in range(new-1, -1, -1):
+					if surfaceName in data["maps"][old]["surfaces"]:
+						for linkIndex, link in enumerate(data["maps"][old]["surfaces"][surfaceName]["links"]):
+							for daytime in ("day", "night"):
+								if link["type"] == "link_renderbox_area" and (link["daynight"] or daytime == "day"):
+									path = os.path.join(link["toSurface"], daytime if link["daynight"] else "day", "renderboxes", str(surface["zoom"]["max"]), link["filename"])
+									if path in linksByPath and path not in compareList:
+										oldPath = link["path"] if "path" in link else outdata["maps"][str(old)]["surfaces"][surfaceName]["links"][linkIndex]["path"]
+										compareList[path] = (path, oldPath, linksByPath[path])
+
+
+			compareList = compareList.values()
+			resultList = pool.map(partial(compare_renderbox, basePath=os.path.join(toppath, "Images"), new=str(newMap["path"])), compareList, 16)
+
+			count = 0
+			for (isDifferent, path, oldPath, links) in resultList:
+				if not isDifferent:
+					os.remove(path)
+
+					for (surfaceName, linkIndex) in links:
+						outdata["maps"][str(new)]["surfaces"][surfaceName]["links"][linkIndex] = { "path": oldPath }
+						
+				else:
+					count += 1
+
+			if kwargs["verbose"]: print("removed %s of %s compared renderboxes, found %s new" % (count, len(compareList), totalCount))
+					
+
+
+
+
+
+
+
+
 
 	# compress and build string
-	changed = False
-	if "maps" not in outdata:
-		outdata["maps"] = {}
-	if str(new) not in outdata["maps"]:
-		outdata["maps"][str(new)] = { "surfaces": {} }
 	for surfaceName, daytimeImageIndex in allImageIndex.items():
 		indexList = []
 		daytime = "night" if "night" in daytimeImageIndex and data["maps"][new]["surfaces"][surfaceName] and str(data["maps"][new]["surfaces"][surfaceName]["night"]) else "day"
@@ -316,6 +388,8 @@ def ref(*args, **kwargs):
 		outdata["maps"][str(new)]["surfaces"][surfaceName]["chunks"] = '='.join(indexList)
 		if len(indexList) > 0:
 			changed = True
+			
+
 
 
 

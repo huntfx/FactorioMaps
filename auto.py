@@ -90,7 +90,6 @@ def printErase(arg):
 def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, **kwargs):
 	
 	pipeOut, pipeIn = os.pipe()
-	print(popenArgs)
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
 
 	printingStackTraceback = False
@@ -611,6 +610,10 @@ def auto(*args):
 					#print("downsampling %s images" % screenshot)
 					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, needsThumbnail, **kwargs)
 
+					if jindex == len(latest) - 1:
+						print("zooming renderboxes", timestamp)
+						zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
+
 				if screenshot != latest[-1]:
 					refZoom()
 				else:
@@ -631,9 +634,6 @@ def auto(*args):
 						workthread.daemon = True
 						workthread.start()
 
-
-			print("zooming renderboxes")
-			zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
 			
 
 
@@ -648,7 +648,11 @@ def auto(*args):
 				data = json.load(outf)
 				for mapIndex, mapStuff in json.load(inf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
-						data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
+						if "chunks" in data["maps"][int(mapIndex)]["surfaces"][surfaceName]:
+							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
+						for linkIndex, link in enumerate(surfaceStuff["links"]):
+							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
+							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 				outf.seek(0)
 				json.dump(data, outf)
 				outf.truncate()

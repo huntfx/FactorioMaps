@@ -76,7 +76,22 @@ def simpleZoom(workQueue):
 def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 	with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as mapInfoFile:
 		mapInfo = json.load(mapInfoFile)
-		mapLayer = next(mapLayer for mapLayer in mapInfo["maps"] if mapLayer["path"] == timestamp)
+
+		outFileExists = os.path.isfile(os.path.join(workfolder, "mapInfo.out.json"))
+		mapInfoOutFile = open(os.path.join(workfolder, "mapInfo.out.json"), 'r+')
+		if outFileExists:
+			outInfo = json.load(mapInfoOutFile)
+			print("\n\nreading out file\n\n" + json.dumps(outInfo) + "\n\n")
+		else:
+			outInfo = { "maps": {} }
+
+		for i, m in enumerate(mapInfo["maps"]):
+			if m["path"] == timestamp:
+				mapLayer = m
+				mapIndex = str(i)
+
+		if mapIndex not in outInfo["maps"]:
+			outInfo["maps"][mapIndex] = { "surfaces": {} }
 
 		zoomWork = set()
 		for daytime, activeSurfaces in daytimeSurfaces.items():
@@ -84,22 +99,39 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 			for surfaceName in activeSurfaces:
 				surfaceZoomLevels[surfaceName] = mapLayer["surfaces"][surfaceName]["zoom"]["max"] - mapLayer["surfaces"][surfaceName]["zoom"]["min"]
 
-			for fromSurface, surface in mapLayer["surfaces"].items():
+			for surfaceName, surface in mapLayer["surfaces"].items():
 				if "links" in surface:
-					for _, link in enumerate(surface["links"]):
+
+					if surfaceName not in outInfo["maps"][mapIndex]["surfaces"]:
+						outInfo["maps"][mapIndex]["surfaces"][surfaceName] = {}
+					if "links" not in outInfo["maps"][mapIndex]["surfaces"][surfaceName]:
+						outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"] = []
+
+					for linkIndex, link in enumerate(surface["links"]):
 						if link["type"] == "link_renderbox_area" and "zoom" in link:
 							totalZoomLevelsRequired = 0
 							for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
 								if zoomSurface in surfaceZoomLevels:
 									totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
 
+							if not outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]:
+								outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex] = {}
+							if "zoom" not in outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]:
+								outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"] = {}
+
+
 							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
-							zoomWork.add((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime if link["daynight"] else "day", "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
+							outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
+
+							
+							# an assumption is made that the total zoom levels required doesnt change between snapshots.
+							if (link if "path" in link else outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex])["path"] == timestamp:
+								zoomWork.add((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime if link["daynight"] else "day", "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
 
 		
-		mapInfoFile.seek(0)
-		json.dump(mapInfo, mapInfoFile)
-		mapInfoFile.truncate()
+		mapInfoOutFile.seek(0)
+		json.dump(outInfo, mapInfoOutFile)
+		mapInfoOutFile.truncate()
 							
 
 						
