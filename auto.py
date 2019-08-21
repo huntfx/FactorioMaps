@@ -648,18 +648,18 @@ def auto(*args):
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as outf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as inf:
-				data = json.load(outf)
-				for mapIndex, mapStuff in json.load(inf)["maps"].items():
+			with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as srcf:
+				data = json.load(destf)
+				for mapIndex, mapStuff in json.load(srcf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
 						if "chunks" in surfaceStuff:
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
 						for linkIndex, link in enumerate(surfaceStuff["links"]):
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
-				outf.seek(0)
-				json.dump(data, outf)
-				outf.truncate()
+				destf.seek(0)
+				json.dump(data, destf)
+				destf.truncate()
 			os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 

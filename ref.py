@@ -302,7 +302,7 @@ def ref(*args, **kwargs):
 
 
 		if kwargs["verbose"]: print("comparing renderboxes")
-		if "renderboxesCompared" not in newMap:
+		if "renderboxesCompared" not in outdata["maps"][str(new)]:
 			changed = True
 			outdata["maps"][str(new)]["renderboxesCompared"] = True
 
