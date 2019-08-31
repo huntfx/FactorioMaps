@@ -69,6 +69,8 @@ Of course the processing time depends very heavely on your system specs, but a r
 If you wish to host your map for other people to a server, you need to take into account the following considerations: (You can change these once in `index.html.template` and they will be used for all future snapshots.)
 1. Of the files that this program generates, the files required to be hosted are:
     * `index.html`
+    * `index.css`
+    * `index.js`
     * `mapInfo.js`
     * All __images__ in `Images\`.
     * All files in `lib\`.
