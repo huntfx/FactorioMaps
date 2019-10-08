@@ -242,7 +242,7 @@ def auto(*args):
 
 	for saveName in savenames:
 		savePath = os.path.join("../../saves", saveName)
-		if not (os.path.isdir(savePath) or os.path.isfile(savePath + ".zip")):
+		if not (os.path.isdir(savePath) or os.path.isfile(savePath)):
 			print(f'Cannot find savefile: "{saveName}"')
 			raise ValueError(f'Cannot find savefile: "{saveName}"')
 
