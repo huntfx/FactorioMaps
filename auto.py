@@ -232,17 +232,19 @@ def auto(*args):
 
 
 
-	args = list(filter(parseArg, args))
-	if len(args) > 0:
-		foldername = args[0]
+	newArgs = list(filter(parseArg, args))
+	if kwargs["verbose"]:
+		print(args)
+	if len(newArgs) > 0:
+		foldername = newArgs[0]
 	else:
 		foldername = os.path.splitext(os.path.basename(max([os.path.join("../../saves", basename) for basename in os.listdir("../../saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
 		print("No save name passed. Using most recent save: %s" % foldername)
-	savenames = args[1:] or [ foldername ]
+	savenames = newArgs[1:] or [ foldername ]
 
 	for saveName in savenames:
 		savePath = os.path.join("../../saves", saveName)
-		if not (os.path.isdir(savePath) or os.path.isfile(savePath)):
+		if not (os.path.isdir(savePath) or os.path.isfile(savePath) or os.path.isfile(savePath + ".zip")):
 			print(f'Cannot find savefile: "{saveName}"')
 			raise ValueError(f'Cannot find savefile: "{saveName}"')
 
@@ -463,24 +465,25 @@ def auto(*args):
 
 			with open("autorun.lua", "w") as f:
 				surfaceString = '{"' + '", "'.join(kwargs["surface"]) + '"}' if len(kwargs["surface"]) > 0 else "nil"
-				f.write(
-					f'fm.autorun = {{\n'
-					f'HD = {str(kwargs["hd"] == True).lower()},\n'
-					f'day = {str(kwargs["nightonly"] != True).lower()},\n'
-					f'night = {str(kwargs["dayonly"] != True).lower()},\n'
-					f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
-					f'tags = {str(kwargs["no-tags"] != True).lower()},\n'
-					f'around_tag_range = {float(kwargs["tag-range"])},\n'
-					f'around_build_range = {float(kwargs["build-range"])},\n'
-					f'around_connect_range = {float(kwargs["connect-range"])},\n'
-					f'connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
-					f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
-					f'surfaces = {surfaceString},\n'
-					f'name = "{foldername + "/"}",\n'
-					f'mapInfo = {mapInfoLua},\n'
-					f'chunkCache = {chunkCache},\n'
-					f'}}'
-				)
+				autorunString = (f'fm.autorun = {{\n'
+				f'HD = {str(kwargs["hd"] == True).lower()},\n'
+				f'day = {str(kwargs["nightonly"] != True).lower()},\n'
+				f'night = {str(kwargs["dayonly"] != True).lower()},\n'
+				f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
+				f'tags = {str(kwargs["no-tags"] != True).lower()},\n'
+				f'around_tag_range = {float(kwargs["tag-range"])},\n'
+				f'around_build_range = {float(kwargs["build-range"])},\n'
+				f'around_connect_range = {float(kwargs["connect-range"])},\n'
+				f'connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
+				f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
+				f'surfaces = {surfaceString},\n'
+				f'name = "{foldername + "/"}",\n'
+				f'mapInfo = {mapInfoLua},\n'
+				f'chunkCache = {chunkCache},\n'
+				f'}}')
+				f.write(autorunString)
+				if kwargs["verbose"]:
+					printErase(autorunString)
 
 
 			printErase("building config.ini")
@@ -514,8 +517,11 @@ def auto(*args):
 			isSteam = None
 			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
 
-			popenArgs = (factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename+".zip")), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"]), "--disable-migration-window")
-					
+			popenArgs = (factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename)), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"]), "--disable-migration-window")
+			if kwargs["verbose"]:
+				printErase(popenArgs)
+
+
 			condition = mp.Condition()
 
 
@@ -552,6 +558,8 @@ def auto(*args):
 			with open(datapath, 'r') as f:
 				for line in f:
 					latest.append(line.rstrip("\n"))
+			if kwargs["verbose"]:
+				printErase(latest)
 
 			
 			firstOtherInputs = latest[-1].split(" ")
