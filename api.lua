@@ -32,7 +32,7 @@ local function resolveSurface(surface, default, errorText)
 end
 
 local roundMultiplier = 32
-if fm.autorun.HD then
+if fm.autorun and fm.autorun.HD then
 	roundMultiplier = 64
 end
 

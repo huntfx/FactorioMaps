@@ -263,13 +263,15 @@ script.on_event(defines.events.on_tick, function(event)
 			text = {
 				"Factoriomaps automatic world capture",
 				"Factoriomaps is now finished capturing your game and will close soon.",
-				"If you believe the script is stuck or you see this screen in error,\nconsider making an issue on the github page: https://git.io/factoriomaps"
+				"If you believe the script is stuck or you see this screen in error,\nconsider making an issue on the github page: https://git.io/factoriomaps",
+				"Do not save! This will result in a bricked gamestate."
 			}
 		else
 			text = {
 				"Welcome to FactorioMaps!",
 				"For instructions, check out",
-				"You can leave the mod disabled while you play.\nThe scripts will automagically enable it when it needs it!"
+				"You can leave the mod disabled while you play.\nThe scripts will automagically enable it when it needs it!",
+				"Do not save! This will result in a bricked gamestate."
 			}
 		end
 	
@@ -287,6 +289,7 @@ script.on_event(defines.events.on_tick, function(event)
 		end
 		--topLine.add{type = "label", name = "main-end", caption = "."}.style
 		main.add{type = "label", caption = text[3]}.style.single_line = false
+		main.add{type = "label", caption = text[4]}.style.font = "default-bold"
 		main.style.horizontal_align = "right"
 	
 		
