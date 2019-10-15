@@ -25,5 +25,6 @@
     "3.3.1": "Fixed a bug where some parts of the map could be missing if multiple factions were used",
     "3.3.2": "Many bugfixes.",
     "3.4.0": ["Separated map tags to surface and snapshot level", "Thumbnail generation of the map"],
-    "3.5.0": ["!Added API for integration with i.a. Factorissimo", "Better dependency management", "Several bugfixes"]
+    "3.5.0": ["!Added API for integration with i.a. Factorissimo", "Better dependency management", "Several bugfixes"],
+    "3.5.1": "Removed dependency on package that isnt being updated anymore."
 }
