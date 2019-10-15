@@ -5,7 +5,7 @@ import os
 import subprocess
 import sys
 import time
-import cv2, numpy
+import numpy
 from turbojpeg import TurboJPEG
 from shutil import get_terminal_size as tsize
 from sys import platform as _platform
@@ -33,7 +33,7 @@ def printErase(arg):
 	try:
 		tsiz = tsize()[0]
 		print("\r{}{}\n".format(arg, " " * (tsiz*math.ceil(len(arg)/tsiz)-len(arg) - 1)), end="", flush=True)
-	except e:
+	except:
 		#raise
 		pass
 
