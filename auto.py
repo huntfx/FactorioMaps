@@ -325,9 +325,7 @@ def auto(*args):
 					print(line)
 				print("")
 				print("")
-				print("  Download: https://mods.factorio.com/mod/L0laapk3_FactorioMaps")
-				print("            OR")
-				print("            https://github.com/L0laapk3/FactorioMaps")
+				print("  Download: https://git.io/factoriomaps")
 				if majorUpdate:
 					print("")
 					print("You can dismiss this by using --noupdate (not recommended)")
