@@ -164,6 +164,8 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 		with condition:
 			condition.notify()
 
+		psutil.Process(pid).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
+
 		if isSteam:
 			pipef.close()
 			with open(os.path.join(tmpDir, "factorio-current.log"), "r") as f:
@@ -181,8 +183,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				line = pipef.readline()
 				printingStackTraceback = handleGameLine(line)
 
-				
-		psutil.Process(pid).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
+			
 
 
 
