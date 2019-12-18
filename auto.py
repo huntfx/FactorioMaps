@@ -164,6 +164,8 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 		with condition:
 			condition.notify()
 
+		psutil.Process(pid).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
+
 		if isSteam:
 			pipef.close()
 			with open(os.path.join(tmpDir, "factorio-current.log"), "r") as f:
@@ -181,8 +183,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				line = pipef.readline()
 				printingStackTraceback = handleGameLine(line)
 
-				
-		psutil.Process(pid).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
+			
 
 
 
@@ -428,7 +429,7 @@ def auto(*args):
 
 			printErase("building autorun.lua")
 			if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
-				with open(os.path.join(workfolder, "mapInfo.json"), "r") as f:
+				with open(os.path.join(workfolder, "mapInfo.json"), "r", encoding='utf-8') as f:
 					mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
 					if isFirstSnapshot:
 						f.seek(0)
@@ -642,7 +643,7 @@ def auto(*args):
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as srcf:
+			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as srcf:
 				data = json.load(destf)
 				for mapIndex, mapStuff in json.load(srcf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
@@ -660,7 +661,7 @@ def auto(*args):
 
 		print("updating labels")
 		tags = {}
-		with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as mapInfoJson:
+		with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as mapInfoJson:
 			data = json.load(mapInfoJson)
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
@@ -739,7 +740,7 @@ def auto(*args):
 		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
-		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r") as inf:
+		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r", encoding='utf-8') as inf:
 			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(')
 			outf.write(json.dumps(inf.read()))
 			outf.write(");")
