@@ -249,7 +249,7 @@ def zoom(*args, **kwargs):
 	#print(basepath)
 
 
-	with open(datapath, "r") as f:
+	with open(datapath, "r", encoding="utf-8") as f:
 		data = json.load(f)
 	for mapIndex, map in enumerate(data["maps"]):
 		if len(args) <= 1 or map["path"] == args[1]:

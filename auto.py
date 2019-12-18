@@ -450,7 +450,7 @@ def auto(*args):
 			else:
 				chunkCache = "{}"
 
-			with open("autorun.lua", "w") as f:
+			with open("autorun.lua", "w", encoding="utf-8") as f:
 				surfaceString = '{"' + '", "'.join(kwargs["surface"]) + '"}' if len(kwargs["surface"]) > 0 else "nil"
 				autorunString = (f'fm.autorun = {{\n'
 				f'HD = {str(kwargs["hd"] == True).lower()},\n'
@@ -465,7 +465,7 @@ def auto(*args):
 				f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
 				f'surfaces = {surfaceString},\n'
 				f'name = "{foldername + "/"}",\n'
-				f'mapInfo = {mapInfoLua},\n'
+				f'mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},\n'
 				f'chunkCache = {chunkCache},\n'
 				f'}}')
 				f.write(autorunString)
@@ -643,7 +643,7 @@ def auto(*args):
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as srcf:
+			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r", encoding='utf-8') as srcf:
 				data = json.load(destf)
 				for mapIndex, mapStuff in json.load(srcf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
