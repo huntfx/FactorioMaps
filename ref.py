@@ -367,6 +367,8 @@ def ref(*args, **kwargs):
 	for surfaceName, daytimeImageIndex in allImageIndex.items():
 		indexList = []
 		daytime = "night" if "night" in daytimeImageIndex and data["maps"][new]["surfaces"][surfaceName] and str(data["maps"][new]["surfaces"][surfaceName]["night"]) else "day"
+		if daytime not in daytimeImageIndex:	# this is true if nothing changed
+			continue
 		surfaceImageIndex = daytimeImageIndex[daytime]
 		for y, xList in surfaceImageIndex.items():
 			string = getBase64(y, False)

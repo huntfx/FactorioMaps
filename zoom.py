@@ -294,6 +294,8 @@ def zoom(*args, **kwargs):
 										maxY = max(maxY, y)
 										allBigChunks[(x >> maxzoom - minzoom, y >> maxzoom - minzoom)] = True
 
+								if len(allBigChunks) <= 0:
+									continue
 
 								pathList = []
 								for otherMapIndex in range(mapIndex, -1, -1):
