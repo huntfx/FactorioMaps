@@ -139,6 +139,8 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
+			# note: possibility to avoid this: https://www.reddit.com/r/Steam/comments/4rgrxj/where_are_launch_options_saved_for_games/
+			# requirements for this approach: root?, need to figure out steam userid, parse the file format, ensure no conflicts between instances. overall probably not worth it.
 			print("WARNING: Running in limited support mode trough steam. Consider using standalone factorio instead.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to click this every time the game starts for the steam version)")
 			attrs = ('pid', 'name', 'create_time')
 
