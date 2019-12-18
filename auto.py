@@ -139,6 +139,8 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
+			# note: possibility to avoid this: https://www.reddit.com/r/Steam/comments/4rgrxj/where_are_launch_options_saved_for_games/
+			# requirements for this approach: root?, need to figure out steam userid, parse the file format, ensure no conflicts between instances. overall probably not worth it.
 			print("WARNING: Running in limited support mode trough steam. Consider using standalone factorio instead.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to click this every time the game starts for the steam version)")
 			attrs = ('pid', 'name', 'create_time')
 
@@ -450,7 +452,7 @@ def auto(*args):
 			else:
 				chunkCache = "{}"
 
-			with open("autorun.lua", "w") as f:
+			with open("autorun.lua", "w", encoding="utf-8") as f:
 				surfaceString = '{"' + '", "'.join(kwargs["surface"]) + '"}' if len(kwargs["surface"]) > 0 else "nil"
 				autorunString = (f'fm.autorun = {{\n'
 				f'HD = {str(kwargs["hd"] == True).lower()},\n'
@@ -465,7 +467,7 @@ def auto(*args):
 				f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
 				f'surfaces = {surfaceString},\n'
 				f'name = "{foldername + "/"}",\n'
-				f'mapInfo = {mapInfoLua},\n'
+				f'mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},\n'
 				f'chunkCache = {chunkCache},\n'
 				f'}}')
 				f.write(autorunString)
@@ -643,7 +645,7 @@ def auto(*args):
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r") as srcf:
+			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r", encoding='utf-8') as srcf:
 				data = json.load(destf)
 				for mapIndex, mapStuff in json.load(srcf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():

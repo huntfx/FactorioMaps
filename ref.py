@@ -109,10 +109,10 @@ def ref(*args, **kwargs):
 
 	pool = mp.Pool(processes=maxthreads)
 
-	with open(datapath, "r") as f:
+	with open(datapath, "r", encoding="utf-8") as f:
 		data = json.load(f)
 	if os.path.isfile(datapath[:-5] + ".out.json"):
-		with open(datapath[:-5] + ".out.json", "r") as f:
+		with open(datapath[:-5] + ".out.json", "r", encoding="utf-8") as f:
 			outdata = json.load(f)
 	else:
 		outdata = {}
@@ -367,6 +367,8 @@ def ref(*args, **kwargs):
 	for surfaceName, daytimeImageIndex in allImageIndex.items():
 		indexList = []
 		daytime = "night" if "night" in daytimeImageIndex and data["maps"][new]["surfaces"][surfaceName] and str(data["maps"][new]["surfaces"][surfaceName]["night"]) else "day"
+		if daytime not in daytimeImageIndex:	# this is true if nothing changed
+			continue
 		surfaceImageIndex = daytimeImageIndex[daytime]
 		for y, xList in surfaceImageIndex.items():
 			string = getBase64(y, False)
@@ -394,7 +396,7 @@ def ref(*args, **kwargs):
 
 	if changed:
 		if kwargs["verbose"]: print("writing mapInfo.out.json")
-		with open(datapath[:-5] + ".out.json", "w+") as f:
+		with open(datapath[:-5] + ".out.json", "w+", encoding="utf-8") as f:
 			json.dump(outdata, f)
 
 		if kwargs["verbose"]: print("deleting empty folders")
