@@ -8,6 +8,14 @@ fm.API.hiddenSurfaces = {}
 
 local ERRORPRETEXT = "\n\nFACTORIOMAPS HAS DETECTED AN INVALID USAGE OF THE FACTORIOMAPS API BY ANOTHER MOD.\nTHIS IS LIKELY NOT A PROBLEM WITH FACTORIOMAPS, BUT WITH THE OTHER MOD.\n\n"
 
+
+local function NYI()
+	error("This API call is not yet implemented due to lack of demand. If you are looking at using this function, contact me! I will gladly implement it.")
+end
+
+
+
+
 -- resolve surface to surface object
 local function resolveSurface(surface, default, errorText)
 	errorText = errorText or ""
@@ -211,6 +219,7 @@ remote.add_interface("factoriomaps", {
 	end,
 
 
+
 	surface_set_hidden = function(surface, isHidden)
 		surface = resolveSurface(surface)
 		if isHidden == true or isHidden == nil then
@@ -237,6 +246,18 @@ remote.add_interface("factoriomaps", {
 			error(ERRORPRETEXT .. "The default surface was set multiple times: '" .. fm.autorun.mapInfo.defaultSurface .. "', '" .. surface.name .. "'.\n")
 		end
 		fm.autorun.mapInfo.defaultSurface = surface.name
+	end,
+	surface_set_startpoint = function(options)
+		NYI();
+	end
+
+
+
+	legend_link_point = function(directory, subdirectory, text)
+		NYI();
+	end,
+	legend_link_area = function(directory, subdirectory, text)
+		NYI();
 	end
 })
 
