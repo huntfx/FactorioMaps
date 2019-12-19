@@ -8,6 +8,7 @@ fm.API.hiddenSurfaces = {}
 
 local ERRORPRETEXT = "\n\nFACTORIOMAPS HAS DETECTED AN INVALID USAGE OF THE FACTORIOMAPS API BY ANOTHER MOD.\nTHIS IS LIKELY NOT A PROBLEM WITH FACTORIOMAPS, BUT WITH THE OTHER MOD.\n\n"
 
+-- resolve surface to surface object
 local function resolveSurface(surface, default, errorText)
 	errorText = errorText or ""
 	if surface ~= nil then
@@ -187,6 +188,9 @@ remote.add_interface("factoriomaps", {
 	get_start_capture_event_id = function()
 		return fm.API.startEvent
 	end,
+
+
+
 	link_box_point = function(options)
 		local from, fromSurface = parseLocation(options, "from", true, true)
 		local to, toSurface =     parseLocation(options, "to", false, true, fromSurface)
@@ -205,6 +209,8 @@ remote.add_interface("factoriomaps", {
 
 		addLink("link_renderbox_area", from, fromSurface, to, toSurface)
 	end,
+
+
 	surface_set_hidden = function(surface, isHidden)
 		surface = resolveSurface(surface)
 		if isHidden == true or isHidden == nil then
@@ -224,6 +230,13 @@ remote.add_interface("factoriomaps", {
 		else
 			error(ERRORPRETEXT .. "invalid isHidden parameter\n")
 		end
+	end,
+	surface_set_default = function(surface)
+		surface = resolveSurface(surface)
+		if fm.autorun.mapInfo.defaultSurface ~= nil and fm.autorun.mapInfo.defaultSurface ~= surface.name then
+			error(ERRORPRETEXT .. "The default surface was set multiple times: '" .. fm.autorun.mapInfo.defaultSurface .. "', '" .. surface.name .. "'.\n")
+		end
+		fm.autorun.mapInfo.defaultSurface = surface.name
 	end
 })
 
@@ -232,6 +245,6 @@ remote.add_interface("factoriomaps", {
 function fm.API.pull()
 	script.raise_event(fm.API.startEvent, {})
 
-	remote.remove_interface("factoriomaps")
+	--remote.remove_interface("factoriomaps")
 end
 

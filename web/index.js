@@ -418,9 +418,10 @@ if (countAvailableSaves > 0 || mapInfo.links && mapInfo.links.save) {
 	document.getElementById("buttonAnchor").appendChild(btn);
 }
 
+const defaultSurface = mapInfo.defaultSurface || "nauvis";
 let nightOpacity = 0;
 const someSurfaces = mapInfo.maps[mapInfo.maps.length-1].surfaces;
-let currentSurface = "nauvis" in someSurfaces ? "nauvis" : Object.keys(someSurfaces).sort()[0]
+let currentSurface = defaultSurface in someSurfaces ? defaultSurface : Object.keys(someSurfaces).sort()[0]
 let loadLayer = someSurfaces[currentSurface].layers;
 let timestamp = (loadLayer.day || loadLayer.night).path;
 
@@ -597,10 +598,10 @@ if (layersByTimestamp.length > 1 && true) {
 }
 
 
-// nauvis ontop, other than that natural sort.
-let surfaceKeys = Object.keys(layers).filter(s => s != "nauvis").sort(naturalSort);
-if (Object.keys(layers).some(s => s == "nauvis"))
-	surfaceKeys.unshift("nauvis")
+// default surface ontop, other than that natural sort.
+let surfaceKeys = Object.keys(layers).filter(s => s != defaultSurface).sort(naturalSort);
+if (Object.keys(layers).some(s => s == defaultSurface))
+	surfaceKeys.unshift(defaultSurface)
 
 if (surfaceKeys.length > 1) {
 	surfaceSlider = new L.Control.layerRadioSelector({

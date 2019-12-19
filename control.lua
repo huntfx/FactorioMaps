@@ -86,9 +86,10 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 			end
 			
+			fm.API.pull()
 			
 			if fm.autorun.surfaces == nil then
-				fm.autorun.surfaces = { "nauvis" }
+				fm.autorun.surfaces = { fm.autorun.mapInfo.defaultSurface or "nauvis" }
 			else
 				for index, surfaceName in pairs(fm.autorun.surfaces) do
 					if player.surface.name == surfaceName then	-- move surface the player is on to first
@@ -107,7 +108,6 @@ script.on_event(defines.events.on_tick, function(event)
 				end
 			end
 			
-			fm.API.pull()
 			fm.API.activeLinks = {}
 			local newSurfaces = {true} -- discover all surfaces linked to from the original surface list or any new surfaces found by this process.
 			while #newSurfaces > 0 do
