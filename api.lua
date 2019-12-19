@@ -249,7 +249,7 @@ remote.add_interface("factoriomaps", {
 	end,
 	surface_set_startpoint = function(options)
 		NYI();
-	end
+	end,
 
 
 
