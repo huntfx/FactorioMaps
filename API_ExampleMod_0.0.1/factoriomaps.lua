@@ -5,7 +5,7 @@
 -- this function is to be ran on script.on_init and on script.on_load.
 local function handle_factoriomaps()
 	if remote.interfaces.factoriomaps then
-		script.on_event(remote.call("factoriomaps", "get_start_capture_event"), function() 
+		script.on_event(remote.call("factoriomaps", "get_start_capture_event_id"), function() 
 
 			-- note that this event only gets called when it starts capturing the world, so speed optimalisation of the code in this function is not important.
 
@@ -52,6 +52,14 @@ local function handle_factoriomaps()
 			remote.call("factoriomaps", "surface_set_hidden", "Factory floor 1", true)
 			remote.call("factoriomaps", "surface_set_hidden", "Factory floor 2", true)
 			remote.call("factoriomaps", "surface_set_hidden", "Factory floor 3", true)
+
+
+
+
+			-- surface_set_default: Sets the default surface. This will error if this is called by multiple mods,
+			-- You should be really careful with using this, it is unlikely that you need this unless you are a scenario.
+			-- Further, this will have no effect if an existing timeline is being appended.
+			-- remote.call("factoriomaps", "surface_set_default", "nauvis")
 		end
 
 

@@ -7,11 +7,11 @@ from tempfile import gettempdir
 
 
 urlList = (
-	"https://cdn.jsdelivr.net/npm/leaflet@1.4.0/dist/leaflet.css",
-	"https://cdn.jsdelivr.net/npm/leaflet@1.4.0/dist/leaflet-src.min.js",
+	"https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css",
+	"https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet-src.min.js",
 	"https://cdn.jsdelivr.net/npm/leaflet.fullscreen@1.4.5/Control.FullScreen.css",
 	"https://cdn.jsdelivr.net/npm/leaflet.fullscreen@1.4.5/Control.FullScreen.min.js",
-	"https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js",
+	"https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js",
 	"https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css",
 	"https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js",
 	"https://cdn.jsdelivr.net/gh/L0laapk3/Leaflet.OpacityControls@2/Control.Opacity.css",
@@ -20,7 +20,7 @@ urlList = (
 	"https://factorio.com/static/img/favicon.ico",
 )
 
-CURRENTVERSION = 3
+CURRENTVERSION = 4
 
 
 

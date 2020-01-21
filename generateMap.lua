@@ -240,8 +240,10 @@ function fm.generateMap(data)
 		-- build range
 		for chunk in fm.currentSurface.get_chunks() do
 			if fm.currentSurface.is_chunk_generated(chunk) then
+				log(chunk.x .. " " .. chunk.y)
 				for _, force in pairs(game.forces) do
 					if #force.players > 0 and force.is_chunk_charted(fm.currentSurface, chunk) then
+						log("charted by " .. force.name)
 						forceStats[force.name] = forceStats[force.name] + 1
 						imageStats.charted = imageStats.charted + 1
 						for gridX = chunk.x * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do

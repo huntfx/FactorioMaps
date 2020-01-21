@@ -721,9 +721,14 @@ def auto(*args):
 					
 					if len(icons) == 1:
 						if src is not None:
-							copy(src, dest)
+							img = Image.open(src)
+							w, h = img.size
+							img = img.crop((0, 0, h, h))
+							img.save(dest)
 					else:
-						newImg = Image.open(src).convert("RGBA")
+						newImg = Image.open(src)
+						w, h = newImg.size
+						newImg = newImg.crop((0, 0, h, h)).convert("RGBA")
 						if len(iconColor) > 1:
 							newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
 						if i == 0:
