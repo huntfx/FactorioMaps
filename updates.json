@@ -29,5 +29,6 @@
     "3.5.1": "Removed dependency on package that isnt being updated anymore",
     "3.5.2": "Added support for unicode characters",
     "3.5.3": "Bugfixes",
-    "3.5.4": "Extended API"
+    "3.5.4": "Extended API",
+    "3.5.5": "Updated for 0.18"
 }
