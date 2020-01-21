@@ -1,12 +1,12 @@
 {
     "name": "L0laapk3_FactorioMaps",
-    "version": "3.5.4",
+    "version": "3.5.5",
     "title": "FactorioMaps",
     "author": "L0laapk3",
     "contact": "https://github.com/L0laapk3/",
     "homepage": "https://git.io/factoriomaps",
     "description": "Generate timelapses of your base to view in browsers!",
     "license": "CC BY-NC-SA 4.0",
-    "factorio_version": "0.17",
+    "factorio_version": "0.18",
     "dependencies": []
 }
