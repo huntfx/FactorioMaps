@@ -195,8 +195,64 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				printingStackTraceback = handleGameLine(line)
 
 
+def check_update(reverse_update_test:bool = False):
+	try:
+		print("checking for updates")
+		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
+		with open("updates.json", "r") as f:
+			currentUpdates = json.load(f)
+		if reverse_update_test:
+			latestUpdates, currentUpdates = currentUpdates, latestUpdates
 
+		updates = []
+		majorUpdate = False
+		currentVersion = (0, 0, 0)
+		for verStr, changes in currentUpdates.items():
+			ver = tuple(map(int, verStr.split(".")))
+			if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
+				currentVersion = ver
+		for verStr, changes in latestUpdates.items():
+			if verStr not in currentUpdates:
+				ver = tuple(map(int, verStr.split(".")))
+				updates.append((verStr, changes))
+		updates.sort(key = lambda u: u[0])
+		if len(updates) > 0:
 
+			padding = max(map(lambda u: len(u[0]), updates))
+			changelogLines = []
+			for update in updates:
+				if isinstance(update[1], str):
+					updateText = update[1]
+				else:
+					updateText = str(("\r\n      " + " "*padding).join(update[1]))
+				if updateText[0] == "!":
+					majorUpdate = True
+					updateText = updateText[1:]
+				changelogLines.append("    %s: %s" % (update[0].rjust(padding), updateText))
+			print("")
+			print("")
+			print("================================================================================")
+			print("")
+			print(("  An " + ("important" if majorUpdate else "incremental") + " update has been found!"))
+			print("")
+			print("  Here's what changed:")
+			for line in changelogLines:
+				print(line)
+			print("")
+			print("")
+			print("  Download: https://git.io/factoriomaps")
+			if majorUpdate:
+				print("")
+				print("  You can dismiss this by using --no-update (not recommended)")
+			print("")
+			print("================================================================================")
+			print("")
+			print("")
+		if majorUpdate or reverse_update_test:
+			exit(1)
+
+	except (urllib.error.URLError, timeout) as e:
+		print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
 def auto(*args):
@@ -273,6 +329,9 @@ def auto(*args):
 	if args.verbose > 0:
 		print(args)
 
+	if not args.no_update:
+		check_update(args.reverseupdatetest)
+
 	saves = Path("..", "..", "saves")
 	if args.outfolder:
 		foldername = args.outfolder
@@ -341,74 +400,9 @@ def auto(*args):
 	except FileExistsError:
 		raise Exception(f"{workfolder} exists and is not a directory!")
 
-	if not kwargs["no-update"]:
-		try:
-			print("checking for updates")
-			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
-			with open("updates.json", "r") as f:
-				currentUpdates = json.load(f)
-			if kwargs["reverseupdatetest"]:
-				latestUpdates, currentUpdates = currentUpdates, latestUpdates
-
-			updates = []
-			majorUpdate = False
-			currentVersion = (0, 0, 0)
-			for verStr, changes in currentUpdates.items():
-				ver = tuple(map(int, verStr.split(".")))
-				if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
-					currentVersion = ver
-			for verStr, changes in latestUpdates.items():
-				if verStr not in currentUpdates:
-					ver = tuple(map(int, verStr.split(".")))
-					updates.append((verStr, changes))
-			updates.sort(key = lambda u: u[0])
-			if len(updates) > 0:
-
-				padding = max(map(lambda u: len(u[0]), updates))
-				changelogLines = []
-				for update in updates:
-					if isinstance(update[1], str):
-						updateText = update[1]
-					else:
-						updateText = str(("\r\n      " + " "*padding).join(update[1]))
-					if updateText[0] == "!":
-						majorUpdate = True
-						updateText = updateText[1:]
-					changelogLines.append("    %s: %s" % (update[0].rjust(padding), updateText))
-				print("")
-				print("")
-				print("================================================================================")
-				print("")
-				print(("  an " + ("important" if majorUpdate else "incremental") + " update has been found!"))
-				print("")
-				print("  heres what changed:")
-				for line in changelogLines:
-					print(line)
-				print("")
-				print("")
-				print("  Download: https://git.io/factoriomaps")
-				if majorUpdate:
-					print("")
-					print("You can dismiss this by using --no-update (not recommended)")
-				print("")
-				print("================================================================================")
-				print("")
-				print("")
-				if majorUpdate or kwargs["reverseupdatetest"]:
-					sys.exit(1)(1)
-
-
-		except (urllib.error.URLError, timeout) as e:
-			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
-
-
-
-
 	updateLib(False)
 
-
-
-	#TODO: integrity check, if done files arent there or there are any bmp's left, complain.
+	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
 
 	def linkDir(src, dest):
