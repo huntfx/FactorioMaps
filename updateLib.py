@@ -1,10 +1,8 @@
-from shutil import rmtree, copytree
 import os
-from urllib.parse import urlparse
-from urllib.request import urlretrieve, build_opener, install_opener
+from shutil import copytree, rmtree
 from tempfile import gettempdir
-
-
+from urllib.parse import urlparse
+from urllib.request import build_opener, install_opener, urlretrieve
 
 urlList = (
 	"https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css",
@@ -30,7 +28,7 @@ CURRENTVERSION = 4
 def update(Force=True):
 
 	targetPath = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web/lib")
-	
+
 	if not Force:
 		try:
 			with open(os.path.join(targetPath, "VERSION"), "r") as f:
@@ -56,7 +54,7 @@ def update(Force=True):
 		print(f"downloading {url}")
 		urlretrieve(url, os.path.join(tempPath, os.path.basename(urlparse(url).path)))
 
-		
+
 	try:
 		rmtree(targetPath)
 	except (FileNotFoundError, NotADirectoryError):
@@ -77,6 +75,6 @@ def update(Force=True):
 
 
 
-		
+
 if __name__ == '__main__':
 	update(True)

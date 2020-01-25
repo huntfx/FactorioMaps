@@ -1,12 +1,15 @@
-from PIL import Image
+import json
+import math
 import multiprocessing as mp
-import os, math, sys, time, psutil, json
+import os
+import sys
+import time
 from functools import partial
 from shutil import get_terminal_size as tsize
 
+import psutil
+from PIL import Image
 
-
-	
 ext = ".png"
 
 def work(line, folder, progressQueue):
@@ -16,7 +19,7 @@ def work(line, folder, progressQueue):
 	left = int(arg[1])
 	width = int(arg[2])
 	height = int(arg[3])
-		
+
 	try:
 		Image.open(path).convert("RGB").crop((top, left, top + width, left + height)).save(path)
 	except IOError:
@@ -31,7 +34,7 @@ def work(line, folder, progressQueue):
 	progressQueue.put(True, True)
 	return False
 
-		
+
 
 
 
@@ -43,7 +46,7 @@ def crop(*args, **kwargs):
 	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
 
 	basepath = os.path.join(toppath, "Images")
-	
+
 
 
 	datapath = os.path.join(basepath, subname, "crop.txt")
@@ -56,15 +59,15 @@ def crop(*args, **kwargs):
 			time.sleep(1)
 
 	print("crop {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
-	
+
 	files = []
 	with open(datapath, "r") as data:
 		assert(data.readline().rstrip('\n') == "v2")
 		for line in data:
 			files.append(line)
-	
+
 	pool = mp.Pool(processes=maxthreads)
-	
+
 	m = mp.Manager()
 	progressQueue = m.Queue()
 	originalSize = len(files)

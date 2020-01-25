@@ -5,19 +5,19 @@ import os
 import subprocess
 import sys
 import time
-import numpy
-from turbojpeg import TurboJPEG
 from shutil import get_terminal_size as tsize
 from sys import platform as _platform
 
+import numpy
 import psutil
 from PIL import Image, ImageChops
+from turbojpeg import TurboJPEG
 
 maxQuality = False  		# Set this to true if you want to compress/postprocess the images yourself later
 useBetterEncoder = True 	# Slower encoder that generates smaller images.
 
 quality = 80
-	
+
 EXT = ".png"
 OUTEXT = ".jpg"     		# format='JPEG' is hardcoded in places, meed to modify those, too. Most parameters are not supported outside jpeg.
 THUMBNAILEXT = ".png"
@@ -51,7 +51,7 @@ def saveCompress(img, path, inpath=None):
 	if maxQuality:  # do not waste any time compressing the image
 		return img.save(path, subsampling=0, quality=100)
 
-	
+
 	out_file = open(path, 'wb')
 	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy() ))
 	out_file.close()
@@ -123,18 +123,18 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
 							outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 
-							
+
 							# an assumption is made that the total zoom levels required doesnt change between snapshots.
 							if (link if "path" in link else outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex])["path"] == timestamp:
 								zoomWork.add((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime if link["daynight"] else "day", "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
 
-		
+
 		mapInfoOutFile.seek(0)
 		json.dump(outInfo, mapInfoOutFile)
 		mapInfoOutFile.truncate()
-							
 
-						
+
+
 	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
 	processes = []
 	zoomWork = list(zoomWork)
@@ -144,7 +144,7 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 		processes.append(p)
 	for p in processes:
 		p.join()
-					
+
 
 
 
@@ -157,7 +157,7 @@ def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chun
 		for k in range(start, stop, -1):
 			x = chunksize*chunk[0]
 			y = chunksize*chunk[1]
-			for j in range(y, y + chunksize, 2):					
+			for j in range(y, y + chunksize, 2):
 				for i in range(x, x + chunksize, 2):
 
 					coords = [(0,0), (1,0), (0,1), (1,1)]
@@ -196,8 +196,8 @@ def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chun
 						if k == last+1:
 							saveCompress(result, os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + OUTEXT))
 						if OUTEXT != EXT and (k != last+1 or keepLast):
-							result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + EXT)) 
-							
+							result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + EXT))
+
 						if OUTEXT != EXT:
 							for img, path in imgs:
 								saveCompress(img, path.replace(EXT, OUTEXT), path)
@@ -209,8 +209,8 @@ def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chun
 		path = os.path.join(basepath, pathList[0], surfaceName, daytime, str(start), str(chunk[0]), str(chunk[1]))
 		img = Image.open(path + EXT, mode='r').convert("RGB")
 		saveCompress(img, path + OUTEXT, path + EXT)
-		os.remove(path + EXT)   
-		
+		os.remove(path + EXT)
+
 
 def thread(basepath, pathList, surfaceName, daytime, size, start, stop, last, allChunks, counter, resultQueue, keepLast=False):
 	#print(start, stop, chunks)
@@ -223,7 +223,7 @@ def thread(basepath, pathList, surfaceName, daytime, size, start, stop, last, al
 		chunk = allChunks[i]
 		work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chunk, keepLast)
 		resultQueue.put(True)
-		
+
 
 
 
@@ -315,7 +315,7 @@ def zoom(*args, **kwargs):
 								threads = min(len(allChunks), maxthreads)
 								processes = []
 								originalSize = len(allChunks)
-								
+
 								# print(("%s %s %s %s" % (pathList[0], str(surfaceName), daytime, pathList)))
 								# print(("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks))))
 								counter = mp.Value('i', originalSize)
@@ -324,7 +324,7 @@ def zoom(*args, **kwargs):
 									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, imageSize, maxzoom, minzoom + threadsplit, minzoom, allChunks, counter, resultQueue, generateThumbnail))
 									p.start()
 									processes.append(p)
-								
+
 								doneSize = 0
 								for _ in range(originalSize):
 									resultQueue.get(True)
@@ -335,9 +335,9 @@ def zoom(*args, **kwargs):
 
 								for p in processes:
 									p.join()
-								
 
-								
+
+
 
 								if threadsplit > 0:
 									#print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
@@ -370,23 +370,23 @@ def zoom(*args, **kwargs):
 											os.remove(path)
 
 									thumbnail.save(os.path.join(basepath, "thumbnail" + THUMBNAILEXT))
-									
 
 
-									
+
+
 								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
 
 
 
-						
-
-				
 
 
 
 
 
-				
+
+
+
+
 
 
 if __name__ == '__main__':

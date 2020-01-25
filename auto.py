@@ -7,7 +7,9 @@ if sys.maxsize <= 2**32:
 if sys.hexversion < 0x3060000:
 	raise Exception("Python 3.6 or higher is required for this script.")
 
-import traceback, os, pkg_resources
+import os
+import traceback
+import pkg_resources
 from pkg_resources import DistributionNotFound, VersionConflict
 
 try:
@@ -17,33 +19,36 @@ except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
 	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
 	sys.exit(1)
-	
 
-
-
-import subprocess, signal
-import json
-import threading, psutil
-import time
-import re
-import random
-import math
 import configparser
-from subprocess import call
 import datetime
-import urllib.request, urllib.error, urllib.parse
-from socket import timeout
-from shutil import copy, copytree, rmtree, get_terminal_size as tsize
-from zipfile import ZipFile
-import tempfile
-from PIL import Image, ImageChops
+import json
+import math
 import multiprocessing as mp
+import random
+import re
+import signal
+import subprocess
+import tempfile
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from shutil import copy, copytree
+from shutil import get_terminal_size as tsize
+from shutil import rmtree
+from socket import timeout
+from subprocess import call
+from zipfile import ZipFile
+
+import psutil
+from PIL import Image, ImageChops
 
 from crop import crop
 from ref import ref
-from zoom import zoom, zoomRenderboxes
 from updateLib import update as updateLib
-
+from zoom import zoom, zoomRenderboxes
 
 
 kwargs = {
@@ -63,7 +68,7 @@ kwargs = {
 	'verbose': False,
 	'noupdate': False,
 	'reverseupdatetest': False,
-	'maxthreads': mp.cpu_count(),	
+	'maxthreads': mp.cpu_count(),
 	'cropthreads': None,
 	'refthreads': None,
 	'zoomthreads': None,
@@ -102,9 +107,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			if prevPrinted:
 				printErase(line)
 			return
-		
+
 		prevPrinted = False
-		
+
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
 		if m is not None:
 			rawTags[m.group(1)] = m.group(2)
@@ -129,7 +134,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-		
+
 		line = pipef.readline().rstrip("\n")
 		printingStackTraceback = handleGameLine(line)
 		isSteam = False
@@ -185,7 +190,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				line = pipef.readline()
 				printingStackTraceback = handleGameLine(line)
 
-			
+
 
 
 
@@ -209,11 +214,11 @@ def auto(*args):
 					printErase("killed factorio")
 
 		#time.sleep(0.1)
-		
 
 
 
-	
+
+
 	def parseArg(arg):
 		if arg[0:2] != "--":
 			return True
@@ -276,7 +281,7 @@ def auto(*args):
 	workfolder = os.path.join(basepath, foldername)
 	print("output folder: {}".format(os.path.relpath(workfolder, "../..")))
 
- 
+
 	try:
 		os.makedirs(workfolder)
 	except FileExistsError:
@@ -311,7 +316,7 @@ def auto(*args):
 				for update in updates:
 					if isinstance(update[1], str):
 						updateText = update[1]
-					else: 
+					else:
 						updateText = str(("\r\n      " + " "*padding).join(update[1]))
 					if updateText[0] == "!":
 						majorUpdate = True
@@ -358,11 +363,11 @@ def auto(*args):
 			subprocess.check_call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), stdout=subprocess.DEVNULL, shell=True)
 		else:
 			os.symlink(os.path.abspath(dest), os.path.abspath(src))
-		
+
 
 	print("enabling FactorioMaps mod")
 	modListPath = os.path.join(kwargs["modpath"], "mod-list.json")
-	
+
 	if not os.path.samefile(kwargs["modpath"], "../../mods"):
 		for f in os.listdir(kwargs["modpath"]):
 			if re.match(r'^L0laapk3_FactorioMaps_', f, flags=re.IGNORECASE):
@@ -374,9 +379,9 @@ def auto(*args):
 					os.remove(path)
 
 		linkDir(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath("."))), ".")
-	
-		
-	
+
+
+
 	def changeModlist(newState):
 		done = False
 		with open(modListPath, "r") as f:
@@ -399,7 +404,7 @@ def auto(*args):
 
 
 
-			
+
 	if kwargs["delete"]:
 		print("deleting output folder")
 		try:
@@ -491,7 +496,7 @@ def auto(*args):
 			if "interface" not in config:
 				config["interface"] = {}
 			config["interface"]["show-tips-and-tricks"] = "false"
-			
+
 			if "path" not in config:
 				config["path"] = {}
 			config["path"]["write-data"] = tmpDir
@@ -500,11 +505,11 @@ def auto(*args):
 				config["graphics"] = {}
 			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads" if kwargs["screenshotthreads"] else "maxthreads"]))
 			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
-			
+
 			with open(configPath, 'w+') as outf:
 				outf.writelines(("; version=3\n", ))
 				config.write(outf, space_around_delimiters=False)
-				
+
 
 			linkDir(os.path.join(tmpDir, "script-output"), "../../script-output")
 			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
@@ -538,17 +543,16 @@ def auto(*args):
 				raise Exception("isSteam error")
 			if pid is None:
 				raise Exception("pid error")
-				
 
 
 
 			while not os.path.exists(datapath):
 				time.sleep(0.4)
-			
+
 
 			open("autorun.lua", 'w').close()
 
-				
+
 
 			latest = []
 			with open(datapath, 'r') as f:
@@ -557,12 +561,12 @@ def auto(*args):
 			if kwargs["verbose"]:
 				printErase(latest)
 
-			
+
 			firstOtherInputs = latest[-1].split(" ")
 			firstOutFolder = firstOtherInputs.pop(0).replace("/", " ")
 			waitfilename = os.path.join(basepath, firstOutFolder, "Images", firstOtherInputs[0], firstOtherInputs[1], firstOtherInputs[2], "done.txt")
 
-			
+
 			isKilled = [False]
 			def waitKill(isKilled, pid):
 				while not isKilled[0]:
@@ -625,11 +629,11 @@ def auto(*args):
 				if screenshot != latest[-1]:
 					refZoom()
 				else:
-					
+
 					startLogProcess.terminate()
 
 					# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
-					
+
 					onlyStall = isKilled[0]
 					isKilled[0] = True
 					kill(pid, onlyStall)
@@ -642,13 +646,13 @@ def auto(*args):
 						workthread.daemon = True
 						workthread.start()
 
-			
 
 
 
-		
 
-			
+
+
+
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
@@ -680,7 +684,7 @@ def auto(*args):
 								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
 
 		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
-		
+
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
@@ -695,7 +699,7 @@ def auto(*args):
 			for _, tag in tags.items():
 				dest = os.path.join(workfolder, tag["iconPath"])
 				os.makedirs(os.path.dirname(dest), exist_ok=True)
-				
+
 
 				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
 
@@ -725,7 +729,7 @@ def auto(*args):
 									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
 						else:
 							src = os.path.join(basepath, kwargs["modpath"], mod[2], icon + ".png")
-					
+
 					if len(icons) == 1:
 						if src is not None:
 							img = Image.open(src)
@@ -748,9 +752,6 @@ def auto(*args):
 
 
 
-
-
-
 		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
@@ -758,8 +759,8 @@ def auto(*args):
 			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(')
 			outf.write(json.dumps(inf.read()))
 			outf.write(");")
-			
-			
+
+
 		print("creating index.html")
 		copy("web/index.html", os.path.join(workfolder, "index.html"))
 		copy("web/index.css", os.path.join(workfolder, "index.css"))
@@ -796,14 +797,6 @@ def auto(*args):
 				rmtree(tmpDir)
 			except (FileNotFoundError, NotADirectoryError):
 				pass
-
-
-
-
-
-
-
-
 
 if __name__ == '__main__':
 	auto(*sys.argv[1:])
