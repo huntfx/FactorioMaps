@@ -79,7 +79,8 @@ kwargs = {
 	'screenshotthreads': None,
 	'delete': False,
 	'dry': False,
-	'surface': []
+	'surface': [],
+	'force-lib-update': False
 }
 changedKwargs = []
 
@@ -324,6 +325,7 @@ def auto(*args):
 	parser.add_argument("--dry", action="store_true", help="Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script.")
 	parser.add_argument("outfolder", nargs="?", help="Output folder for the generated snapshots.")
 	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated.")
+	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the leaflet library.")
 
 	args = parser.parse_args()
 	if args.verbose > 0:
@@ -400,7 +402,7 @@ def auto(*args):
 	except FileExistsError:
 		raise Exception(f"{workfolder} exists and is not a directory!")
 
-	updateLib(False)
+	updateLib(args.force_lib_update)
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
