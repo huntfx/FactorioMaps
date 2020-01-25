@@ -329,18 +329,17 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = os.path.join("../../script-output", kwargs["basepath"])
+	user_folder = Path("..", "..").resolve()
+	basepath = Path(user_folder, "script-output", args.basepath)
 	workthread = None
 
-	workfolder = os.path.join(basepath, foldername)
-	print("output folder: {}".format(os.path.relpath(workfolder, "../..")))
-
+	workfolder = Path(basepath, foldername).resolve()
+	print("output folder: {}".format(workfolder.relative_to(Path(user_folder))))
 
 	try:
-		os.makedirs(workfolder)
+		workfolder.mkdir(parents=True, exist_ok=True)
 	except FileExistsError:
-		pass
-
+		raise Exception(f"{workfolder} exists and is not a directory!")
 
 	if not kwargs["no-update"]:
 		try:
