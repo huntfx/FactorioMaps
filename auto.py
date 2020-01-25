@@ -28,6 +28,7 @@ import math
 import multiprocessing as mp
 import random
 import re
+import string
 import signal
 import subprocess
 import tempfile
@@ -306,14 +307,23 @@ def auto(*args):
 		"Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 	]
-	possiblePaths = [driveletter + ":/" + path for driveletter in 'CDEFGHIJKL' for path in windowsPaths] + [
-		"../../bin/x64/factorio.exe",
-		"../../bin/x64/factorio",
+
+	available_drives = [
+		"%s:/" % d for d in string.ascii_uppercase if Path(f"{d}:/").exists()
 	]
+	possiblePaths = [
+		drive + path for drive in available_drives for path in windowsPaths
+	] + ["../../bin/x64/factorio.exe", "../../bin/x64/factorio",]
 	try:
-		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if kwargs["factorio"] else possiblePaths) if os.path.isfile(x))
+		factorioPath = next(
+			x
+			for x in map(Path, [args.factorio] if args.factorio else possiblePaths)
+			if x.is_file()
+		)
 	except StopIteration:
-		raise Exception("Can't find factorio.exe. Please pass --factorio=PATH as an argument.")
+		raise Exception(
+			"Can't find factorio.exe. Please pass --factorio=PATH as an argument."
+		)
 
 	print("factorio path: {}".format(factorioPath))
 
