@@ -46,6 +46,7 @@ from zipfile import ZipFile
 
 import psutil
 from PIL import Image, ImageChops
+from orderedset import OrderedSet
 
 from crop import crop
 from ref import ref
@@ -265,28 +266,39 @@ def auto(*args):
 	parser.add_argument("--delete", action="store_true", help="Deletes the output folder specified before running the script.")
 	parser.add_argument("--dry", action="store_true", help="Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script.")
 	parser.add_argument("outfolder", nargs="?", help="Output folder for the generated snapshots.")
-	parser.add_argument("savename", nargs="*", help="Names of the savenames to generate snapshots from. If no savenames are provided the latest save or the save matching outfolder will be gerated.")
+	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated.")
 
 	args = parser.parse_args()
 	if args.verbose > 0:
 		print(args)
 
-	saves = Path("..","..","saves")
+	saves = Path("..", "..", "saves")
 	if args.outfolder:
 		foldername = args.outfolder
 	else:
-		timestamp, file_path = max((save.stat().st_mtime, save) for save in saves.iterdir() if save.stem not in { "_autosave1", "_autosave2", "_autosave3" })
+		timestamp, file_path = max(
+			(save.stat().st_mtime, save)
+			for save in saves.iterdir()
+			if save.stem not in {"_autosave1", "_autosave2", "_autosave3"}
+		)
 		foldername = file_path.stem
 		print("No save name passed. Using most recent save: %s" % foldername)
 	savenames = args.savename or [foldername]
 
-	# TODO: Add GLOB pattern matching
+	save_games = OrderedSet()
 	for save_name in savenames:
-		save_game = Path(saves, save_name)
-		save_game_zip = Path("..","..","saves", f"{save_name}.zip")
-		if not (save_game.is_dir() or save_game.is_file() or save_game_zip.is_file()):
+		glob_results = list(saves.glob(save_name))
+		glob_results += list(saves.glob(f"{save_name}.zip"))
+
+		if not glob_results:
 			print(f'Cannot find savefile: "{save_name}"')
 			raise ValueError(f'Cannot find savefile: "{save_name}"')
+		results = [save for save in glob_results if save.is_file()]
+		for result in results:
+			save_games.add(result.stem)
+
+	if args.verbose > 0:
+		print(f"Will generate snapshots for : {list(save_games)}")
 
 	windowsPaths = [
 		"Program Files/Factorio/bin/x64/factorio.exe",
@@ -456,7 +468,7 @@ def auto(*args):
 
 	try:
 
-		for index, savename in () if kwargs["dry"] else enumerate(savenames):
+		for index, savename in () if kwargs["dry"] else enumerate(save_games):
 
 
 
@@ -629,7 +641,7 @@ def auto(*args):
 			for jindex, screenshot in enumerate(latest):
 				otherInputs = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
 				outFolder = otherInputs.pop(0).replace("/", " ")
-				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
+				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(save_games)))
 
 				timestamp = otherInputs[0]
 				if otherInputs[2] in daytimeSurfaces:
@@ -648,7 +660,7 @@ def auto(*args):
 
 
 				def refZoom():
-					needsThumbnail = index + 1 == len(savenames)
+					needsThumbnail = index + 1 == len(save_games)
 					#print("Crossreferencing %s images" % screenshot)
 					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
 					#print("downsampling %s images" % screenshot)
@@ -670,7 +682,7 @@ def auto(*args):
 					isKilled[0] = True
 					kill(pid, onlyStall)
 
-					if savename == savenames[-1]:
+					if savename == save_games[-1]:
 						refZoom()
 
 					else:
