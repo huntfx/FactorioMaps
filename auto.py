@@ -452,11 +452,8 @@ def auto(*args):
 	rawTags = manager.dict()
 	rawTags["__used"] = False
 
-
-
-
-	if kwargs["delete"]:
-		print("deleting output folder")
+	if args.delete:
+		print(f"Deleting output folder ({workfolder})")
 		try:
 			rmtree(workfolder)
 		except (FileNotFoundError, NotADirectoryError):
