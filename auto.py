@@ -85,9 +85,6 @@ kwargs = {
 changedKwargs = []
 
 
-
-
-
 def printErase(arg):
 	try:
 		tsiz = tsize()[0]
@@ -256,6 +253,13 @@ def check_update(reverse_update_test:bool = False):
 		print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
+def link_dir(src: Path, dest:Path):
+	if os.name == 'nt':
+		subprocess.check_call(("MKLINK", "/J", src.resolve(), dest.resolve()), stdout=subprocess.DEVNULL, shell=True)
+	else:
+		os.symlink(dest.resolve(), src.resolve())
+
+
 def auto(*args):
 
 	lock = threading.Lock()
@@ -405,29 +409,22 @@ def auto(*args):
 	updateLib(args.force_lib_update)
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
-
-
-	def linkDir(src, dest):
-		if os.name == 'nt':
-			subprocess.check_call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), stdout=subprocess.DEVNULL, shell=True)
-		else:
-			os.symlink(os.path.abspath(dest), os.path.abspath(src))
-
-
 	print("enabling FactorioMaps mod")
-	modListPath = os.path.join(kwargs["modpath"], "mod-list.json")
+	modListPath = Path(args.modpath, "mod-list.json")
 
-	if not os.path.samefile(kwargs["modpath"], "../../mods"):
-		for f in os.listdir(kwargs["modpath"]):
-			if re.match(r'^L0laapk3_FactorioMaps_', f, flags=re.IGNORECASE):
-				print("Found other factoriomaps mod in custom mod folder, deleting.")
-				path = os.path.join(kwargs["modpath"], f)
-				if os.path.islink(path):
-					os.unlink(path)
-				else:
-					os.remove(path)
+	if args.modpath.resolve() != Path("..","..","mods").resolve():
+		modpattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
+		for entry in [entry for entry in args.modpath.iterdir() if modpattern.match(entry.name)]:
+			print("Found other factoriomaps mod in custom mod folder, deleting.")
+			path = Path(args.modpath, entry)
+			if path.is_file() or path.is_symlink():
+				path.unlink()
+			elif path.is_dir():
+				rmtree(path)
+			else:
+				raise Exception(f"Unable to remove {path} unknown type")
 
-		linkDir(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath("."))), ".")
+		link_dir(Path(args.modpath, Path('.').resolve().name), Path("."))
 
 
 
@@ -560,7 +557,7 @@ def auto(*args):
 				config.write(outf, space_around_delimiters=False)
 
 
-			linkDir(os.path.join(tmpDir, "script-output"), "../../script-output")
+			link_dir(Path(tmpDir, "script-output"), Path("..","..","script-output"))
 			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
 
 			pid = None
