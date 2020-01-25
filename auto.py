@@ -260,6 +260,22 @@ def link_dir(src: Path, dest:Path):
 		os.symlink(dest.resolve(), src.resolve())
 
 
+def link_custom_mod_folder(modpath: Path):
+	print(f"Verifying mod version in custom mod folder ({modpath})")
+	modpattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
+	for entry in [entry for entry in modpath.iterdir() if modpattern.match(entry.name)]:
+		print("Found other factoriomaps mod in custom mod folder, deleting.")
+		path = Path(modpath, entry)
+		if path.is_file() or path.is_symlink():
+			path.unlink()
+		elif path.is_dir():
+			rmtree(path)
+		else:
+			raise Exception(f"Unable to remove {path} unknown type")
+
+	link_dir(Path(modpath, Path('.').resolve().name), Path("."))
+
+
 def change_modlist(modpath: Path,newState: bool):
 	print(f"{'Enabling' if newState else 'Disabling'} FactorioMaps mod")
 	done = False
@@ -428,18 +444,7 @@ def auto(*args):
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
 	if args.modpath.resolve() != Path("..","..","mods").resolve():
-		modpattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
-		for entry in [entry for entry in args.modpath.iterdir() if modpattern.match(entry.name)]:
-			print("Found other factoriomaps mod in custom mod folder, deleting.")
-			path = Path(args.modpath, entry)
-			if path.is_file() or path.is_symlink():
-				path.unlink()
-			elif path.is_dir():
-				rmtree(path)
-			else:
-				raise Exception(f"Unable to remove {path} unknown type")
-
-		link_dir(Path(args.modpath, Path('.').resolve().name), Path("."))
+		link_custom_mod_folder(args.modpath)
 
 	change_modlist(args.modpath, True)
 
