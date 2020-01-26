@@ -260,6 +260,23 @@ def link_dir(src: Path, dest:Path):
 		os.symlink(dest.resolve(), src.resolve())
 
 
+def change_modlist(modpath: Path,newState: bool):
+	print(f"{'Enabling' if newState else 'Disabling'} FactorioMaps mod")
+	done = False
+	modlistPath = Path(modpath, "mod-list.json")
+	with modlistPath.open("r") as f:
+		modlist = json.load(f)
+	for mod in modlist["mods"]:
+		if mod["name"] == "L0laapk3_FactorioMaps":
+			mod["enabled"] = newState
+			done = True
+			break
+	if not done:
+		modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
+	with modlistPath.open("w") as f:
+		json.dump(modlist, f, indent=2)
+
+
 def auto(*args):
 
 	lock = threading.Lock()
@@ -409,8 +426,6 @@ def auto(*args):
 	updateLib(args.force_lib_update)
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
-	print("enabling FactorioMaps mod")
-	modListPath = Path(args.modpath, "mod-list.json")
 
 	if args.modpath.resolve() != Path("..","..","mods").resolve():
 		modpattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
@@ -426,23 +441,7 @@ def auto(*args):
 
 		link_dir(Path(args.modpath, Path('.').resolve().name), Path("."))
 
-
-
-	def changeModlist(newState):
-		done = False
-		with open(modListPath, "r") as f:
-			modlist = json.load(f)
-		for mod in modlist["mods"]:
-			if mod["name"] == "L0laapk3_FactorioMaps":
-				mod["enabled"] = newState
-				done = True
-		if not done:
-			modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
-		with open(modListPath, "w") as f:
-			json.dump(modlist, f, indent=2)
-
-	changeModlist(True)
-
+	change_modlist(args.modpath, True)
 
 	manager = mp.Manager()
 	rawTags = manager.dict()
@@ -831,10 +830,7 @@ def auto(*args):
 		except:
 			pass
 
-		print("disabling FactorioMaps mod")
-		changeModlist(False)
-
-
+		change_modlist(args.modpath, False)
 
 		print("cleaning up")
 		for tmpDir in allTmpDirs:
