@@ -58,6 +58,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--screenshotthreads=N` | Set the number of screenshotting threads factorio uses. |
 | `--delete` | Deletes the output folder specified before running the script. |
 | `--dry` | Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script. |
+| `--force-lib-update` | Forces an update of the leaflet library. |
  
 Image quality settings can be changed in the top of `zoom.py`.
 
