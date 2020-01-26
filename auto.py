@@ -649,26 +649,26 @@ def auto(*args):
 					#print("waiting for workthread")
 					workthread.join()
 
-			timestamp = None
-			daytimeSurfaces = {}
-			for jindex, screenshot in enumerate(latest):
-				otherInputs = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
-				outFolder = otherInputs.pop(0).replace("/", " ")
-				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(save_games)))
+				timestamp = None
+				daytimeSurfaces = {}
+				for jindex, screenshot in enumerate(latest):
+					out_folder, timestamp, surface, daytime = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
+					out_folder = out_folder.replace("/", " ")
+					print(f"Processing {out_folder}/{'/'.join([timestamp, surface, daytime])} ({len(latest) * index + jindex + 1} of {len(latest) * len(save_games)})")
 
-				timestamp = otherInputs[0]
-				if otherInputs[2] in daytimeSurfaces:
-					daytimeSurfaces[otherInputs[2]].append(otherInputs[1])
-				else:
-					daytimeSurfaces[otherInputs[2]] = [otherInputs[1]]
+					if daytime in daytimeSurfaces:
+						daytimeSurfaces[daytime].append(surface)
+					else:
+						daytimeSurfaces[daytime] = [surface]
 
-				#print("Cropping %s images" % screenshot)
-				crop(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
-				waitlocalfilename = os.path.join(basepath, outFolder, "Images", otherInputs[0], otherInputs[1], otherInputs[2], "done.txt")
-				if not os.path.exists(waitlocalfilename):
-					#print("waiting for done.txt")
-					while not os.path.exists(waitlocalfilename):
-						time.sleep(0.4)
+					#print("Cropping %s images" % screenshot)
+					print(basepath)
+					crop(out_folder, timestamp, surface, daytime, basepath, args)
+					waitlocalfilename = os.path.join(basepath, out_folder, "Images", timestamp, surface, daytime, "done.txt")
+					if not os.path.exists(waitlocalfilename):
+						#print("waiting for done.txt")
+						while not os.path.exists(waitlocalfilename):
+							time.sleep(0.4)
 
 
 
