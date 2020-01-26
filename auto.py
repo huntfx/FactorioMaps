@@ -54,6 +54,7 @@ from ref import ref
 from updateLib import update as updateLib
 from zoom import zoom, zoomRenderboxes
 
+USER_FOLDER = Path("..", "..").resolve()
 
 kwargs = {
 	'dayonly': False,
@@ -371,7 +372,7 @@ def auto(*args):
 	if args.update:
 		check_update(args.reverseupdatetest)
 
-	saves = Path("..", "..", "saves")
+	saves = Path(USER_FOLDER, "saves")
 	if args.outfolder:
 		foldername = args.outfolder
 	else:
@@ -427,12 +428,11 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	user_folder = Path("..", "..").resolve()
-	basepath = Path(user_folder, "script-output", args.basepath)
+	basepath = Path(USER_FOLDER, "script-output", args.basepath)
 	workthread = None
 
 	workfolder = Path(basepath, foldername).resolve()
-	print("output folder: {}".format(workfolder.relative_to(Path(user_folder))))
+	print("output folder: {}".format(workfolder.relative_to(Path(USER_FOLDER))))
 
 	try:
 		workfolder.mkdir(parents=True, exist_ok=True)
@@ -443,7 +443,7 @@ def auto(*args):
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
-	if args.modpath.resolve() != Path("..","..","mods").resolve():
+	if args.modpath.resolve() != Path(USER_FOLDER,"mods").resolve():
 		link_custom_mod_folder(args.modpath)
 
 	change_modlist(args.modpath, True)
