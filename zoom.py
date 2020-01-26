@@ -1,7 +1,9 @@
 import json
 import math
 import multiprocessing as mp
+from argparse import Namespace
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
@@ -28,7 +30,6 @@ THUMBNAILSCALE = 2
 MINRENDERBOXSIZE = 8
 
 
-
 def printErase(arg):
 	try:
 		tsiz = tsize()[0]
@@ -47,57 +48,65 @@ else:
 	jpeg = TurboJPEG("mozjpeg/libturbojpeg.so")
 
 
-def saveCompress(img, path, inpath=None):
+def saveCompress(img, path: Path):
 	if maxQuality:  # do not waste any time compressing the image
 		return img.save(path, subsampling=0, quality=100)
 
-
-	out_file = open(path, 'wb')
-	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy() ))
+	out_file = path.open("wb")
+	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy()))
 	out_file.close()
 
 
 def simpleZoom(workQueue):
 	for (folder, start, stop, filename) in workQueue:
-		path = os.path.join(folder, str(start), filename)
-		img = Image.open(path + EXT, mode='r').convert("RGB")
+		path = Path(folder, str(start), filename)
+		img = Image.open(path.with_suffix(EXT), mode="r").convert("RGB")
 		if OUTEXT != EXT:
-			saveCompress(img, path + OUTEXT, path + EXT)
-			os.remove(path + EXT)
+			saveCompress(img, path.with_suffix(OUTEXT))
+			path.with_suffix(EXT).unlink()
 
 		for z in range(start - 1, stop - 1, -1):
-			if img.size[0] >= MINRENDERBOXSIZE*2 and img.size[1] >= MINRENDERBOXSIZE*2:
-				img = img.resize((img.size[0]//2, img.size[1]//2), Image.ANTIALIAS)
-			zFolder = os.path.join(folder, str(z))
-			if not os.path.exists(zFolder):
-				os.mkdir(zFolder)
-			saveCompress(img, os.path.join(zFolder, filename + OUTEXT))
+			if img.size[0] >= MINRENDERBOXSIZE * 2 and img.size[1] >= MINRENDERBOXSIZE * 2:
+				img = img.resize((img.size[0] // 2, img.size[1] // 2), Image.ANTIALIAS)
+			zFolder = Path(folder, str(z))
+			if not zFolder.exists():
+				zFolder.mkdir(parents=True)
+			saveCompress(img, Path(zFolder, filename).with_suffix(OUTEXT))
 
 
-def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
-	with open(os.path.join(workfolder, "mapInfo.json"), 'r+') as mapInfoFile:
+def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, args):
+	with Path(workfolder, "mapInfo.json").open("r+") as mapInfoFile:
 		mapInfo = json.load(mapInfoFile)
 
-		outFileExists = os.path.isfile(os.path.join(workfolder, "mapInfo.out.json"))
-		mapInfoOutFile = open(os.path.join(workfolder, "mapInfo.out.json"), 'r+')
-		if outFileExists:
-			outInfo = json.load(mapInfoOutFile)
+		out_file = Path(workfolder, "mapInfo.out.json")
+		if out_file.exists():
+			with out_file.open("r") as map_info_out_file:
+				outInfo = json.load(map_info_out_file)
 		else:
-			outInfo = { "maps": {} }
+			outInfo = {"maps": {}}
+
+		mapLayer = None
+		mapIndex = None
 
 		for i, m in enumerate(mapInfo["maps"]):
 			if m["path"] == timestamp:
 				mapLayer = m
 				mapIndex = str(i)
 
+		if not mapLayer or not mapIndex:
+			raise Exception("mapLayer or mapIndex missing")
+
 		if mapIndex not in outInfo["maps"]:
-			outInfo["maps"][mapIndex] = { "surfaces": {} }
+			outInfo["maps"][mapIndex] = {"surfaces": {}}
 
 		zoomWork = set()
 		for daytime, activeSurfaces in daytimeSurfaces.items():
 			surfaceZoomLevels = {}
 			for surfaceName in activeSurfaces:
-				surfaceZoomLevels[surfaceName] = mapLayer["surfaces"][surfaceName]["zoom"]["max"] - mapLayer["surfaces"][surfaceName]["zoom"]["min"]
+				surfaceZoomLevels[surfaceName] = (
+					mapLayer["surfaces"][surfaceName]["zoom"]["max"]
+					- mapLayer["surfaces"][surfaceName]["zoom"]["min"]
+				)
 
 			for surfaceName, surface in mapLayer["surfaces"].items():
 				if "links" in surface:
@@ -112,30 +121,41 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 							totalZoomLevelsRequired = 0
 							for zoomSurface, zoomLevel in link["maxZoomFromSurfaces"].items():
 								if zoomSurface in surfaceZoomLevels:
-									totalZoomLevelsRequired = max(totalZoomLevelsRequired, zoomLevel + surfaceZoomLevels[zoomSurface])
+									totalZoomLevelsRequired = max(
+										totalZoomLevelsRequired,
+										zoomLevel + surfaceZoomLevels[zoomSurface],
+									)
 
 							if not outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]:
 								outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex] = {}
 							if "zoom" not in outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]:
 								outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"] = {}
 
-
 							link["zoom"]["min"] = link["zoom"]["max"] - totalZoomLevelsRequired
 							outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 
-
 							# an assumption is made that the total zoom levels required doesnt change between snapshots.
 							if (link if "path" in link else outInfo["maps"][mapIndex]["surfaces"][surfaceName]["links"][linkIndex])["path"] == timestamp:
-								zoomWork.add((os.path.abspath(os.path.join(subpath, mapLayer["path"], link["toSurface"], daytime if link["daynight"] else "day", "renderboxes")), link["zoom"]["max"], link["zoom"]["min"], link["filename"]))
+								zoomWork.add(
+									(
+										Path(
+											subpath,
+											mapLayer["path"],
+											link["toSurface"],
+											daytime if link["daynight"] else "day",
+											"renderboxes",
+										).resolve(),
+										link["zoom"]["max"],
+										link["zoom"]["min"],
+										link["filename"],
+									)
+								)
 
+		with out_file.open("w") as map_info_out_file:
+			json.dump(outInfo, map_info_out_file)
+			map_info_out_file.truncate()
 
-		mapInfoOutFile.seek(0)
-		json.dump(outInfo, mapInfoOutFile)
-		mapInfoOutFile.truncate()
-
-
-
-	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
+	maxthreads = args.zoomthreads if args.zoomthreads else args.maxthreads
 	processes = []
 	zoomWork = list(zoomWork)
 	for i in range(0, min(maxthreads, len(zoomWork))):
@@ -146,70 +166,81 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, **kwargs):
 		p.join()
 
 
-
-
-
-
-
 def work(basepath, pathList, surfaceName, daytime, size, start, stop, last, chunk, keepLast=False):
-	chunksize = 2**(start-stop)
+	chunksize = 2 ** (start - stop)
 	if start > stop:
 		for k in range(start, stop, -1):
-			x = chunksize*chunk[0]
-			y = chunksize*chunk[1]
+			x = chunksize * chunk[0]
+			y = chunksize * chunk[1]
 			for j in range(y, y + chunksize, 2):
 				for i in range(x, x + chunksize, 2):
 
-					coords = [(0,0), (1,0), (0,1), (1,1)]
-					paths = [os.path.join(basepath, pathList[0], surfaceName, daytime, str(k), str(i+coord[0]), str(j+coord[1]) + EXT) for coord in coords]
+					coords = [(0, 0), (1, 0), (0, 1), (1, 1)]
+					paths = [
+						Path(
+							basepath,
+							pathList[0],
+							surfaceName,
+							daytime,
+							str(k),
+							str(i + coord[0]),
+							str(j + coord[1]),
+						).with_suffix(EXT)
+						for coord in coords
+					]
 
-					if any(os.path.isfile(path) for path in paths):
+					if any(path.exists() for path in paths):
 
-						if not os.path.exists(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2))):
+						if not Path(basepath, pathList[0], surfaceName, daytime, str(k - 1), str(i // 2)).exists():
 							try:
-								os.makedirs(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2)))
+								Path(basepath, pathList[0], surfaceName, daytime, str(k - 1), str(i // 2)).mkdir(parents=True)
 							except OSError:
 								pass
 
 						isOriginal = []
 						for m in range(len(coords)):
-							isOriginal.append(os.path.isfile(paths[m]))
+							isOriginal.append(paths[m].is_file())
 							if not isOriginal[m]:
 								for n in range(1, len(pathList)):
-									paths[m] = os.path.join(basepath, pathList[n], surfaceName, daytime, str(k), str(i+coords[m][0]), str(j+coords[m][1]) + OUTEXT)
-									if os.path.isfile(paths[m]):
+									paths[m] = Path(basepath, pathList[n], surfaceName, daytime, str(k), str(i + coords[m][0]), str(j + coords[m][1])).with_suffix(OUTEXT)
+									if paths[m].is_file():
 										break
 
+						result = Image.new("RGB", (size, size), BACKGROUNDCOLOR)
 
-						result = Image.new('RGB', (size, size), BACKGROUNDCOLOR)
-
-						imgs = []
+						images = []
 						for m in range(len(coords)):
-							if (os.path.isfile(paths[m])):
-								img = Image.open(paths[m], mode='r').convert("RGB")
-								result.paste(box=(coords[m][0]*size//2, coords[m][1]*size//2), im=img.resize((size//2, size//2), Image.ANTIALIAS))
+							if paths[m].is_file():
+								img = Image.open(paths[m], mode="r").convert("RGB")
+								result.paste(
+									box=(
+										coords[m][0] * size // 2,
+										coords[m][1] * size // 2,
+									),
+									im=img.resize(
+										(size // 2, size // 2), Image.ANTIALIAS
+									),
+								)
 
 								if isOriginal[m]:
-									imgs.append((img, paths[m]))
+									images.append((img, paths[m]))
 
-
-						if k == last+1:
-							saveCompress(result, os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + OUTEXT))
-						if OUTEXT != EXT and (k != last+1 or keepLast):
-							result.save(os.path.join(basepath, pathList[0], surfaceName, daytime, str(k-1), str(i//2), str(j//2) + EXT))
+						if k == last + 1:
+							saveCompress(result, Path(basepath, pathList[0], surfaceName, daytime, str(k - 1), str(i // 2), str(j // 2)).with_suffix(OUTEXT))
+						if OUTEXT != EXT and (k != last + 1 or keepLast):
+							result.save(Path(basepath, pathList[0], surfaceName, daytime, str(k - 1), str(i // 2), str(j // 2), ).with_suffix(EXT))
 
 						if OUTEXT != EXT:
-							for img, path in imgs:
-								saveCompress(img, path.replace(EXT, OUTEXT), path)
-								os.remove(path)
-
+							for img, path in images:
+								saveCompress(img, path.with_suffix(OUTEXT))
+								path.unlink()
 
 			chunksize = chunksize // 2
 	elif stop == last:
-		path = os.path.join(basepath, pathList[0], surfaceName, daytime, str(start), str(chunk[0]), str(chunk[1]))
-		img = Image.open(path + EXT, mode='r').convert("RGB")
-		saveCompress(img, path + OUTEXT, path + EXT)
-		os.remove(path + EXT)
+		path = Path(basepath, pathList[0], surfaceName, daytime, str(start), str(chunk[0]), str(chunk[1]))
+		img = Image.open(path.with_suffix(EXT), mode="r").convert("RGB")
+		saveCompress(img, path.with_suffix(OUTEXT))
+		path.with_suffix(EXT).unlink()
 
 
 def thread(basepath, pathList, surfaceName, daytime, size, start, stop, last, allChunks, counter, resultQueue, keepLast=False):
@@ -227,73 +258,77 @@ def thread(basepath, pathList, surfaceName, daytime, size, start, stop, last, al
 
 
 
+def zoom(
+	out_folder: Path,
+	timestamp: str = None,
+	surface_reference: str = None,
+	daytime_reference: str = None,
+	basepath: Path = None,
+	needsThumbnail: bool = True,
+	args: Namespace = Namespace(),
+):
+	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10)
 
+	work_folder = basepath if basepath else Path("..", "..", "script-output", "FactorioMaps")
+	top_path = Path(work_folder, out_folder)
+	data_path = Path(top_path, "mapInfo.json")
+	image_path = Path(top_path, "Images")
+	maxthreads = args.zoomthreads if args.zoomthreads else args.maxthreads
 
-
-
-
-
-
-def zoom(*args, **kwargs):
-
-
-	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
-
-
-	needsThumbnail = (str(args[5]).lower() != "false") if len(args) > 5 else True
-	toppath = os.path.join((args[4] if len(args) > 4 else "../../script-output/FactorioMaps"), args[0])
-	datapath = os.path.join(toppath, "mapInfo.json")
-	basepath = os.path.join(toppath, "Images")
-	maxthreads = int(kwargs["zoomthreads" if kwargs["zoomthreads"] else "maxthreads"])
-
-
-	#print(basepath)
-
-
-	with open(datapath, "r", encoding="utf-8") as f:
+	with data_path.open("r", encoding="utf-8") as f:
 		data = json.load(f)
 	for mapIndex, map in enumerate(data["maps"]):
-		if len(args) <= 1 or map["path"] == args[1]:
+		if timestamp is None or map["path"] == timestamp:
 			for surfaceName, surface in map["surfaces"].items():
-				if len(args) <= 2 or surfaceName == args[2]:
+				if surface_reference is None or surfaceName == surface_reference:
 					maxzoom = surface["zoom"]["max"]
 					minzoom = surface["zoom"]["min"]
 
 					daytimes = []
-					try:
-						if surface["day"]: daytimes.append("day")
-					except KeyError: pass
-					try:
-						if surface["night"]: daytimes.append("night")
-					except KeyError: pass
+					if "day" in surface:
+						daytimes.append("day")
+					if "night" in surface:
+						daytimes.append("night")
 					for daytime in daytimes:
-						if len(args) <= 3 or daytime == args[3]:
-							if not os.path.isdir(os.path.join(toppath, "Images", str(map["path"]), surfaceName, daytime, str(maxzoom - 1))):
+						if daytime_reference is None or daytime == daytime_reference:
+							if not Path(top_path, "Images", str(map["path"]), surfaceName, daytime, str(maxzoom - 1)).is_dir():
 
-								print("zoom {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
+								print(f"zoom {0:5.1f}% [{' ' * (tsize()[0]-15)}]", end="")
 
-								generateThumbnail = needsThumbnail \
-												and mapIndex == len(data["maps"]) - 1 \
-												and surfaceName == ("nauvis" if "nauvis" in map["surfaces"] else sorted(map["surfaces"].keys())[0]) \
-												and daytime == daytimes[0]
+								generateThumbnail = (
+									needsThumbnail
+									and mapIndex == len(data["maps"]) - 1
+									and surfaceName
+									== (
+										"nauvis"
+										if "nauvis" in map["surfaces"]
+										else sorted(map["surfaces"].keys())[0]
+									)
+									and daytime == daytimes[0]
+								)
 
 								allBigChunks = {}
 								minX = float("inf")
 								maxX = float("-inf")
 								minY = float("inf")
 								maxY = float("-inf")
-								imageSize = None
-								for xStr in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(maxzoom))):
-									x = int(xStr)
+								imageSize: int = None
+								for xStr in Path(image_path, str(map["path"]), surfaceName, daytime, str(maxzoom)).iterdir():
+									x = int(xStr.name)
 									minX = min(minX, x)
 									maxX = max(maxX, x)
-									for yStr in os.listdir(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr)):
+									for yStr in Path(image_path, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr).iterdir():
 										if imageSize is None:
-											imageSize = Image.open(os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr, yStr), mode='r').size[0]
-										y = int(yStr.split('.', 2)[0])
+											imageSize = Image.open(Path(image_path, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr, yStr), mode="r").size[0]
+										y = int(yStr.stem)
 										minY = min(minY, y)
 										maxY = max(maxY, y)
-										allBigChunks[(x >> maxzoom - minzoom, y >> maxzoom - minzoom)] = True
+										allBigChunks[
+											(
+												x >> maxzoom - minzoom,
+												y >> maxzoom - minzoom,
+											)
+										] = True
 
 								if len(allBigChunks) <= 0:
 									continue
@@ -303,14 +338,19 @@ def zoom(*args, **kwargs):
 									pathList.append(str(data["maps"][otherMapIndex]["path"]))
 
 								threadsplit = 0
-								while 4**threadsplit * len(allBigChunks) < maxthreads:
+								while 4 ** threadsplit * len(allBigChunks) < maxthreads:
 									threadsplit = threadsplit + 1
 								threadsplit = min(max(maxzoom - minzoom - 3, 0), threadsplit + 3)
 								allChunks = []
 								for pos in list(allBigChunks):
-									for i in range(2**threadsplit):
-										for j in range(2**threadsplit):
-											allChunks.append((pos[0]*(2**threadsplit) + i, pos[1]*(2**threadsplit) + j))
+									for i in range(2 ** threadsplit):
+										for j in range(2 ** threadsplit):
+											allChunks.append(
+												(
+													pos[0] * (2 ** threadsplit) + i,
+													pos[1] * (2 ** threadsplit) + j,
+												)
+											)
 
 								threads = min(len(allChunks), maxthreads)
 								processes = []
@@ -318,10 +358,26 @@ def zoom(*args, **kwargs):
 
 								# print(("%s %s %s %s" % (pathList[0], str(surfaceName), daytime, pathList)))
 								# print(("%s-%s (total: %s):" % (start, stop + threadsplit, len(allChunks))))
-								counter = mp.Value('i', originalSize)
+								counter = mp.Value("i", originalSize)
 								resultQueue = mp.Queue()
 								for _ in range(0, threads):
-									p = mp.Process(target=thread, args=(basepath, pathList, surfaceName, daytime, imageSize, maxzoom, minzoom + threadsplit, minzoom, allChunks, counter, resultQueue, generateThumbnail))
+									p = mp.Process(
+										target=thread,
+										args=(
+											image_path,
+											pathList,
+											surfaceName,
+											daytime,
+											imageSize,
+											maxzoom,
+											minzoom + threadsplit,
+											minzoom,
+											allChunks,
+											counter,
+											resultQueue,
+											generateThumbnail,
+										),
+									)
 									p.start()
 									processes.append(p)
 
@@ -330,64 +386,95 @@ def zoom(*args, **kwargs):
 									resultQueue.get(True)
 									doneSize += 1
 									progress = float(doneSize) / originalSize
-									tsiz = tsize()[0]-15
-									print("\rzoom {:5.1f}% [{}{}]".format(round(progress * 98, 1), "=" * int(progress * tsiz), " " * (tsiz - int(progress * tsiz))), end="")
+									tsiz = tsize()[0] - 15
+									print(
+										"\rzoom {:5.1f}% [{}{}]".format(
+											round(progress * 98, 1),
+											"=" * int(progress * tsiz),
+											" " * (tsiz - int(progress * tsiz)),
+										),
+										end="",
+									)
 
 								for p in processes:
 									p.join()
 
-
-
-
 								if threadsplit > 0:
-									#print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
+									# print(("finishing up: %s-%s (total: %s)" % (stop + threadsplit, stop, len(allBigChunks))))
 									processes = []
 									i = len(allBigChunks) - 1
 									for chunk in list(allBigChunks):
-										p = mp.Process(target=work, args=(basepath, pathList, surfaceName, daytime, imageSize, minzoom + threadsplit, minzoom, minzoom, chunk, generateThumbnail))
+										p = mp.Process(
+											target=work,
+											args=(
+												image_path,
+												pathList,
+												surfaceName,
+												daytime,
+												imageSize,
+												minzoom + threadsplit,
+												minzoom,
+												minzoom,
+												chunk,
+												generateThumbnail,
+											),
+										)
 										i = i - 1
 										p.start()
 										processes.append(p)
 									for p in processes:
 										p.join()
 
-
 								if generateThumbnail:
 									printErase("generating thumbnail")
-									minzoompath = os.path.join(basepath, str(map["path"]), surfaceName, daytime, str(minzoom))
+									minzoompath = Path(
+										image_path,
+										str(map["path"]),
+										surfaceName,
+										daytime,
+										str(minzoom),
+									)
 
+									if imageSize is None:
+										raise Exception("Missing imageSize for thumbnail generation")
 
-									thumbnail = Image.new('RGB', ((maxX-minX+1) * imageSize >> maxzoom-minzoom, (maxY-minY+1) * imageSize >> maxzoom-minzoom), BACKGROUNDCOLOR)
-									bigMinX = minX >> maxzoom-minzoom
-									bigMinY = minY >> maxzoom-minzoom
-									xOffset = ((bigMinX * imageSize << maxzoom-minzoom) - minX * imageSize) >> maxzoom-minzoom
-									yOffset = ((bigMinY * imageSize << maxzoom-minzoom) - minY * imageSize) >> maxzoom-minzoom
+									thumbnail = Image.new(
+										"RGB",
+										(
+											(maxX - minX + 1) * imageSize
+											>> maxzoom - minzoom,
+											(maxY - minY + 1) * imageSize
+											>> maxzoom - minzoom,
+										),
+										BACKGROUNDCOLOR,
+									)
+									bigMinX = minX >> maxzoom - minzoom
+									bigMinY = minY >> maxzoom - minzoom
+									xOffset = ((bigMinX * imageSize << maxzoom - minzoom) - minX * imageSize) >> maxzoom - minzoom
+									yOffset = ((bigMinY * imageSize << maxzoom - minzoom) - minY * imageSize) >> maxzoom - minzoom
 									for chunk in list(allBigChunks):
-										path = os.path.join(minzoompath, str(chunk[0]), str(chunk[1]) + EXT)
-										thumbnail.paste(box=(xOffset+(chunk[0]-bigMinX)*imageSize, yOffset+(chunk[1]-bigMinY)*imageSize), im=Image.open(path, mode='r').convert("RGB").resize((imageSize, imageSize), Image.ANTIALIAS))
+										path = Path(minzoompath, str(chunk[0]), str(chunk[1])).with_suffix(EXT)
+										thumbnail.paste(
+											box=(
+												xOffset
+												+ (chunk[0] - bigMinX) * imageSize,
+												yOffset
+												+ (chunk[1] - bigMinY) * imageSize,
+											),
+											im=Image.open(path, mode="r")
+											.convert("RGB")
+											.resize(
+												(imageSize, imageSize), Image.ANTIALIAS
+											),
+										)
 
 										if OUTEXT != EXT:
-											os.remove(path)
+											path.unlink()
 
-									thumbnail.save(os.path.join(basepath, "thumbnail" + THUMBNAILEXT))
+									thumbnail.save(Path(image_path, "thumbnail" + THUMBNAILEXT))
 
-
-
-
-								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0]-15)))
+								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0] - 15)))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
 	zoom(*sys.argv[1:])

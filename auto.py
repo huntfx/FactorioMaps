@@ -672,36 +672,34 @@ def auto(*args):
 
 
 
-				def refZoom():
-					needsThumbnail = index + 1 == len(save_games)
-					#print("Crossreferencing %s images" % screenshot)
-					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
-					#print("downsampling %s images" % screenshot)
-					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, needsThumbnail, **kwargs)
+					def refZoom():
+						needsThumbnail = index + 1 == len(save_games)
+						#print("Crossreferencing %s images" % screenshot)
+						#print("downsampling %s images" % screenshot)
+						zoom(out_folder, timestamp, surface, daytime, basepath, needsThumbnail, args)
 
-					if jindex == len(latest) - 1:
-						print("zooming renderboxes", timestamp)
-						zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, first_out_folder, "Images"), **kwargs)
+						if jindex == len(latest) - 1:
+							print("zooming renderboxes", timestamp)
+							zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(basepath, first_out_folder, "Images"), args)
 
-				if screenshot != latest[-1]:
-					refZoom()
-				else:
-
-					startLogProcess.terminate()
-
-					# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
-
-					onlyStall = isKilled[0]
-					isKilled[0] = True
-					kill(pid, onlyStall)
-
-					if savename == save_games[-1]:
+					if screenshot != latest[-1]:
 						refZoom()
-
 					else:
-						workthread = threading.Thread(target=refZoom)
-						workthread.daemon = True
-						workthread.start()
+						startLogProcess.terminate()
+
+						# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
+
+						onlyStall = isKilled[0]
+						isKilled[0] = True
+						kill(pid, onlyStall)
+
+						if savename == save_games[-1]:
+							refZoom()
+
+						else:
+							workthread = threading.Thread(target=refZoom)
+							workthread.daemon = True
+							workthread.start()
 
 
 
