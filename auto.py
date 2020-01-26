@@ -553,24 +553,24 @@ def auto(*args):
 			pass
 
 
+	###########################################
+	#
+	#		Start of Work
+	#
+	###########################################
 
-
-
-
-	datapath = os.path.join(workfolder, "latest.txt")
+	datapath = Path(workfolder, "latest.txt")
 	allTmpDirs = []
 
 	is_first_snapshot = True
 
 	try:
 
-		for index, savename in () if kwargs["dry"] else enumerate(save_games):
-
-
+		for index, savename in () if args.dry else enumerate(save_games):
 
 			printErase("cleaning up")
-			if os.path.isfile(datapath):
-				os.remove(datapath)
+			if datapath.is_file():
+				datapath.unlink()
 
 			build_autorun(args, workfolder, foldername, is_first_snapshot)
 			is_first_snapshot = False
