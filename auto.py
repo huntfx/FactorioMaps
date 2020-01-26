@@ -32,6 +32,7 @@ import string
 import signal
 import subprocess
 import tempfile
+from tempfile import TemporaryDirectory
 import threading
 import time
 import urllib.error
@@ -65,6 +66,7 @@ kwargs = {
 	'tag-range': 5.2,
 	'build-range': 5.2,
 	'connect-range': 1.2,
+	'config-path':None,
 	'factorio': None,
 	'modpath': "../../mods",
 	'basepath': "FactorioMaps",
@@ -348,6 +350,7 @@ def auto(*args):
 	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
 	parser.add_argument("--factorio", type=Path, help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
 	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(USER_FOLDER, 'mods'), help="Use PATH as the mod folder.")
+	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(USER_FOLDER, 'config'), help="Use PATH as the mod folder.")
 	parser.add_argument("--basepath", default="FactorioMaps", help="Output to script-output\\RELPATH instead of script-output\\FactorioMaps. (Factorio cannot output outside of script-output)")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
@@ -533,39 +536,36 @@ f'''fm.autorun = {{
 					printErase(autorunString)
 
 
-			printErase("building config.ini")
-			tmpDir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
-			allTmpDirs.append(tmpDir)
-			try:
-				rmtree(tmpDir)
-			except (FileNotFoundError, NotADirectoryError):
-				pass
-			os.makedirs(os.path.join(tmpDir, "config"))
+			printErase("Building config.ini")
+			with TemporaryDirectory(prefix="FactorioMaps-") as temporary_directory:
+				if args.verbose > 2:
+					print(f"Using temporary directory '{temporary_directory}'")
+				configPath = Path(temporary_directory, "config","config.ini")
+				configPath.parent.mkdir(parents=True)
 
-			configPath = os.path.join(tmpDir, "config/config.ini")
-			config = configparser.ConfigParser()
-			config.read("../../config/config.ini")
+				config = configparser.ConfigParser()
+				config.read(Path(args.config_path, "config.ini"))
 
-			if "interface" not in config:
-				config["interface"] = {}
-			config["interface"]["show-tips-and-tricks"] = "false"
+        if "interface" not in config:
+          config["interface"] = {}
+        config["interface"]["show-tips-and-tricks"] = "false"
 
-			if "path" not in config:
-				config["path"] = {}
-			config["path"]["write-data"] = tmpDir
+        if "path" not in config:
+          config["path"] = {}
+        config["path"]["write-data"] = temporary_directory
 
-			if "graphics" not in config:
-				config["graphics"] = {}
-			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads" if kwargs["screenshotthreads"] else "maxthreads"]))
-			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
+        if "graphics" not in config:
+          config["graphics"] = {}
+        config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
+        config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
 
-			with open(configPath, 'w+') as outf:
-				outf.writelines(("; version=3\n", ))
-				config.write(outf, space_around_delimiters=False)
+				with configPath.open("w+") as outf:
+					outf.writelines(("; version=3\n", ))
+					config.write(outf, space_around_delimiters=False)
 
+				link_dir(Path(temporary_directory, "script-output"), Path(USER_FOLDER, "script-output"))
+				copy(Path(USER_FOLDER, 'player-data.json'), temporary_directory)
 
-			link_dir(Path(tmpDir, "script-output"), Path("..","..","script-output"))
-			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
 
 			pid = None
 			isSteam = None
