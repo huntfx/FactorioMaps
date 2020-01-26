@@ -38,6 +38,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from argparse import Namespace
 from pathlib import Path
 from shutil import copy, copytree
 from shutil import get_terminal_size as tsize
@@ -296,6 +297,92 @@ def change_modlist(modpath: Path,newState: bool):
 		json.dump(modlist, f, indent=2)
 
 
+def build_autorun(args: Namespace, work_folder:Path, out_folder: Path, is_first_snapshot: bool):
+	printErase("Building autorun.lua")
+	map_info_path = Path(work_folder, "mapInfo.json")
+	if map_info_path.is_file():
+		with map_info_path.open("r", encoding='utf-8') as f:
+			mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
+			if is_first_snapshot:
+				f.seek(0)
+				mapInfo = json.load(f)
+				if "options" in mapInfo:
+					for kwarg in changedKwargs:
+						if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
+							printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
+	else:
+		mapInfoLua = "{}"
+
+	is_first_snapshot = False
+
+	chunk_cache_path = Path(work_folder, "chunkCache.json")
+	if chunk_cache_path.is_file():
+		with chunk_cache_path.open("r") as f:
+			chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
+	else:
+		chunkCache = "{}"
+
+	def lower_bool(value: bool):
+		return str(value).lower()
+
+	with open("autorun.lua", "w", encoding="utf-8") as f:
+		print(args.surface)
+		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
+		autorunString = \
+f'''fm.autorun = {{
+HD = {lower_bool(args.hd)},
+day = {lower_bool(args.day)},
+night = {lower_bool(args.night)},
+alt_mode = {lower_bool(args.altmode)},
+tags = {lower_bool(args.tags)},
+around_tag_range = {args.tag_range},
+around_build_range = {args.build_range},
+around_connect_range = {args.connect_range},
+connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},
+date = "{datetime.datetime.strptime(args.date, "%d/%m/%y").strftime("%d/%m/%y")}",
+surfaces = {surfaceString},
+name = "{str(out_folder) + "/"}",
+mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},
+chunkCache = {chunkCache}
+}}'''
+		f.write(autorunString)
+		if args.verbose:
+			printErase(autorunString)
+
+
+def build_config(args: Namespace, temporary_directory):
+	printErase("Building config.ini")
+	if args.verbose > 2:
+		print(f"Using temporary directory '{temporary_directory}'")
+	config_path = Path(temporary_directory, "config","config.ini")
+	config_path.parent.mkdir(parents=True)
+
+	config = configparser.ConfigParser()
+	config.read(Path(args.config_path, "config.ini"))
+
+	if "interface" not in config:
+		config["interface"] = {}
+	config["interface"]["show-tips-and-tricks"] = "false"
+
+	if "path" not in config:
+		config["path"] = {}
+	config["path"]["write-data"] = temporary_directory
+
+	if "graphics" not in config:
+		config["graphics"] = {}
+	config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
+	config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
+
+	with config_path.open("w+") as config_file:
+		config_file.writelines(("; version=3\n", ))
+		config.write(config_file, space_around_delimiters=False)
+
+	link_dir(Path(temporary_directory, "script-output"), Path(USER_FOLDER, "script-output"))
+	copy(Path(USER_FOLDER, 'player-data.json'), temporary_directory)
+
+	return config_path
+
+
 def auto(*args):
 
 	lock = threading.Lock()
@@ -470,7 +557,7 @@ def auto(*args):
 	datapath = os.path.join(workfolder, "latest.txt")
 	allTmpDirs = []
 
-	isFirstSnapshot = True
+	is_first_snapshot = True
 
 	try:
 
@@ -482,89 +569,11 @@ def auto(*args):
 			if os.path.isfile(datapath):
 				os.remove(datapath)
 
+			build_autorun(args, workfolder, foldername, is_first_snapshot)
+			is_first_snapshot = False
 
-
-			printErase("building autorun.lua")
-			if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
-				with open(os.path.join(workfolder, "mapInfo.json"), "r", encoding='utf-8') as f:
-					mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
-					if isFirstSnapshot:
-						f.seek(0)
-						mapInfo = json.load(f)
-						if "options" in mapInfo:
-							for kwarg in changedKwargs:
-								if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
-									printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
-						isFirstSnapshot = False
-
-			else:
-				mapInfoLua = "{}"
-				isFirstSnapshot = False
-
-			if (os.path.isfile(os.path.join(workfolder, "chunkCache.json"))):
-				with open(os.path.join(workfolder, "chunkCache.json"), "r") as f:
-					chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
-			else:
-				chunkCache = "{}"
-
-			def lower_bool(value: bool):
-				return str(value).lower()
-
-			with open("autorun.lua", "w", encoding="utf-8") as f:
-				print(args.surface)
-				surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
-				autorunString = \
-f'''fm.autorun = {{
-	HD = {lower_bool(args.hd)},
-	day = {lower_bool(args.day)},
-	night = {lower_bool(args.night)},
-	alt_mode = {lower_bool(args.altmode)},
-	tags = {lower_bool(args.tags)},
-	around_tag_range = {args.tag_range},
-	around_build_range = {args.build_range},
-	around_connect_range = {args.connect_range},
-	around_connect_range = {float(kwargs["connect-range"])},
-	connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},
-	date = "{datetime.datetime.strptime(args.date, "%d/%m/%y").strftime("%d/%m/%y")}",
-	surfaces = {surfaceString},
-	name = "{foldername + "/"}",
-	mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},
-	chunkCache = {chunkCache}
-}}'''
-				f.write(autorunString)
-				if args.verbose:
-					printErase(autorunString)
-
-
-			printErase("Building config.ini")
 			with TemporaryDirectory(prefix="FactorioMaps-") as temporary_directory:
-				if args.verbose > 2:
-					print(f"Using temporary directory '{temporary_directory}'")
-				configPath = Path(temporary_directory, "config","config.ini")
-				configPath.parent.mkdir(parents=True)
-
-				config = configparser.ConfigParser()
-				config.read(Path(args.config_path, "config.ini"))
-
-        if "interface" not in config:
-          config["interface"] = {}
-        config["interface"]["show-tips-and-tricks"] = "false"
-
-        if "path" not in config:
-          config["path"] = {}
-        config["path"]["write-data"] = temporary_directory
-
-        if "graphics" not in config:
-          config["graphics"] = {}
-        config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
-        config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
-
-				with configPath.open("w+") as outf:
-					outf.writelines(("; version=3\n", ))
-					config.write(outf, space_around_delimiters=False)
-
-				link_dir(Path(temporary_directory, "script-output"), Path(USER_FOLDER, "script-output"))
-				copy(Path(USER_FOLDER, 'player-data.json'), temporary_directory)
+				config_path = build_config(args, temporary_directory)
 
 				pid = None
 				isSteam = None
@@ -575,7 +584,7 @@ f'''fm.autorun = {{
 					str(Path(USER_FOLDER, 'saves', savename).absolute()),
 					'--disable-audio',
 					'--config',
-					str(configPath),
+					str(config_path),
 					"--mod-directory",
 					str(args.modpath.absolute()),
 					"--disable-migration-window")
