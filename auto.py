@@ -217,10 +217,6 @@ def auto(*args):
 
 		#time.sleep(0.1)
 
-
-
-
-
 	def parseArg(arg):
 		if arg[0:2] != "--":
 			return True
@@ -239,6 +235,8 @@ def auto(*args):
 			print(f'Bad flag: "{key}"')
 			raise ValueError(f'Bad flag: "{key}"')
 		return False
+
+	list(filter(parseArg, args))
 
 	parser = argparse.ArgumentParser(description="FactorioMaps")
 	daytime = parser.add_mutually_exclusive_group()
@@ -273,21 +271,22 @@ def auto(*args):
 	if args.verbose > 0:
 		print(args)
 
-	newArgs = list(filter(parseArg, args))
-	if kwargs["verbose"]:
-		print(args)
-	if len(newArgs) > 0:
-		foldername = newArgs[0]
+	saves = Path("..","..","saves")
+	if args.outfolder:
+		foldername = args.outfolder
 	else:
-		foldername = os.path.splitext(os.path.basename(max([os.path.join("../../saves", basename) for basename in os.listdir("../../saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
+		timestamp, file_path = max((save.stat().st_mtime, save) for save in saves.iterdir() if save.stem not in { "_autosave1", "_autosave2", "_autosave3" })
+		foldername = file_path.stem
 		print("No save name passed. Using most recent save: %s" % foldername)
-	savenames = newArgs[1:] or [ foldername ]
+	savenames = args.savename or [foldername]
 
-	for saveName in savenames:
-		savePath = os.path.join("../../saves", saveName)
-		if not (os.path.isdir(savePath) or os.path.isfile(savePath) or os.path.isfile(savePath + ".zip")):
-			print(f'Cannot find savefile: "{saveName}"')
-			raise ValueError(f'Cannot find savefile: "{saveName}"')
+	# TODO: Add GLOB pattern matching
+	for save_name in savenames:
+		save_game = Path(saves, save_name)
+		save_game_zip = Path("..","..","saves", f"{save_name}.zip")
+		if not (save_game.is_dir() or save_game.is_file() or save_game_zip.is_file()):
+			print(f'Cannot find savefile: "{save_name}"')
+			raise ValueError(f'Cannot find savefile: "{save_name}"')
 
 	windowsPaths = [
 		"Program Files/Factorio/bin/x64/factorio.exe",
