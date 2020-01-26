@@ -522,7 +522,10 @@ def auto(*args):
 	workthread = None
 
 	workfolder = Path(basepath, foldername).resolve()
-	print("output folder: {}".format(workfolder.relative_to(Path(USER_FOLDER))))
+	try:
+		print("output folder: {}".format(workfolder.relative_to(Path(USER_FOLDER))))
+	except ValueError:
+		print("output folder: {}".format(workfolder.resolve()))
 
 	try:
 		workfolder.mkdir(parents=True, exist_ok=True)
