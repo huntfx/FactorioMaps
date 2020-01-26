@@ -582,75 +582,61 @@ f'''fm.autorun = {{
 				if args.verbose:
 					printErase(popenArgs)
 
+				condition = mp.Condition()
+				results = manager.list()
 
-			condition = mp.Condition()
+				printErase("starting factorio")
+				startLogProcess = mp.Process(
+					target=startGameAndReadGameLogs,
+					args=(results, condition, popenArgs, temporary_directory, pidBlacklist, rawTags),
+					kwargs=kwargs
+				)
+				startLogProcess.daemon = True
+				startLogProcess.start()
 
+				with condition:
+					condition.wait()
+				isSteam, pid = results[:]
 
-			results = manager.list()
+				if isSteam is None:
+					raise Exception("isSteam error")
+				if pid is None:
+					raise Exception("pid error")
 
-			printErase("starting factorio")
-			startLogProcess = mp.Process(target=startGameAndReadGameLogs, args=(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags), kwargs=kwargs)
-			startLogProcess.daemon = True
-			startLogProcess.start()
+				while not datapath.exists():
+					time.sleep(0.4)
 
+				open("autorun.lua", 'w').close()
 
-			with condition:
-				condition.wait()
-			isSteam, pid = results[:]
+				latest = []
+				with datapath.open('r') as f:
+					for line in f:
+						latest.append(line.rstrip("\n"))
+				if args.verbose:
+					printErase(latest)
 
+				first_out_folder, timestamp, surface, daytime = latest[-1].split(" ")
+				first_out_folder = first_out_folder.replace("/", " ")
+				waitfilename = Path(basepath, first_out_folder, "images", timestamp, surface, daytime, "done.txt")
 
-			if isSteam is None:
-				raise Exception("isSteam error")
-			if pid is None:
-				raise Exception("pid error")
+				isKilled = [False]
+				def waitKill(isKilled, pid):
+					while not isKilled[0]:
+						#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
+						if os.path.isfile(waitfilename):
+							isKilled[0] = True
+							kill(pid)
+							break
+						else:
+							time.sleep(0.4)
 
+				killThread = threading.Thread(target=waitKill, args=(isKilled, pid))
+				killThread.daemon = True
+				killThread.start()
 
-
-			while not os.path.exists(datapath):
-				time.sleep(0.4)
-
-
-			open("autorun.lua", 'w').close()
-
-
-
-			latest = []
-			with open(datapath, 'r') as f:
-				for line in f:
-					latest.append(line.rstrip("\n"))
-			if kwargs["verbose"]:
-				printErase(latest)
-
-
-			firstOtherInputs = latest[-1].split(" ")
-			firstOutFolder = firstOtherInputs.pop(0).replace("/", " ")
-			waitfilename = os.path.join(basepath, firstOutFolder, "Images", firstOtherInputs[0], firstOtherInputs[1], firstOtherInputs[2], "done.txt")
-
-
-			isKilled = [False]
-			def waitKill(isKilled, pid):
-				while not isKilled[0]:
-					#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
-					if os.path.isfile(waitfilename):
-						isKilled[0] = True
-						kill(pid)
-						break
-					else:
-						time.sleep(0.4)
-
-			killThread = threading.Thread(target=waitKill, args=(isKilled, pid))
-			killThread.daemon = True
-			killThread.start()
-
-
-
-			if workthread and workthread.isAlive():
-				#print("waiting for workthread")
-				workthread.join()
-
-
-
-
+				if workthread and workthread.isAlive():
+					#print("waiting for workthread")
+					workthread.join()
 
 			timestamp = None
 			daytimeSurfaces = {}
@@ -684,7 +670,7 @@ f'''fm.autorun = {{
 
 					if jindex == len(latest) - 1:
 						print("zooming renderboxes", timestamp)
-						zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
+						zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, first_out_folder, "Images"), **kwargs)
 
 				if screenshot != latest[-1]:
 					refZoom()
