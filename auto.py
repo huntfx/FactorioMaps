@@ -504,26 +504,32 @@ def auto(*args):
 			else:
 				chunkCache = "{}"
 
+			def lower_bool(value: bool):
+				return str(value).lower()
+
 			with open("autorun.lua", "w", encoding="utf-8") as f:
-				surfaceString = '{"' + '", "'.join(kwargs["surface"]) + '"}' if len(kwargs["surface"]) > 0 else "nil"
-				autorunString = (f'fm.autorun = {{\n'
-				f'HD = {str(kwargs["hd"] == True).lower()},\n'
-				f'day = {str(kwargs["nightonly"] != True).lower()},\n'
-				f'night = {str(kwargs["dayonly"] != True).lower()},\n'
-				f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
-				f'tags = {str(kwargs["no-tags"] != True).lower()},\n'
-				f'around_tag_range = {float(kwargs["tag-range"])},\n'
-				f'around_build_range = {float(kwargs["build-range"])},\n'
-				f'around_connect_range = {float(kwargs["connect-range"])},\n'
-				f'connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
-				f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
-				f'surfaces = {surfaceString},\n'
-				f'name = "{foldername + "/"}",\n'
-				f'mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},\n'
-				f'chunkCache = {chunkCache},\n'
-				f'}}')
+				print(args.surface)
+				surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
+				autorunString = \
+f'''fm.autorun = {{
+	HD = {lower_bool(args.hd)},
+	day = {lower_bool(args.day)},
+	night = {lower_bool(args.night)},
+	alt_mode = {lower_bool(args.altmode)},
+	tags = {lower_bool(args.tags)},
+	around_tag_range = {args.tag_range},
+	around_build_range = {args.build_range},
+	around_connect_range = {args.connect_range},
+	around_connect_range = {float(kwargs["connect-range"])},
+	connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},
+	date = "{datetime.datetime.strptime(args.date, "%d/%m/%y").strftime("%d/%m/%y")}",
+	surfaces = {surfaceString},
+	name = "{foldername + "/"}",
+	mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},
+	chunkCache = {chunkCache}
+}}'''
 				f.write(autorunString)
-				if kwargs["verbose"]:
+				if args.verbose:
 					printErase(autorunString)
 
 
