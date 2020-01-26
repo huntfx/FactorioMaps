@@ -373,8 +373,6 @@ def auto(*args):
 
 		#time.sleep(0.1)
 
-	list(filter(parseArg, args))
-
 	parser = argparse.ArgumentParser(description="FactorioMaps")
 	daytime = parser.add_mutually_exclusive_group()
 	daytime.add_argument("--dayonly", dest="night", action="store_false", help="Only take daytime screenshots.")
