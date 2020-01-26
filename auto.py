@@ -98,7 +98,7 @@ def printErase(arg):
 		pass
 
 
-def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, **kwargs):
+def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, args):
 
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
@@ -130,10 +130,10 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			if m is not None and m.group(2) is not None:
 				printErase(m.group(3))
 				prevPrinted = True
-			elif m is not None and kwargs["verbose"]:
+			elif m is not None and args.verbose:
 				printErase(m.group(1))
 				prevPrinted = True
-			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (kwargs["verbosegame"] and len(line) > 0):
+			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (args.verbosegame and len(line) > 0):
 				printErase("[GAME] %s" % line)
 				prevPrinted = True
 		return False
@@ -181,7 +181,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 
 		if isSteam:
 			pipef.close()
-			with open(os.path.join(tmpDir, "factorio-current.log"), "r") as f:
+			with Path(tmpDir, "factorio-current.log").open("r") as f:
 				while psutil.pid_exists(pid):
 					where = f.tell()
 					line = f.readline()
@@ -597,8 +597,7 @@ def auto(*args):
 				printErase("starting factorio")
 				startLogProcess = mp.Process(
 					target=startGameAndReadGameLogs,
-					args=(results, condition, popenArgs, temporary_directory, pidBlacklist, rawTags),
-					kwargs=kwargs
+					args=(results, condition, popenArgs, temporary_directory, pidBlacklist, rawTags, args)
 				)
 				startLogProcess.daemon = True
 				startLogProcess.start()
