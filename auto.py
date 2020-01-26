@@ -675,6 +675,7 @@ def auto(*args):
 					def refZoom():
 						needsThumbnail = index + 1 == len(save_games)
 						#print("Crossreferencing %s images" % screenshot)
+						ref(out_folder, timestamp, surface, daytime, basepath, args)
 						#print("downsampling %s images" % screenshot)
 						zoom(out_folder, timestamp, surface, daytime, basepath, needsThumbnail, args)
 
