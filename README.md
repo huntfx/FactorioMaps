@@ -50,7 +50,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
 | `--verbose` | Displays factoriomaps script logs. |
 | `--verbosegame` | Displays *all* game logs. |
-| `--noupdate` | Skips the update check. |
+| `--no-update` | Skips the update check. |
 | `--maxthreads=N` | Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available. |
 | `--cropthreads=N` | Sets the number of threads used for the crop step. |
 | `--refthreads=N` | Sets the number of threads used for the crossreferencing step. |

@@ -20,6 +20,7 @@ except (DistributionNotFound, VersionConflict) as ex:
 	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
 	sys.exit(1)
 
+import argparse
 import configparser
 import datetime
 import json
@@ -35,6 +36,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 from shutil import copy, copytree
 from shutil import get_terminal_size as tsize
 from shutil import rmtree
@@ -66,7 +68,7 @@ kwargs = {
 	'date': datetime.date.today().strftime("%d/%m/%y"),
 	'verbosegame': False,
 	'verbose': False,
-	'noupdate': False,
+	'no-update': False,
 	'reverseupdatetest': False,
 	'maxthreads': mp.cpu_count(),
 	'cropthreads': None,
@@ -238,7 +240,38 @@ def auto(*args):
 			raise ValueError(f'Bad flag: "{key}"')
 		return False
 
+	parser = argparse.ArgumentParser(description="FactorioMaps")
+	daytime = parser.add_mutually_exclusive_group()
+	daytime.add_argument("--dayonly", action="store_true", help="Only take daytime screenshots.")
+	daytime.add_argument("--nightonly", action="store_true", help="Only take nighttime screenshots.")
+	parser.add_argument("--hd", action="store_true", help="Take screenshots of resolution 64 x 64 pixels per in-game tile.")
+	parser.add_argument("--no-altmode", action="store_true", help="Hides entity info (alt mode).")
+	parser.add_argument("--no-tags", action="store_true", help="Hides map tags")
+	parser.add_argument("--build-range", type=float, default=5.2, help="The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles).")
+	parser.add_argument("--connect-range", type=float, default=1.2, help="The maximum range from connection buildings (rails, electric poles) around which pictures are saved.")
+	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
+	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
+	parser.add_argument("--factorio", type=Path, help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
+	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(USER_FOLDER, 'mods'), help="Use PATH as the mod folder.")
+	parser.add_argument("--basepath", default="FactorioMaps", help="Output to script-output\\RELPATH instead of script-output\\FactorioMaps. (Factorio cannot output outside of script-output)")
+	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
+	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
+	parser.add_argument('--verbosegame', action='count', default=0, help="Displays all game logs.")
+	parser.add_argument("--no-update", "--noupdate", action="store_true", help="Skips the update check.")
+	parser.add_argument("--reverseupdatetest", action="store_true", help=argparse.SUPPRESS)
+	parser.add_argument("--maxthreads", type=int, default=mp.cpu_count(), help="Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available.")
+	parser.add_argument("--cropthreads", type=int, default=None, help="Sets the number of threads used for the crop step.")
+	parser.add_argument("--refthreads", type=int, default=None, help="Sets the number of threads used for the crossreferencing step.")
+	parser.add_argument("--zoomthreads", type=int, default=None, help="Sets the number of threads used for the zoom step.")
+	parser.add_argument("--screenshotthreads", type=int, default=None, help="Set the number of screenshotting threads factorio uses.")
+	parser.add_argument("--delete", action="store_true", help="Deletes the output folder specified before running the script.")
+	parser.add_argument("--dry", action="store_true", help="Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script.")
+	parser.add_argument("outfolder", nargs="?", help="Output folder for the generated snapshots.")
+	parser.add_argument("savename", nargs="*", help="Names of the savenames to generate snapshots from. If no savenames are provided the latest save or the save matching outfolder will be gerated.")
 
+	args = parser.parse_args()
+	if args.verbose > 0:
+		print(args)
 
 	newArgs = list(filter(parseArg, args))
 	if kwargs["verbose"]:
@@ -288,7 +321,7 @@ def auto(*args):
 		pass
 
 
-	if not kwargs["noupdate"]:
+	if not kwargs["no-update"]:
 		try:
 			print("checking for updates")
 			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
@@ -336,7 +369,7 @@ def auto(*args):
 				print("  Download: https://git.io/factoriomaps")
 				if majorUpdate:
 					print("")
-					print("You can dismiss this by using --noupdate (not recommended)")
+					print("You can dismiss this by using --no-update (not recommended)")
 				print("")
 				print("================================================================================")
 				print("")
