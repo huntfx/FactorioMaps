@@ -566,14 +566,21 @@ f'''fm.autorun = {{
 				link_dir(Path(temporary_directory, "script-output"), Path(USER_FOLDER, "script-output"))
 				copy(Path(USER_FOLDER, 'player-data.json'), temporary_directory)
 
-
-			pid = None
-			isSteam = None
-			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
-
-			popenArgs = (factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename)), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"]), "--disable-migration-window")
-			if kwargs["verbose"]:
-				printErase(popenArgs)
+				pid = None
+				isSteam = None
+				pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
+				popenArgs = (
+					str(factorioPath),
+					'--load-game',
+					str(Path(USER_FOLDER, 'saves', savename).absolute()),
+					'--disable-audio',
+					'--config',
+					str(configPath),
+					"--mod-directory",
+					str(args.modpath.absolute()),
+					"--disable-migration-window")
+				if args.verbose:
+					printErase(popenArgs)
 
 
 			condition = mp.Condition()
