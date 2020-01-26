@@ -336,11 +336,11 @@ def auto(*args):
 
 	parser = argparse.ArgumentParser(description="FactorioMaps")
 	daytime = parser.add_mutually_exclusive_group()
-	daytime.add_argument("--dayonly", action="store_true", help="Only take daytime screenshots.")
-	daytime.add_argument("--nightonly", action="store_true", help="Only take nighttime screenshots.")
+	daytime.add_argument("--dayonly", dest="night", action="store_false", help="Only take daytime screenshots.")
+	daytime.add_argument("--nightonly", dest="day", action="store_false", help="Only take nighttime screenshots.")
 	parser.add_argument("--hd", action="store_true", help="Take screenshots of resolution 64 x 64 pixels per in-game tile.")
-	parser.add_argument("--no-altmode", action="store_true", help="Hides entity info (alt mode).")
-	parser.add_argument("--no-tags", action="store_true", help="Hides map tags")
+	parser.add_argument("--no-altmode", dest="altmode", action="store_false", help="Hides entity info (alt mode).")
+	parser.add_argument("--no-tags", dest="tags", action="store_false", help="Hides map tags")
 	parser.add_argument("--build-range", type=float, default=5.2, help="The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles).")
 	parser.add_argument("--connect-range", type=float, default=1.2, help="The maximum range from connection buildings (rails, electric poles) around which pictures are saved.")
 	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
@@ -351,7 +351,7 @@ def auto(*args):
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
 	parser.add_argument('--verbosegame', action='count', default=0, help="Displays all game logs.")
-	parser.add_argument("--no-update", "--noupdate", action="store_true", help="Skips the update check.")
+	parser.add_argument("--no-update", "--noupdate", dest="update", action="store_false", help="Skips the update check.")
 	parser.add_argument("--reverseupdatetest", action="store_true", help=argparse.SUPPRESS)
 	parser.add_argument("--maxthreads", type=int, default=mp.cpu_count(), help="Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available.")
 	parser.add_argument("--cropthreads", type=int, default=None, help="Sets the number of threads used for the crop step.")
@@ -368,7 +368,7 @@ def auto(*args):
 	if args.verbose > 0:
 		print(args)
 
-	if not args.no_update:
+	if args.update:
 		check_update(args.reverseupdatetest)
 
 	saves = Path("..", "..", "saves")
