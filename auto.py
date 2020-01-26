@@ -58,37 +58,6 @@ from zoom import zoom, zoomRenderboxes
 
 USER_FOLDER = Path("..", "..").resolve()
 
-kwargs = {
-	'dayonly': False,
-	'nightonly': False,
-	'hd': False,
-	'no-altmode': False,
-	'no-tags': False,
-	'tag-range': 5.2,
-	'build-range': 5.2,
-	'connect-range': 1.2,
-	'config-path':None,
-	'factorio': None,
-	'modpath': "../../mods",
-	'basepath': "FactorioMaps",
-	'date': datetime.date.today().strftime("%d/%m/%y"),
-	'verbosegame': False,
-	'verbose': False,
-	'no-update': False,
-	'reverseupdatetest': False,
-	'maxthreads': mp.cpu_count(),
-	'cropthreads': None,
-	'refthreads': None,
-	'zoomthreads': None,
-	'screenshotthreads': None,
-	'delete': False,
-	'dry': False,
-	'surface': [],
-	'force-lib-update': False
-}
-changedKwargs = []
-
-
 def printErase(arg):
 	try:
 		tsiz = tsize()[0]
@@ -303,13 +272,14 @@ def build_autorun(args: Namespace, work_folder:Path, out_folder: Path, is_first_
 	if map_info_path.is_file():
 		with map_info_path.open("r", encoding='utf-8') as f:
 			mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
-			if is_first_snapshot:
-				f.seek(0)
-				mapInfo = json.load(f)
-				if "options" in mapInfo:
-					for kwarg in changedKwargs:
-						if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
-							printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
+			# TODO: Update for new argument parsing
+#			if is_first_snapshot:
+#				f.seek(0)
+#				mapInfo = json.load(f)
+#				if "options" in mapInfo:
+#					for kwarg in changedKwargs:
+#						if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
+#							printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
 	else:
 		mapInfoLua = "{}"
 
@@ -402,25 +372,6 @@ def auto(*args):
 					printErase("killed factorio")
 
 		#time.sleep(0.1)
-
-	def parseArg(arg):
-		if arg[0:2] != "--":
-			return True
-		key = arg[2:].split("=",2)[0].lower()
-		if key in kwargs:
-			changedKwargs.append(key)
-			if isinstance(kwargs[key], list):
-				kwargs[key].append(arg[2:].split("=",2)[1])
-			else:
-				kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
-				if kwargs[key] == "true":
-					kwargs[key] = True
-				if kwargs[key] == "false":
-					kwargs[key] = False
-		else:
-			print(f'Bad flag: "{key}"')
-			raise ValueError(f'Bad flag: "{key}"')
-		return False
 
 	list(filter(parseArg, args))
 
