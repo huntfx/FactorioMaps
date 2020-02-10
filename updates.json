@@ -30,5 +30,6 @@
     "3.5.2": "Added support for unicode characters",
     "3.5.3": "Bugfixes",
     "3.5.4": "Extended API",
-    "3.5.5": "Updated for 0.18"
+    "3.5.5": "Updated for 0.18",
+    "3.5.6": "Fixed bug when dealing with near empty factorio config files"
 }

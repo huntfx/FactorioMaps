@@ -56,6 +56,7 @@ def saveCompress(img, path, inpath=None):
 	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy() ))
 	out_file.close()
 
+
 def simpleZoom(workQueue):
 	for (folder, start, stop, filename) in workQueue:
 		path = os.path.join(folder, str(start), filename)

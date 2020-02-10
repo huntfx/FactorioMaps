@@ -488,9 +488,16 @@ def auto(*args):
 			config = configparser.ConfigParser()
 			config.read("../../config/config.ini")
 
+			if "interface" not in config:
+				config["interface"] = {}
 			config["interface"]["show-tips-and-tricks"] = "false"
 			
+			if "path" not in config:
+				config["path"] = {}
 			config["path"]["write-data"] = tmpDir
+
+			if "graphics" not in config:
+				config["graphics"] = {}
 			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads" if kwargs["screenshotthreads"] else "maxthreads"]))
 			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
 			
