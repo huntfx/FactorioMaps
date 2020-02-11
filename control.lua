@@ -87,9 +87,17 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 			
 			fm.API.pull()
+
 			
 			if fm.autorun.surfaces == nil then
-				fm.autorun.surfaces = { fm.autorun.mapInfo.defaultSurface or "nauvis" }
+				if fm.autorun.mapInfo.defaultSurface == nil then
+					if game.surfaces["battle_surface_1"] then	-- detect pvp scenario
+						fm.autorun.mapInfo.defaultSurface = "battle_surface_1"
+					else
+						fm.autorun.mapInfo.defaultSurface = "nauvis"
+					end
+				end
+				fm.autorun.surfaces = { fm.autorun.mapInfo.defaultSurface }
 			else
 				for index, surfaceName in pairs(fm.autorun.surfaces) do
 					if player.surface.name == surfaceName then	-- move surface the player is on to first
