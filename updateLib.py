@@ -55,7 +55,10 @@ def update(Force=True):
 		copytree(tempDir, targetPath)
 		with open(Path(targetPath, "VERSION"), "w") as f:
 			f.write(str(CURRENTVERSION))
-		input("Press Enter to continue...")
+			
+		if __name__ == "__main__":
+			input("Press Enter to continue...")
+			
 		return True
 
 
