@@ -96,7 +96,3 @@ def crop(outFolder, timestamp, surface, daytime, basePath=None, args: Namespace 
 				print(line)
 
 		raise
-
-
-if __name__ == "__main__":
-	crop(*sys.argv[1:])

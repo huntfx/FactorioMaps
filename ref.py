@@ -411,15 +411,3 @@ def ref(
 		for curdir, subdirs, files in os.walk(Path(topPath, timestamp, surfaceReference, daytimeReference)):
 			if len(subdirs) == 0 and len(files) == 0:
 				os.rmdir(curdir)
-
-
-
-
-
-
-
-
-
-
-if __name__ == '__main__':
-	ref(*sys.argv[1:])

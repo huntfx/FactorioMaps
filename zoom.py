@@ -468,7 +468,3 @@ def zoom(
 									thumbnail.save(Path(imagePath, "thumbnail" + THUMBNAILEXT))
 
 								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0] - 15)))
-
-
-if __name__ == "__main__":
-	zoom(*sys.argv[1:])
