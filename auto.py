@@ -296,7 +296,6 @@ def build_autorun(args: Namespace, work_folder:Path, out_folder: Path, is_first_
 		return str(value).lower()
 
 	with open("autorun.lua", "w", encoding="utf-8") as f:
-		print(args.surface)
 		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
 		autorunString = \
 f'''fm.autorun = {{
