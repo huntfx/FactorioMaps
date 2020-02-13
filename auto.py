@@ -661,7 +661,7 @@ def auto(*args):
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r", encoding='utf-8') as srcf:
+			with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as destf, Path(workfolder, "mapInfo.out.json").open("r", encoding='utf-8') as srcf:
 				data = json.load(destf)
 				for mapIndex, mapStuff in json.load(srcf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
@@ -679,7 +679,7 @@ def auto(*args):
 
 		print("updating labels")
 		tags = {}
-		with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as mapInfoJson:
+		with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
 			data = json.load(mapInfoJson)
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
@@ -760,7 +760,7 @@ def auto(*args):
 		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
-		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r", encoding='utf-8') as inf:
+		with Path(workfolder, "mapInfo.js").open('w') as outf, Path(workfolder, "mapInfo.json").open("r", encoding='utf-8') as inf:
 			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(')
 			outf.write(json.dumps(inf.read()))
 			outf.write(");")

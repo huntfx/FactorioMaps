@@ -212,7 +212,7 @@ def ref(
 						else:
 							if args.verbose: print("found day surface, reuse results from ref.py from there")
 
-							with open(os.path.join(top_path, "Images", newMap["path"], surfaceName, "day", "ref.txt"), "r") as f:
+							with Path(top_path, "Images", newMap["path"], surfaceName, "day", "ref.txt").open("r") as f:
 								for line in f:
 									dayImages.append(tuple(line.rstrip("\n").split(" ", 2)))
 
@@ -280,7 +280,7 @@ def ref(
 		if args.verbose: print("creating render index")
 		for surfaceName, daytime in newComparedSurfaces:
 			z = surface["zoom"]["max"]
-			with open(os.path.join(top_path, "Images", newMap["path"], surfaceName, daytime, "ref.txt"), "w") as f:
+			with Path(top_path, "Images", newMap["path"], surfaceName, daytime, "ref.txt").open("w") as f:
 				for aList in (keepList, neighbourList):
 					for coord in aList:
 						if coord[0] == surfaceName and coord[1] == daytime and coord[2] == str(z):
