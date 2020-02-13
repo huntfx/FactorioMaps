@@ -325,8 +325,8 @@ def zoom(
 										maxY = max(maxY, y)
 										allBigChunks[
 											(
-												x >> maxzoom - minzoom,
-												y >> maxzoom - minzoom,
+												x >> maxzoom-minzoom,
+												y >> maxzoom-minzoom,
 											)
 										] = True
 
@@ -338,17 +338,17 @@ def zoom(
 									pathList.append(str(data["maps"][otherMapIndex]["path"]))
 
 								threadsplit = 0
-								while 4 ** threadsplit * len(allBigChunks) < maxthreads:
+								while 4**threadsplit * len(allBigChunks) < maxthreads:
 									threadsplit = threadsplit + 1
 								threadsplit = min(max(maxzoom - minzoom - 3, 0), threadsplit + 3)
 								allChunks = []
 								for pos in list(allBigChunks):
-									for i in range(2 ** threadsplit):
-										for j in range(2 ** threadsplit):
+									for i in range(2**threadsplit):
+										for j in range(2**threadsplit):
 											allChunks.append(
 												(
-													pos[0] * (2 ** threadsplit) + i,
-													pos[1] * (2 ** threadsplit) + j,
+													pos[0] * (2**threadsplit) + i,
+													pos[1] * (2**threadsplit) + j,
 												)
 											)
 
@@ -441,31 +441,25 @@ def zoom(
 									thumbnail = Image.new(
 										"RGB",
 										(
-											(maxX - minX + 1) * imageSize
-											>> maxzoom - minzoom,
-											(maxY - minY + 1) * imageSize
-											>> maxzoom - minzoom,
+											(maxX - minX + 1) * imageSize >> maxzoom-minzoom,
+											(maxY - minY + 1) * imageSize >> maxzoom-minzoom,
 										),
 										BACKGROUNDCOLOR,
 									)
-									bigMinX = minX >> maxzoom - minzoom
-									bigMinY = minY >> maxzoom - minzoom
-									xOffset = ((bigMinX * imageSize << maxzoom - minzoom) - minX * imageSize) >> maxzoom - minzoom
-									yOffset = ((bigMinY * imageSize << maxzoom - minzoom) - minY * imageSize) >> maxzoom - minzoom
+									bigMinX = minX >> maxzoom-minzoom
+									bigMinY = minY >> maxzoom-minzoom
+									xOffset = ((bigMinX * imageSize << maxzoom-minzoom) - minX * imageSize) >> maxzoom-minzoom
+									yOffset = ((bigMinY * imageSize << maxzoom-minzoom) - minY * imageSize) >> maxzoom-minzoom
 									for chunk in list(allBigChunks):
 										path = Path(minzoompath, str(chunk[0]), str(chunk[1])).with_suffix(EXT)
 										thumbnail.paste(
 											box=(
-												xOffset
-												+ (chunk[0] - bigMinX) * imageSize,
-												yOffset
-												+ (chunk[1] - bigMinY) * imageSize,
+												xOffset + (chunk[0] - bigMinX) * imageSize,
+												yOffset + (chunk[1] - bigMinY) * imageSize,
 											),
 											im=Image.open(path, mode="r")
 											.convert("RGB")
-											.resize(
-												(imageSize, imageSize), Image.ANTIALIAS
-											),
+											.resize((imageSize, imageSize), Image.ANTIALIAS),
 										)
 
 										if OUTEXT != EXT:
