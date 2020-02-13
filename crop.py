@@ -100,4 +100,3 @@ def crop(out_folder, timestamp, surface, daytime, base_path=None, args: Namespac
 
 if __name__ == "__main__":
 	crop(*sys.argv[1:])
-
