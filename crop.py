@@ -42,7 +42,7 @@ def crop(outFolder, timestamp, surface, daytime, basePath=None, args: Namespace 
 
 	subname = Path(timestamp, surface, daytime)
 	toppath = Path(
-		basePath if basePath else Path("..", "..", "script-output", "FactorioMaps"),
+		basePath if basePath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps"),
 		outFolder,
 	)
 

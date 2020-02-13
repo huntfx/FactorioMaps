@@ -11,9 +11,10 @@ import os
 import traceback
 import pkg_resources
 from pkg_resources import DistributionNotFound, VersionConflict
+from pathlib import Path
 
 try:
-	with open('packages.txt') as f:
+	with Path(__file__, "..", "packages.txt").open("r") as f:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
@@ -39,7 +40,6 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from argparse import Namespace
-from pathlib import Path
 from shutil import copy, copytree
 from shutil import get_terminal_size as tsize
 from shutil import rmtree
@@ -56,7 +56,7 @@ from ref import ref
 from updateLib import update as updateLib
 from zoom import zoom, zoomRenderboxes
 
-USERFOLDER = Path("..", "..").resolve()
+userFolder = Path(__file__, "..", "..", "..").resolve()
 
 def printErase(arg):
 	try:
@@ -170,7 +170,7 @@ def checkUpdate(reverseUpdateTest:bool = False):
 	try:
 		print("checking for updates")
 		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
-		with open("updates.json", "r") as f:
+		with Path(__file__, "..", "updates.json").open("r") as f:
 			currentUpdates = json.load(f)
 		if reverseUpdateTest:
 			latestUpdates, currentUpdates = currentUpdates, latestUpdates
@@ -346,8 +346,8 @@ def buildConfig(args: Namespace, temporaryDirectory):
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
 
-	linkDir(Path(temporaryDirectory, "script-output"), Path(USERFOLDER, "script-output"))
-	copy(Path(USERFOLDER, 'player-data.json'), temporaryDirectory)
+	linkDir(Path(temporaryDirectory, "script-output"), Path(userFolder, "script-output"))
+	copy(Path(userFolder, 'player-data.json'), temporaryDirectory)
 
 	return configPath
 
@@ -384,8 +384,8 @@ def auto(*args):
 	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
 	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
 	parser.add_argument("--factorio", type=Path, help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
-	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(USERFOLDER, 'mods'), help="Use PATH as the mod folder.")
-	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(USERFOLDER, 'config'), help="Use PATH as the mod folder.")
+	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder.")
+	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'config'), help="Use PATH as the mod folder.")
 	parser.add_argument("--basepath", default="FactorioMaps", help="Output to script-output\\RELPATH instead of script-output\\FactorioMaps. (Factorio cannot output outside of script-output)")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
@@ -410,7 +410,7 @@ def auto(*args):
 	if args.update:
 		checkUpdate(args.reverseupdatetest)
 
-	saves = Path(USERFOLDER, "saves")
+	saves = Path(userFolder, "saves")
 	if args.outfolder:
 		foldername = args.outfolder
 	else:
@@ -466,12 +466,12 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = Path(USERFOLDER, "script-output", args.basepath)
+	basepath = Path(userFolder, "script-output", args.basepath)
 	workthread = None
 
 	workfolder = Path(basepath, foldername).resolve()
 	try:
-		print("output folder: {}".format(workfolder.relative_to(Path(USERFOLDER))))
+		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
 	except ValueError:
 		print("output folder: {}".format(workfolder.resolve()))
 
@@ -484,7 +484,7 @@ def auto(*args):
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
-	if args.modpath.resolve() != Path(USERFOLDER,"mods").resolve():
+	if args.modpath.resolve() != Path(userFolder,"mods").resolve():
 		linkCustomModFolder(args.modpath)
 
 	changeModlist(args.modpath, True)
@@ -532,7 +532,7 @@ def auto(*args):
 				popenArgs = (
 					str(factorioPath),
 					'--load-game',
-					str(Path(USERFOLDER, 'saves', savename).absolute()),
+					str(Path(userFolder, 'saves', savename).absolute()),
 					'--disable-audio',
 					'--config',
 					str(configPath),
@@ -766,14 +766,13 @@ def auto(*args):
 
 
 		print("creating index.html")
-		copy("web/index.html", os.path.join(workfolder, "index.html"))
-		copy("web/index.css", os.path.join(workfolder, "index.css"))
-		copy("web/index.js", os.path.join(workfolder, "index.js"))
+		for fileName in ("index.html", "index.css", "index.js"):
+			copy(Path(__file__, "..", "web", fileName).resolve(), os.path.join(workfolder, "index.html"))
 		try:
 			rmtree(os.path.join(workfolder, "lib"))
 		except (FileNotFoundError, NotADirectoryError):
 			pass
-		copytree("web/lib", os.path.join(workfolder, "lib"))
+		copytree(Path(__file__, "..", "web", "lib").resolve(), os.path.join(workfolder, "lib"))
 
 
 

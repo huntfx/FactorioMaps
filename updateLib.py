@@ -24,7 +24,7 @@ CURRENTVERSION = 4
 
 def update(Force=True):
 
-	targetPath = Path(Path(__file__).resolve().parent, "web", "lib")
+	targetPath = Path(__file__, "..", "web", "lib")
 
 	if not Force:
 		try:
