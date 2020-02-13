@@ -319,11 +319,11 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 			printErase(autorunString)
 
 
-def buildConfig(args: Namespace, temporaryDirectory):
+def buildConfig(args: Namespace, tempDir):
 	printErase("Building config.ini")
 	if args.verbose > 2:
-		print(f"Using temporary directory '{temporaryDirectory}'")
-	configPath = Path(temporaryDirectory, "config","config.ini")
+		print(f"Using temporary directory '{tempDir}'")
+	configPath = Path(tempDir, "config","config.ini")
 	configPath.parent.mkdir(parents=True)
 
 	config = configparser.ConfigParser()
@@ -335,7 +335,7 @@ def buildConfig(args: Namespace, temporaryDirectory):
 
 	if "path" not in config:
 		config["path"] = {}
-	config["path"]["write-data"] = temporaryDirectory
+	config["path"]["write-data"] = tempDir
 
 	if "graphics" not in config:
 		config["graphics"] = {}
@@ -346,8 +346,8 @@ def buildConfig(args: Namespace, temporaryDirectory):
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
 
-	linkDir(Path(temporaryDirectory, "script-output"), Path(userFolder, "script-output"))
-	copy(Path(userFolder, 'player-data.json'), temporaryDirectory)
+	linkDir(Path(tempDir, "script-output"), Path(userFolder, "script-output"))
+	copy(Path(userFolder, 'player-data.json'), tempDir)
 
 	return configPath
 
@@ -508,7 +508,6 @@ def auto(*args):
 	###########################################
 
 	datapath = Path(workfolder, "latest.txt")
-	allTmpDirs = []
 
 	isFirstSnapshot = True
 
@@ -523,21 +522,18 @@ def auto(*args):
 			buildAutorun(args, workfolder, foldername, isFirstSnapshot)
 			isFirstSnapshot = False
 
-			with TemporaryDirectory(prefix="FactorioMaps-") as temporaryDirectory:
-				configPath = buildConfig(args, temporaryDirectory)
+			with TemporaryDirectory(prefix="FactorioMaps-") as tempDir:
+				configPath = buildConfig(args, tempDir)
 
 				pid = None
 				isSteam = None
 				pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
 				popenArgs = (
 					str(factorioPath),
-					'--load-game',
-					str(Path(userFolder, 'saves', savename).absolute()),
+					'--load-game', str(Path(userFolder, 'saves', savename).absolute()),
 					'--disable-audio',
-					'--config',
-					str(configPath),
-					"--mod-directory",
-					str(args.modpath.absolute()),
+					'--config', str(configPath),
+					"--mod-directory", str(args.modpath.absolute()),
 					"--disable-migration-window")
 				if args.verbose:
 					printErase(popenArgs)
@@ -548,7 +544,7 @@ def auto(*args):
 				printErase("starting factorio")
 				startLogProcess = mp.Process(
 					target=startGameAndReadGameLogs,
-					args=(results, condition, popenArgs, temporaryDirectory, pidBlacklist, rawTags, args)
+					args=(results, condition, popenArgs, tempDir, pidBlacklist, rawTags, args)
 				)
 				startLogProcess.daemon = True
 				startLogProcess.start()
@@ -789,14 +785,6 @@ def auto(*args):
 			pass
 
 		changeModlist(args.modpath, False)
-
-		print("cleaning up")
-		for tmpDir in allTmpDirs:
-			try:
-				os.unlink(os.path.join(tmpDir, "script-output"))
-				rmtree(tmpDir)
-			except (FileNotFoundError, NotADirectoryError):
-				pass
 
 if __name__ == '__main__':
 	auto(*sys.argv[1:])
