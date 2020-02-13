@@ -50,7 +50,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
 | `--verbose` | Displays factoriomaps script logs. |
 | `--verbosegame` | Displays *all* game logs. |
-| `--noupdate` | Skips the update check. |
+| `--no-update` | Skips the update check. |
 | `--maxthreads=N` | Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available. |
 | `--cropthreads=N` | Sets the number of threads used for the crop step. |
 | `--refthreads=N` | Sets the number of threads used for the crossreferencing step. |
@@ -58,6 +58,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--screenshotthreads=N` | Set the number of screenshotting threads factorio uses. |
 | `--delete` | Deletes the output folder specified before running the script. |
 | `--dry` | Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script. |
+| `--force-lib-update` | Forces an update of the web dependencies. |
  
 Image quality settings can be changed in the top of `zoom.py`.
 

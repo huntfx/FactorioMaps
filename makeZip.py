@@ -1,10 +1,9 @@
-import tempfile
 import os
-from shutil import rmtree, copy, make_archive
-
 import shutil
-from updateLib import update as updateLib
+import tempfile
+from shutil import copy, make_archive, rmtree
 
+from updateLib import update as updateLib
 
 folderName = os.path.basename(os.path.realpath("."))
 tempPath = os.path.join(tempfile.gettempdir(), folderName)
