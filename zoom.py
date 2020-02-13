@@ -74,11 +74,11 @@ def simpleZoom(workQueue):
 			saveCompress(img, Path(zFolder, filename).with_suffix(OUTEXT))
 
 
-def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, args):
-	with Path(workfolder, "mapInfo.json").open("r+") as mapInfoFile:
+def zoomRenderboxes(daytimeSurfaces, toppath, timestamp, subpath, args):
+	with Path(toppath, "mapInfo.json").open("r+") as mapInfoFile:
 		mapInfo = json.load(mapInfoFile)
 
-		outFile = Path(workfolder, "mapInfo.out.json")
+		outFile = Path(toppath, "mapInfo.out.json")
 		if outFile.exists():
 			with outFile.open("r") as mapInfoOutFile:
 				outInfo = json.load(mapInfoOutFile)
@@ -270,6 +270,7 @@ def zoom(
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10)
 
 	workFolder = basepath if basepath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps")
+
 	topPath = Path(workFolder, outFolder)
 	dataPath = Path(topPath, "mapInfo.json")
 	imagePath = Path(topPath, "Images")

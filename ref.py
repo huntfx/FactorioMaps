@@ -118,7 +118,7 @@ def ref(
 
 	with open(dataPath, "r", encoding="utf-8") as f:
 		data = json.load(f)
-	outFile = Path(workFolder, "mapInfo.out.json")
+	outFile = Path(topPath, "mapInfo.out.json")
 	if outFile.exists():
 		with outFile.open("r") as mapInfoOutFile:
 			outdata = json.load(mapInfoOutFile)

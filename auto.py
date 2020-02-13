@@ -319,7 +319,7 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 			printErase(autorunString)
 
 
-def buildConfig(args: Namespace, tempDir):
+def buildConfig(args: Namespace, tempDir, basepath):
 	printErase("Building config.ini")
 	if args.verbose > 2:
 		print(f"Using temporary directory '{tempDir}'")
@@ -346,7 +346,9 @@ def buildConfig(args: Namespace, tempDir):
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
 
-	linkDir(Path(tempDir, "script-output"), Path(userFolder, "script-output"))
+	# TODO: change this when https://forums.factorio.com/viewtopic.php?f=28&t=81221 is implemented
+	linkDir(Path(tempDir, "script-output"), basepath)
+
 	copy(Path(userFolder, 'player-data.json'), tempDir)
 
 	return configPath
@@ -384,9 +386,9 @@ def auto(*args):
 	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
 	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
 	parser.add_argument("--factorio", type=Path, help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
-	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder.")
+	parser.add_argument("--output-path", dest="basepath", type=lambda p: Path(p).resolve(), default=Path(userFolder, "script-output", "FactorioMaps"), help="path to the output folder (default is script-output\\FactorioMaps)")
+	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder.")
 	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'config'), help="Use PATH as the mod folder.")
-	parser.add_argument("--basepath", default="FactorioMaps", help="Output to script-output\\RELPATH instead of script-output\\FactorioMaps. (Factorio cannot output outside of script-output)")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
 	parser.add_argument('--verbosegame', action='count', default=0, help="Displays all game logs.")
@@ -399,7 +401,7 @@ def auto(*args):
 	parser.add_argument("--screenshotthreads", type=int, default=None, help="Set the number of screenshotting threads factorio uses.")
 	parser.add_argument("--delete", action="store_true", help="Deletes the output folder specified before running the script.")
 	parser.add_argument("--dry", action="store_true", help="Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script.")
-	parser.add_argument("outfolder", nargs="?", help="Output folder for the generated snapshots.")
+	parser.add_argument("targetname", nargs="?", help="output folder name for the generated snapshots.")
 	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated.")
 	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
 
@@ -411,8 +413,8 @@ def auto(*args):
 		checkUpdate(args.reverseupdatetest)
 
 	saves = Path(userFolder, "saves")
-	if args.outfolder:
-		foldername = args.outfolder
+	if args.targetname:
+		foldername = args.targetname
 	else:
 		timestamp, filePath = max(
 			(save.stat().st_mtime, save)
@@ -466,10 +468,9 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = Path(userFolder, "script-output", args.basepath)
 	workthread = None
 
-	workfolder = Path(basepath, foldername).resolve()
+	workfolder = Path(args.basepath, foldername).resolve()
 	try:
 		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
 	except ValueError:
@@ -484,10 +485,10 @@ def auto(*args):
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
-	if args.modpath.resolve() != Path(userFolder,"mods").resolve():
-		linkCustomModFolder(args.modpath)
+	if args.mod_path.resolve() != Path(userFolder,"mods").resolve():
+		linkCustomModFolder(args.mod_path)
 
-	changeModlist(args.modpath, True)
+	changeModlist(args.mod_path, True)
 
 	manager = mp.Manager()
 	rawTags = manager.dict()
@@ -523,7 +524,7 @@ def auto(*args):
 			isFirstSnapshot = False
 
 			with TemporaryDirectory(prefix="FactorioMaps-") as tempDir:
-				configPath = buildConfig(args, tempDir)
+				configPath = buildConfig(args, tempDir, args.basepath)
 
 				pid = None
 				isSteam = None
@@ -533,7 +534,7 @@ def auto(*args):
 					'--load-game', str(Path(userFolder, 'saves', savename).absolute()),
 					'--disable-audio',
 					'--config', str(configPath),
-					"--mod-directory", str(args.modpath.absolute()),
+					"--mod-directory", str(args.mod_path.absolute()),
 					"--disable-migration-window")
 				if args.verbose:
 					printErase(popenArgs)
@@ -572,7 +573,7 @@ def auto(*args):
 
 				firstOutFolder, timestamp, surface, daytime = latest[-1].split(" ")
 				firstOutFolder = firstOutFolder.replace("/", " ")
-				waitfilename = Path(basepath, firstOutFolder, "images", timestamp, surface, daytime, "done.txt")
+				waitfilename = Path(args.basepath, firstOutFolder, "images", timestamp, surface, daytime, "done.txt")
 
 				isKilled = [False]
 				def waitKill(isKilled, pid):
@@ -606,9 +607,8 @@ def auto(*args):
 						daytimeSurfaces[daytime] = [surface]
 
 					#print("Cropping %s images" % screenshot)
-					print(basepath)
-					crop(outFolder, timestamp, surface, daytime, basepath, args)
-					waitlocalfilename = os.path.join(basepath, outFolder, "Images", timestamp, surface, daytime, "done.txt")
+					crop(outFolder, timestamp, surface, daytime, args.basepath, args)
+					waitlocalfilename = os.path.join(args.basepath, outFolder, "Images", timestamp, surface, daytime, "done.txt")
 					if not os.path.exists(waitlocalfilename):
 						#print("waiting for done.txt")
 						while not os.path.exists(waitlocalfilename):
@@ -619,13 +619,13 @@ def auto(*args):
 					def refZoom():
 						needsThumbnail = index + 1 == len(saveGames)
 						#print("Crossreferencing %s images" % screenshot)
-						ref(outFolder, timestamp, surface, daytime, basepath, args)
+						ref(outFolder, timestamp, surface, daytime, args.basepath, args)
 						#print("downsampling %s images" % screenshot)
-						zoom(outFolder, timestamp, surface, daytime, basepath, needsThumbnail, args)
+						zoom(outFolder, timestamp, surface, daytime, args.basepath, needsThumbnail, args)
 
 						if jindex == len(latest) - 1:
 							print("zooming renderboxes", timestamp)
-							zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(basepath, firstOutFolder, "Images"), args)
+							zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(args.basepath, firstOutFolder, "Images"), args)
 
 					if screenshot != latest[-1]:
 						refZoom()
@@ -689,7 +689,7 @@ def auto(*args):
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
 						map(lambda f: re.search(r"^((.*)_(\d+)\.(\d+)\.(\d+))(\.zip)?$", f, flags=re.IGNORECASE),
-							os.listdir(os.path.join(basepath, args.modpath))))),
+							os.listdir(os.path.join(args.basepath, args.mod_path))))),
 				key = lambda t: t[1],
 				reverse = True)
 
@@ -718,7 +718,7 @@ def auto(*args):
 					else:
 						mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
 						if not mod[1][3]: #true if mod is zip
-							zipPath = os.path.join(basepath, args.modpath, mod[2] + ".zip")
+							zipPath = os.path.join(args.basepath, args.mod_path, mod[2] + ".zip")
 							with ZipFile(zipPath, 'r') as zipObj:
 								if len(icons) == 1:
 									zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
@@ -728,7 +728,7 @@ def auto(*args):
 								else:
 									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
 						else:
-							src = os.path.join(basepath, args.modpath, mod[2], icon + ".png")
+							src = os.path.join(args.basepath, args.mod_path, mod[2], icon + ".png")
 
 					if len(icons) == 1:
 						if src is not None:
@@ -784,7 +784,7 @@ def auto(*args):
 		except:
 			pass
 
-		changeModlist(args.modpath, False)
+		changeModlist(args.mod_path, False)
 
 if __name__ == '__main__':
 	auto(*sys.argv[1:])

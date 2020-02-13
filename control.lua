@@ -63,7 +63,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 		
 			fm.savename = fm.autorun.name or ""
-			fm.topfolder = "FactorioMaps/" .. fm.savename
+			fm.topfolder = fm.savename
 			fm.autorun.tick = game.tick
 
 			hour = math.ceil(fm.autorun.tick / 60 / 60 / 60)
