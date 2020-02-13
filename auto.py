@@ -767,7 +767,7 @@ def auto(*args):
 
 		print("creating index.html")
 		for fileName in ("index.html", "index.css", "index.js"):
-			copy(Path(__file__, "..", "web", fileName).resolve(), os.path.join(workfolder, "index.html"))
+			copy(Path(__file__, "..", "web", fileName).resolve(), os.path.join(workfolder, fileName))
 		try:
 			rmtree(os.path.join(workfolder, "lib"))
 		except (FileNotFoundError, NotADirectoryError):
