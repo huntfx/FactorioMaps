@@ -36,19 +36,19 @@ def work(line, folder, progressQueue):
 	return False
 
 
-def crop(out_folder, timestamp, surface, daytime, base_path=None, args: Namespace = Namespace()):
+def crop(outFolder, timestamp, surface, daytime, basePath=None, args: Namespace = Namespace()):
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10)
 
 	subname = Path(timestamp, surface, daytime)
 	toppath = Path(
-		base_path if base_path else Path("..", "..", "script-output", "FactorioMaps"),
-		out_folder,
+		basePath if basePath else Path("..", "..", "script-output", "FactorioMaps"),
+		outFolder,
 	)
 
-	image_path = Path(toppath, "Images")
+	imagePath = Path(toppath, "Images")
 
-	datapath = Path(image_path, subname, "crop.txt")
+	datapath = Path(imagePath, subname, "crop.txt")
 	maxthreads = args.cropthreads if args.cropthreads else args.maxthreads
 
 	while not datapath.exists():
@@ -72,7 +72,7 @@ def crop(out_folder, timestamp, surface, daytime, base_path=None, args: Namespac
 	try:
 		while len(files) > 0:
 			workers = pool.map_async(
-				partial(work, folder=image_path, progressQueue=progressQueue),
+				partial(work, folder=imagePath, progressQueue=progressQueue),
 				files,
 				128,
 			)

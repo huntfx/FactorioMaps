@@ -52,9 +52,9 @@ def saveCompress(img, path: Path):
 	if maxQuality:  # do not waste any time compressing the image
 		return img.save(path, subsampling=0, quality=100)
 
-	out_file = path.open("wb")
-	out_file.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy()))
-	out_file.close()
+	outFile = path.open("wb")
+	outFile.write(jpeg.encode(numpy.array(img)[:, :, ::-1].copy()))
+	outFile.close()
 
 
 def simpleZoom(workQueue):
@@ -78,10 +78,10 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, args):
 	with Path(workfolder, "mapInfo.json").open("r+") as mapInfoFile:
 		mapInfo = json.load(mapInfoFile)
 
-		out_file = Path(workfolder, "mapInfo.out.json")
-		if out_file.exists():
-			with out_file.open("r") as map_info_out_file:
-				outInfo = json.load(map_info_out_file)
+		outFile = Path(workfolder, "mapInfo.out.json")
+		if outFile.exists():
+			with outFile.open("r") as mapInfoOutFile:
+				outInfo = json.load(mapInfoOutFile)
 		else:
 			outInfo = {"maps": {}}
 
@@ -151,9 +151,9 @@ def zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, subpath, args):
 									)
 								)
 
-		with out_file.open("w") as map_info_out_file:
-			json.dump(outInfo, map_info_out_file)
-			map_info_out_file.truncate()
+		with outFile.open("w") as mapInfoOutFile:
+			json.dump(outInfo, mapInfoOutFile)
+			mapInfoOutFile.truncate()
 
 	maxthreads = args.zoomthreads if args.zoomthreads else args.maxthreads
 	processes = []
@@ -259,28 +259,28 @@ def thread(basepath, pathList, surfaceName, daytime, size, start, stop, last, al
 
 
 def zoom(
-	out_folder: Path,
+	outFolder: Path,
 	timestamp: str = None,
-	surface_reference: str = None,
-	daytime_reference: str = None,
+	surfaceReference: str = None,
+	daytimeReference: str = None,
 	basepath: Path = None,
 	needsThumbnail: bool = True,
 	args: Namespace = Namespace(),
 ):
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10)
 
-	work_folder = basepath if basepath else Path("..", "..", "script-output", "FactorioMaps")
-	top_path = Path(work_folder, out_folder)
-	data_path = Path(top_path, "mapInfo.json")
-	image_path = Path(top_path, "Images")
+	workFolder = basepath if basepath else Path("..", "..", "script-output", "FactorioMaps")
+	topPath = Path(workFolder, outFolder)
+	dataPath = Path(topPath, "mapInfo.json")
+	imagePath = Path(topPath, "Images")
 	maxthreads = args.zoomthreads if args.zoomthreads else args.maxthreads
 
-	with data_path.open("r", encoding="utf-8") as f:
+	with dataPath.open("r", encoding="utf-8") as f:
 		data = json.load(f)
 	for mapIndex, map in enumerate(data["maps"]):
 		if timestamp is None or map["path"] == timestamp:
 			for surfaceName, surface in map["surfaces"].items():
-				if surface_reference is None or surfaceName == surface_reference:
+				if surfaceReference is None or surfaceName == surfaceReference:
 					maxzoom = surface["zoom"]["max"]
 					minzoom = surface["zoom"]["min"]
 
@@ -290,8 +290,8 @@ def zoom(
 					if "night" in surface:
 						daytimes.append("night")
 					for daytime in daytimes:
-						if daytime_reference is None or daytime == daytime_reference:
-							if not Path(top_path, "Images", str(map["path"]), surfaceName, daytime, str(maxzoom - 1)).is_dir():
+						if daytimeReference is None or daytime == daytimeReference:
+							if not Path(topPath, "Images", str(map["path"]), surfaceName, daytime, str(maxzoom - 1)).is_dir():
 
 								print(f"zoom {0:5.1f}% [{' ' * (tsize()[0]-15)}]", end="")
 
@@ -313,13 +313,13 @@ def zoom(
 								minY = float("inf")
 								maxY = float("-inf")
 								imageSize: int = None
-								for xStr in Path(image_path, str(map["path"]), surfaceName, daytime, str(maxzoom)).iterdir():
+								for xStr in Path(imagePath, str(map["path"]), surfaceName, daytime, str(maxzoom)).iterdir():
 									x = int(xStr.name)
 									minX = min(minX, x)
 									maxX = max(maxX, x)
-									for yStr in Path(image_path, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr).iterdir():
+									for yStr in Path(imagePath, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr).iterdir():
 										if imageSize is None:
-											imageSize = Image.open(Path(image_path, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr, yStr), mode="r").size[0]
+											imageSize = Image.open(Path(imagePath, str(map["path"]), surfaceName, daytime, str(maxzoom), xStr, yStr), mode="r").size[0]
 										y = int(yStr.stem)
 										minY = min(minY, y)
 										maxY = max(maxY, y)
@@ -364,7 +364,7 @@ def zoom(
 									p = mp.Process(
 										target=thread,
 										args=(
-											image_path,
+											imagePath,
 											pathList,
 											surfaceName,
 											daytime,
@@ -407,7 +407,7 @@ def zoom(
 										p = mp.Process(
 											target=work,
 											args=(
-												image_path,
+												imagePath,
 												pathList,
 												surfaceName,
 												daytime,
@@ -428,7 +428,7 @@ def zoom(
 								if generateThumbnail:
 									printErase("generating thumbnail")
 									minzoompath = Path(
-										image_path,
+										imagePath,
 										str(map["path"]),
 										surfaceName,
 										daytime,
@@ -471,7 +471,7 @@ def zoom(
 										if OUTEXT != EXT:
 											path.unlink()
 
-									thumbnail.save(Path(image_path, "thumbnail" + THUMBNAILEXT))
+									thumbnail.save(Path(imagePath, "thumbnail" + THUMBNAILEXT))
 
 								print("\rzoom {:5.1f}% [{}]".format(100, "=" * (tsize()[0] - 15)))
 

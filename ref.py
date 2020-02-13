@@ -39,7 +39,7 @@ def compare(path, basePath, new, progressQueue):
 		progressQueue.put(True, True)
 	return (testResult, path[1:])
 
-def compare_renderbox(renderbox, basePath, new):
+def compareRenderbox(renderbox, basePath, new):
 	newPath = os.path.join(basePath, new, renderbox[0]) + ext
 	testResult = False
 	try:
@@ -97,31 +97,31 @@ def getBase64(number, isNight): #coordinate to 18 bit value (3 char base64)
 
 
 def ref(
-	out_folder: Path,
+	outFolder: Path,
 	timestamp: str = None,
-	surface_reference: str = None,
-	daytime_reference: str = None,
+	surfaceReference: str = None,
+	daytimeReference: str = None,
 	basepath: Path = None,
 	args: Namespace = Namespace(),
 ):
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 
-	work_folder = basepath if basepath else Path("..", "..", "script-output", "FactorioMaps")
-	top_path = Path(work_folder, out_folder)
-	data_path = Path(top_path, "mapInfo.json")
+	workFolder = basepath if basepath else Path("..", "..", "script-output", "FactorioMaps")
+	topPath = Path(workFolder, outFolder)
+	dataPath = Path(topPath, "mapInfo.json")
 	maxthreads = args.refthreads if args.refthreads else args.maxthreads
 
 
 
 	pool = mp.Pool(processes=maxthreads)
 
-	with open(data_path, "r", encoding="utf-8") as f:
+	with open(dataPath, "r", encoding="utf-8") as f:
 		data = json.load(f)
-	out_file = Path(work_folder, "mapInfo.out.json")
-	if out_file.exists():
-		with out_file.open("r") as map_info_out_file:
-			outdata = json.load(map_info_out_file)
+	outFile = Path(workFolder, "mapInfo.out.json")
+	if outFile.exists():
+		with outFile.open("r") as mapInfoOutFile:
+			outdata = json.load(mapInfoOutFile)
 	else:
 		outdata = {}
 
@@ -154,9 +154,9 @@ def ref(
 		firstRemoveList = []
 		cropList = {}
 		didAnything = False
-		if daytime is None or daytime == daytime_reference:
+		if daytime is None or daytime == daytimeReference:
 			for surfaceName, surface in newMap["surfaces"].items():
-				if (surface_reference is None or surfaceName == surface_reference) and daytime in surface and str(surface[daytime]) and (daytime is None or daytime == daytime_reference):
+				if (surfaceReference is None or surfaceName == surfaceReference) and daytime in surface and str(surface[daytime]) and (daytime is None or daytime == daytimeReference):
 					didAnything = True
 					z = surface["zoom"]["max"]
 
@@ -190,9 +190,9 @@ def ref(
 								cropList[key] = int(value, 16) | cropList.get(key, 0) if combinePrevious else int(value, 16)
 
 					for old in oldMapsList:
-						readCropList(os.path.join(top_path, "Images", data["maps"][old]["path"], surfaceName, daytime, "crop.txt"), False)
+						readCropList(os.path.join(topPath, "Images", data["maps"][old]["path"], surfaceName, daytime, "crop.txt"), False)
 
-					readCropList(os.path.join(top_path, "Images", newMap["path"], surfaceName, daytime, "crop.txt"), True)
+					readCropList(os.path.join(topPath, "Images", newMap["path"], surfaceName, daytime, "crop.txt"), True)
 
 
 
@@ -201,18 +201,18 @@ def ref(
 						if surfaceName in data["maps"][old]["surfaces"] and daytime in surface and z == surface["zoom"]["max"]:
 							if surfaceName not in allImageIndex:
 								allImageIndex[surfaceName] = {}
-							path = os.path.join(top_path, "Images", data["maps"][old]["path"], surfaceName, daytime, str(z))
+							path = os.path.join(topPath, "Images", data["maps"][old]["path"], surfaceName, daytime, str(z))
 							for x in os.listdir(path):
 								for y in os.listdir(os.path.join(path, x)):
 									oldImages[(x, y.replace(ext, outext))] = data["maps"][old]["path"]
 
 					if daytime != "day":
-						if not os.path.isfile(os.path.join(top_path, "Images", newMap["path"], surfaceName, "day", "ref.txt")):
+						if not os.path.isfile(os.path.join(topPath, "Images", newMap["path"], surfaceName, "day", "ref.txt")):
 							print("WARNING: cannot find day surface to copy non-day surface from. running ref.py on night surfaces is not very accurate.")
 						else:
 							if args.verbose: print("found day surface, reuse results from ref.py from there")
 
-							with Path(top_path, "Images", newMap["path"], surfaceName, "day", "ref.txt").open("r") as f:
+							with Path(topPath, "Images", newMap["path"], surfaceName, "day", "ref.txt").open("r") as f:
 								for line in f:
 									dayImages.append(tuple(line.rstrip("\n").split(" ", 2)))
 
@@ -220,7 +220,7 @@ def ref(
 						allDayImages[surfaceName] = dayImages
 
 
-					path = os.path.join(top_path, "Images", newMap["path"], surfaceName, daytime, str(z))
+					path = os.path.join(topPath, "Images", newMap["path"], surfaceName, daytime, str(z))
 					for x in os.listdir(path):
 						for y in os.listdir(os.path.join(path, x)):
 							if (x, os.path.splitext(y)[0]) in dayImages or (x, y.replace(ext, outext)) not in oldImages:
@@ -242,8 +242,8 @@ def ref(
 			if args.verbose: print("comparing %s existing images" % len(compareList))
 			m = mp.Manager()
 			progressQueue = m.Queue()
-			#compare(compareList[0], treshold=treshold, basePath=os.path.join(top_path, "Images"), new=str(newMap["path"]), progressQueue=progressQueue)
-			workers = pool.map_async(partial(compare, basePath=os.path.join(top_path, "Images"), new=str(newMap["path"]), progressQueue=progressQueue), compareList, 128)
+			#compare(compareList[0], treshold=treshold, basePath=os.path.join(topPath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue)
+			workers = pool.map_async(partial(compare, basePath=os.path.join(topPath, "Images"), new=str(newMap["path"]), progressQueue=progressQueue), compareList, 128)
 			doneSize = 0
 			print("ref  {:5.1f}% [{}]".format(0, " " * (tsize()[0]-15)), end="")
 			for i in range(len(compareList)):
@@ -274,13 +274,13 @@ def ref(
 
 		if args.verbose: print("removing identical images")
 		for x in removeList:
-			os.remove(os.path.join(top_path, "Images", newMap["path"], *x))
+			os.remove(os.path.join(topPath, "Images", newMap["path"], *x))
 
 
 		if args.verbose: print("creating render index")
 		for surfaceName, daytime in newComparedSurfaces:
 			z = surface["zoom"]["max"]
-			with Path(top_path, "Images", newMap["path"], surfaceName, daytime, "ref.txt").open("w") as f:
+			with Path(topPath, "Images", newMap["path"], surfaceName, daytime, "ref.txt").open("w") as f:
 				for aList in (keepList, neighbourList):
 					for coord in aList:
 						if coord[0] == surfaceName and coord[1] == daytime and coord[2] == str(z):
@@ -347,7 +347,7 @@ def ref(
 
 
 			compareList = compareList.values()
-			resultList = pool.map(partial(compare_renderbox, basePath=os.path.join(top_path, "Images"), new=str(newMap["path"])), compareList, 16)
+			resultList = pool.map(partial(compareRenderbox, basePath=os.path.join(topPath, "Images"), new=str(newMap["path"])), compareList, 16)
 
 			count = 0
 			for (isDifferent, path, oldPath, links) in resultList:
@@ -404,11 +404,11 @@ def ref(
 
 	if changed:
 		if args.verbose: print("writing mapInfo.out.json")
-		with out_file.open("w+", encoding="utf-8") as f:
+		with outFile.open("w+", encoding="utf-8") as f:
 			json.dump(outdata, f)
 
 		if args.verbose: print("deleting empty folders")
-		for curdir, subdirs, files in os.walk(Path(top_path, timestamp, surface_reference, daytime_reference)):
+		for curdir, subdirs, files in os.walk(Path(topPath, timestamp, surfaceReference, daytimeReference)):
 			if len(subdirs) == 0 and len(files) == 0:
 				os.rmdir(curdir)
 

@@ -56,7 +56,7 @@ from ref import ref
 from updateLib import update as updateLib
 from zoom import zoom, zoomRenderboxes
 
-USER_FOLDER = Path("..", "..").resolve()
+USERFOLDER = Path("..", "..").resolve()
 
 def printErase(arg):
 	try:
@@ -166,13 +166,13 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				printingStackTraceback = handleGameLine(line)
 
 
-def check_update(reverse_update_test:bool = False):
+def checkUpdate(reverseUpdateTest:bool = False):
 	try:
 		print("checking for updates")
 		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
 		with open("updates.json", "r") as f:
 			currentUpdates = json.load(f)
-		if reverse_update_test:
+		if reverseUpdateTest:
 			latestUpdates, currentUpdates = currentUpdates, latestUpdates
 
 		updates = []
@@ -219,24 +219,24 @@ def check_update(reverse_update_test:bool = False):
 			print("================================================================================")
 			print("")
 			print("")
-		if majorUpdate or reverse_update_test:
+		if majorUpdate or reverseUpdateTest:
 			exit(1)
 
 	except (urllib.error.URLError, timeout) as e:
 		print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
-def link_dir(src: Path, dest:Path):
+def linkDir(src: Path, dest:Path):
 	if os.name == 'nt':
 		subprocess.check_call(("MKLINK", "/J", src.resolve(), dest.resolve()), stdout=subprocess.DEVNULL, shell=True)
 	else:
 		os.symlink(dest.resolve(), src.resolve())
 
 
-def link_custom_mod_folder(modpath: Path):
+def linkCustomModFolder(modpath: Path):
 	print(f"Verifying mod version in custom mod folder ({modpath})")
-	modpattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
-	for entry in [entry for entry in modpath.iterdir() if modpattern.match(entry.name)]:
+	modPattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
+	for entry in [entry for entry in modpath.iterdir() if modPattern.match(entry.name)]:
 		print("Found other factoriomaps mod in custom mod folder, deleting.")
 		path = Path(modpath, entry)
 		if path.is_file() or path.is_symlink():
@@ -246,10 +246,10 @@ def link_custom_mod_folder(modpath: Path):
 		else:
 			raise Exception(f"Unable to remove {path} unknown type")
 
-	link_dir(Path(modpath, Path('.').resolve().name), Path("."))
+	linkDir(Path(modpath, Path('.').resolve().name), Path("."))
 
 
-def change_modlist(modpath: Path,newState: bool):
+def changeModlist(modpath: Path,newState: bool):
 	print(f"{'Enabling' if newState else 'Disabling'} FactorioMaps mod")
 	done = False
 	modlistPath = Path(modpath, "mod-list.json")
@@ -266,14 +266,14 @@ def change_modlist(modpath: Path,newState: bool):
 		json.dump(modlist, f, indent=2)
 
 
-def build_autorun(args: Namespace, work_folder:Path, out_folder: Path, is_first_snapshot: bool):
+def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnapshot: bool):
 	printErase("Building autorun.lua")
-	map_info_path = Path(work_folder, "mapInfo.json")
-	if map_info_path.is_file():
-		with map_info_path.open("r", encoding='utf-8') as f:
+	mapInfoPath = Path(workFolder, "mapInfo.json")
+	if mapInfoPath.is_file():
+		with mapInfoPath.open("r", encoding='utf-8') as f:
 			mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
 			# TODO: Update for new argument parsing
-#			if is_first_snapshot:
+#			if isFirstSnapshot:
 #				f.seek(0)
 #				mapInfo = json.load(f)
 #				if "options" in mapInfo:
@@ -283,48 +283,48 @@ def build_autorun(args: Namespace, work_folder:Path, out_folder: Path, is_first_
 	else:
 		mapInfoLua = "{}"
 
-	is_first_snapshot = False
+	isFirstSnapshot = False
 
-	chunk_cache_path = Path(work_folder, "chunkCache.json")
-	if chunk_cache_path.is_file():
-		with chunk_cache_path.open("r") as f:
+	chunkCachePath = Path(workFolder, "chunkCache.json")
+	if chunkCachePath.is_file():
+		with chunkCachePath.open("r") as f:
 			chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
 	else:
 		chunkCache = "{}"
 
-	def lower_bool(value: bool):
+	def lowerBool(value: bool):
 		return str(value).lower()
 
 	with open("autorun.lua", "w", encoding="utf-8") as f:
 		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
 		autorunString = \
-f'''fm.autorun = {{
-HD = {lower_bool(args.hd)},
-day = {lower_bool(args.day)},
-night = {lower_bool(args.night)},
-alt_mode = {lower_bool(args.altmode)},
-tags = {lower_bool(args.tags)},
-around_tag_range = {args.tag_range},
-around_build_range = {args.build_range},
-around_connect_range = {args.connect_range},
-connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},
-date = "{datetime.datetime.strptime(args.date, "%d/%m/%y").strftime("%d/%m/%y")}",
-surfaces = {surfaceString},
-name = "{str(out_folder) + "/"}",
-mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},
-chunkCache = {chunkCache}
-}}'''
+			f'''fm.autorun = {{
+			HD = {lowerBool(args.hd)},
+			day = {lowerBool(args.day)},
+			night = {lowerBool(args.night)},
+			alt_mode = {lowerBool(args.altmode)},
+			tags = {lowerBool(args.tags)},
+			around_tag_range = {args.tag_range},
+			around_build_range = {args.build_range},
+			around_connect_range = {args.connect_range},
+			connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},
+			date = "{datetime.datetime.strptime(args.date, "%d/%m/%y").strftime("%d/%m/%y")}",
+			surfaces = {surfaceString},
+			name = "{str(outFolder) + "/"}",
+			mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},
+			chunkCache = {chunkCache}
+			}}'''
 		f.write(autorunString)
 		if args.verbose:
 			printErase(autorunString)
 
 
-def build_config(args: Namespace, temporary_directory):
+def buildConfig(args: Namespace, temporaryDirectory):
 	printErase("Building config.ini")
 	if args.verbose > 2:
-		print(f"Using temporary directory '{temporary_directory}'")
-	config_path = Path(temporary_directory, "config","config.ini")
-	config_path.parent.mkdir(parents=True)
+		print(f"Using temporary directory '{temporaryDirectory}'")
+	configPath = Path(temporaryDirectory, "config","config.ini")
+	configPath.parent.mkdir(parents=True)
 
 	config = configparser.ConfigParser()
 	config.read(Path(args.config_path, "config.ini"))
@@ -335,21 +335,21 @@ def build_config(args: Namespace, temporary_directory):
 
 	if "path" not in config:
 		config["path"] = {}
-	config["path"]["write-data"] = temporary_directory
+	config["path"]["write-data"] = temporaryDirectory
 
 	if "graphics" not in config:
 		config["graphics"] = {}
 	config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
 	config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
 
-	with config_path.open("w+") as config_file:
-		config_file.writelines(("; version=3\n", ))
-		config.write(config_file, space_around_delimiters=False)
+	with configPath.open("w+") as configFile:
+		configFile.writelines(("; version=3\n", ))
+		config.write(configFile, space_around_delimiters=False)
 
-	link_dir(Path(temporary_directory, "script-output"), Path(USER_FOLDER, "script-output"))
-	copy(Path(USER_FOLDER, 'player-data.json'), temporary_directory)
+	linkDir(Path(temporaryDirectory, "script-output"), Path(USERFOLDER, "script-output"))
+	copy(Path(USERFOLDER, 'player-data.json'), temporaryDirectory)
 
-	return config_path
+	return configPath
 
 
 def auto(*args):
@@ -384,8 +384,8 @@ def auto(*args):
 	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
 	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
 	parser.add_argument("--factorio", type=Path, help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
-	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(USER_FOLDER, 'mods'), help="Use PATH as the mod folder.")
-	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(USER_FOLDER, 'config'), help="Use PATH as the mod folder.")
+	parser.add_argument("--modpath", type=lambda p: Path(p).resolve(), default=Path(USERFOLDER, 'mods'), help="Use PATH as the mod folder.")
+	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(USERFOLDER, 'config'), help="Use PATH as the mod folder.")
 	parser.add_argument("--basepath", default="FactorioMaps", help="Output to script-output\\RELPATH instead of script-output\\FactorioMaps. (Factorio cannot output outside of script-output)")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
@@ -408,35 +408,35 @@ def auto(*args):
 		print(args)
 
 	if args.update:
-		check_update(args.reverseupdatetest)
+		checkUpdate(args.reverseupdatetest)
 
-	saves = Path(USER_FOLDER, "saves")
+	saves = Path(USERFOLDER, "saves")
 	if args.outfolder:
 		foldername = args.outfolder
 	else:
-		timestamp, file_path = max(
+		timestamp, filePath = max(
 			(save.stat().st_mtime, save)
 			for save in saves.iterdir()
 			if save.stem not in {"_autosave1", "_autosave2", "_autosave3"}
 		)
-		foldername = file_path.stem
+		foldername = filePath.stem
 		print("No save name passed. Using most recent save: %s" % foldername)
-	savenames = args.savename or [foldername]
+	saveNames = args.savename or [foldername]
 
-	save_games = OrderedSet()
-	for save_name in savenames:
-		glob_results = list(saves.glob(save_name))
-		glob_results += list(saves.glob(f"{save_name}.zip"))
+	saveGames = OrderedSet()
+	for saveName in saveNames:
+		globResults = list(saves.glob(saveName))
+		globResults += list(saves.glob(f"{saveName}.zip"))
 
-		if not glob_results:
-			print(f'Cannot find savefile: "{save_name}"')
-			raise ValueError(f'Cannot find savefile: "{save_name}"')
-		results = [save for save in glob_results if save.is_file()]
+		if not globResults:
+			print(f'Cannot find savefile: "{saveName}"')
+			raise ValueError(f'Cannot find savefile: "{saveName}"')
+		results = [save for save in globResults if save.is_file()]
 		for result in results:
-			save_games.add(result.stem)
+			saveGames.add(result.stem)
 
 	if args.verbose > 0:
-		print(f"Will generate snapshots for : {list(save_games)}")
+		print(f"Will generate snapshots for : {list(saveGames)}")
 
 	windowsPaths = [
 		"Program Files/Factorio/bin/x64/factorio.exe",
@@ -445,11 +445,11 @@ def auto(*args):
 		"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 	]
 
-	available_drives = [
+	availableDrives = [
 		"%s:/" % d for d in string.ascii_uppercase if Path(f"{d}:/").exists()
 	]
 	possiblePaths = [
-		drive + path for drive in available_drives for path in windowsPaths
+		drive + path for drive in availableDrives for path in windowsPaths
 	] + ["../../bin/x64/factorio.exe", "../../bin/x64/factorio",]
 	try:
 		factorioPath = next(
@@ -466,12 +466,12 @@ def auto(*args):
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = Path(USER_FOLDER, "script-output", args.basepath)
+	basepath = Path(USERFOLDER, "script-output", args.basepath)
 	workthread = None
 
 	workfolder = Path(basepath, foldername).resolve()
 	try:
-		print("output folder: {}".format(workfolder.relative_to(Path(USER_FOLDER))))
+		print("output folder: {}".format(workfolder.relative_to(Path(USERFOLDER))))
 	except ValueError:
 		print("output folder: {}".format(workfolder.resolve()))
 
@@ -484,10 +484,10 @@ def auto(*args):
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
-	if args.modpath.resolve() != Path(USER_FOLDER,"mods").resolve():
-		link_custom_mod_folder(args.modpath)
+	if args.modpath.resolve() != Path(USERFOLDER,"mods").resolve():
+		linkCustomModFolder(args.modpath)
 
-	change_modlist(args.modpath, True)
+	changeModlist(args.modpath, True)
 
 	manager = mp.Manager()
 	rawTags = manager.dict()
@@ -502,29 +502,29 @@ def auto(*args):
 
 
 	###########################################
-	#
-	#		Start of Work
-	#
+	#										  #
+	#              Start of Work              #
+	#										  #
 	###########################################
 
 	datapath = Path(workfolder, "latest.txt")
 	allTmpDirs = []
 
-	is_first_snapshot = True
+	isFirstSnapshot = True
 
 	try:
 
-		for index, savename in () if args.dry else enumerate(save_games):
+		for index, savename in () if args.dry else enumerate(saveGames):
 
 			printErase("cleaning up")
 			if datapath.is_file():
 				datapath.unlink()
 
-			build_autorun(args, workfolder, foldername, is_first_snapshot)
-			is_first_snapshot = False
+			buildAutorun(args, workfolder, foldername, isFirstSnapshot)
+			isFirstSnapshot = False
 
-			with TemporaryDirectory(prefix="FactorioMaps-") as temporary_directory:
-				config_path = build_config(args, temporary_directory)
+			with TemporaryDirectory(prefix="FactorioMaps-") as temporaryDirectory:
+				configPath = buildConfig(args, temporaryDirectory)
 
 				pid = None
 				isSteam = None
@@ -532,10 +532,10 @@ def auto(*args):
 				popenArgs = (
 					str(factorioPath),
 					'--load-game',
-					str(Path(USER_FOLDER, 'saves', savename).absolute()),
+					str(Path(USERFOLDER, 'saves', savename).absolute()),
 					'--disable-audio',
 					'--config',
-					str(config_path),
+					str(configPath),
 					"--mod-directory",
 					str(args.modpath.absolute()),
 					"--disable-migration-window")
@@ -548,7 +548,7 @@ def auto(*args):
 				printErase("starting factorio")
 				startLogProcess = mp.Process(
 					target=startGameAndReadGameLogs,
-					args=(results, condition, popenArgs, temporary_directory, pidBlacklist, rawTags, args)
+					args=(results, condition, popenArgs, temporaryDirectory, pidBlacklist, rawTags, args)
 				)
 				startLogProcess.daemon = True
 				startLogProcess.start()
@@ -574,9 +574,9 @@ def auto(*args):
 				if args.verbose:
 					printErase(latest)
 
-				first_out_folder, timestamp, surface, daytime = latest[-1].split(" ")
-				first_out_folder = first_out_folder.replace("/", " ")
-				waitfilename = Path(basepath, first_out_folder, "images", timestamp, surface, daytime, "done.txt")
+				firstOutFolder, timestamp, surface, daytime = latest[-1].split(" ")
+				firstOutFolder = firstOutFolder.replace("/", " ")
+				waitfilename = Path(basepath, firstOutFolder, "images", timestamp, surface, daytime, "done.txt")
 
 				isKilled = [False]
 				def waitKill(isKilled, pid):
@@ -600,9 +600,9 @@ def auto(*args):
 				timestamp = None
 				daytimeSurfaces = {}
 				for jindex, screenshot in enumerate(latest):
-					out_folder, timestamp, surface, daytime = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
-					out_folder = out_folder.replace("/", " ")
-					print(f"Processing {out_folder}/{'/'.join([timestamp, surface, daytime])} ({len(latest) * index + jindex + 1} of {len(latest) * len(save_games)})")
+					outFolder, timestamp, surface, daytime = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
+					outFolder = outFolder.replace("/", " ")
+					print(f"Processing {outFolder}/{'/'.join([timestamp, surface, daytime])} ({len(latest) * index + jindex + 1} of {len(latest) * len(saveGames)})")
 
 					if daytime in daytimeSurfaces:
 						daytimeSurfaces[daytime].append(surface)
@@ -611,8 +611,8 @@ def auto(*args):
 
 					#print("Cropping %s images" % screenshot)
 					print(basepath)
-					crop(out_folder, timestamp, surface, daytime, basepath, args)
-					waitlocalfilename = os.path.join(basepath, out_folder, "Images", timestamp, surface, daytime, "done.txt")
+					crop(outFolder, timestamp, surface, daytime, basepath, args)
+					waitlocalfilename = os.path.join(basepath, outFolder, "Images", timestamp, surface, daytime, "done.txt")
 					if not os.path.exists(waitlocalfilename):
 						#print("waiting for done.txt")
 						while not os.path.exists(waitlocalfilename):
@@ -621,15 +621,15 @@ def auto(*args):
 
 
 					def refZoom():
-						needsThumbnail = index + 1 == len(save_games)
+						needsThumbnail = index + 1 == len(saveGames)
 						#print("Crossreferencing %s images" % screenshot)
-						ref(out_folder, timestamp, surface, daytime, basepath, args)
+						ref(outFolder, timestamp, surface, daytime, basepath, args)
 						#print("downsampling %s images" % screenshot)
-						zoom(out_folder, timestamp, surface, daytime, basepath, needsThumbnail, args)
+						zoom(outFolder, timestamp, surface, daytime, basepath, needsThumbnail, args)
 
 						if jindex == len(latest) - 1:
 							print("zooming renderboxes", timestamp)
-							zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(basepath, first_out_folder, "Images"), args)
+							zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(basepath, firstOutFolder, "Images"), args)
 
 					if screenshot != latest[-1]:
 						refZoom()
@@ -642,7 +642,7 @@ def auto(*args):
 						isKilled[0] = True
 						kill(pid, onlyStall)
 
-						if savename == save_games[-1]:
+						if savename == saveGames[-1]:
 							refZoom()
 
 						else:
@@ -789,7 +789,7 @@ def auto(*args):
 		except:
 			pass
 
-		change_modlist(args.modpath, False)
+		changeModlist(args.modpath, False)
 
 		print("cleaning up")
 		for tmpDir in allTmpDirs:
