@@ -120,9 +120,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack,
 
 		if isSteam:
 			if usedSteamLaunchHack:
-				print("using steam launch hack.")
+				printErase("using steam launch hack.")
 			else:
-				print("WARNING: Could not find steam exe. Falling back to old steam method.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t To avoid this in the future, use the --steam-exe argument.")
+				printErase("WARNING: Could not find steam exe. Falling back to old steam method.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t To avoid this in the future, use the --steam-exe argument.")
 			
 			attrs = ('pid', 'name', 'create_time')
 
@@ -426,6 +426,7 @@ def auto(*args):
 		foldername = filePath.stem
 		print("No save name passed. Using most recent save: %s" % foldername)
 	saveNames = args.savename or [foldername]
+	foldername = foldername.replace('*', '').replace('?', '')
 
 	saveGames = OrderedSet()
 	for saveName in saveNames:
@@ -472,7 +473,7 @@ def auto(*args):
 
 	workthread = None
 
-	workfolder = Path(args.basepath, foldername.replace('*', '').replace('?', '')).resolve()
+	workfolder = Path(args.basepath, foldername).resolve()
 	try:
 		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
 	except ValueError:
@@ -595,6 +596,7 @@ def auto(*args):
 				while not datapath.exists():
 					time.sleep(0.4)
 
+				# empty autorun.lua
 				open("autorun.lua", 'w').close()
 
 				latest = []
