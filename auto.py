@@ -67,7 +67,7 @@ def printErase(arg):
 		pass
 
 
-def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, args):
+def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args):
 
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
@@ -113,15 +113,17 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 		line = pipef.readline().rstrip("\n")
 		printingStackTraceback = handleGameLine(line)
 		isSteam = False
-		if line.endswith("Initializing Steam API."):
+		if line.endswith("Initializing Steam API.") or usedSteamLaunchHack:
 			isSteam = True
 		elif not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
-			# note: possibility to avoid this: https://www.reddit.com/r/Steam/comments/4rgrxj/where_are_launch_options_saved_for_games/
-			# requirements for this approach: root?, need to figure out steam userid, parse the file format, ensure no conflicts between instances. overall probably not worth it.
-			print("WARNING: Running in limited support mode trough steam. Consider using standalone factorio instead.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to click this every time the game starts for the steam version)")
+			if usedSteamLaunchHack:
+				print("using steam launch hack.")
+			else:
+				print("WARNING: Could not find steam exe. Falling back to old steam method.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t To avoid this in the future, use the --steam-exe argument.")
+			
 			attrs = ('pid', 'name', 'create_time')
 
 			# on some devices, the previous check wasn't enough apparently, so explicitely wait until the log file is created.
@@ -319,11 +321,11 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 			printErase(autorunString)
 
 
-def buildConfig(args: Namespace, tempDir, basepath):
+def buildConfig(args: Namespace, tmpDir, basepath):
 	printErase("Building config.ini")
 	if args.verbose > 2:
-		print(f"Using temporary directory '{tempDir}'")
-	configPath = Path(tempDir, "config","config.ini")
+		print(f"Using temporary directory '{tmpDir}'")
+	configPath = Path(tmpDir, "config","config.ini")
 	configPath.parent.mkdir(parents=True)
 
 	config = configparser.ConfigParser()
@@ -335,7 +337,7 @@ def buildConfig(args: Namespace, tempDir, basepath):
 
 	if "path" not in config:
 		config["path"] = {}
-	config["path"]["write-data"] = tempDir
+	config["path"]["write-data"] = tmpDir
 
 	if "graphics" not in config:
 		config["graphics"] = {}
@@ -347,9 +349,9 @@ def buildConfig(args: Namespace, tempDir, basepath):
 		config.write(configFile, space_around_delimiters=False)
 
 	# TODO: change this when https://forums.factorio.com/viewtopic.php?f=28&t=81221 is implemented
-	linkDir(Path(tempDir, "script-output"), basepath)
+	linkDir(Path(tmpDir, "script-output"), basepath)
 
-	copy(Path(userFolder, 'player-data.json'), tempDir)
+	copy(Path(userFolder, 'player-data.json'), tmpDir)
 
 	return configPath
 
@@ -523,21 +525,52 @@ def auto(*args):
 			buildAutorun(args, workfolder, foldername, isFirstSnapshot)
 			isFirstSnapshot = False
 
-			with TemporaryDirectory(prefix="FactorioMaps-") as tempDir:
-				configPath = buildConfig(args, tempDir, args.basepath)
+			with TemporaryDirectory(prefix="FactorioMaps-") as tmpDir:
+				configPath = buildConfig(args, tmpDir, args.basepath)
 
 				pid = None
 				isSteam = None
 				pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
-				popenArgs = (
-					str(factorioPath),
-					'--load-game', str(Path(userFolder, 'saves', savename).absolute()),
+
+
+				launchArgs = [
+					'--load-game',
+					str(Path(userFolder, 'saves', savename).absolute()),
 					'--disable-audio',
-					'--config', str(configPath),
-					"--mod-directory", str(args.mod_path.absolute()),
-					"--disable-migration-window")
+					'--config',
+					str(configPath),
+					"--mod-directory",str(args.mod_path.absolute()),
+					"--disable-migration-window"
+				]
+
+				usedSteamLaunchHack = False
+
+				if os.name == "nt":
+					steamApiPath = Path(factorioPath, "..", "steam_api64.dll")
+				else:
+					steamApiPath = Path(factorioPath, "..", "steam_api64.so")
+
+				if steamApiPath.exists():	# chances are this is a steam install..
+					if os.name == "nt":
+						steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
+					else:
+						steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
+					
+					if steamPath.exists(): # found a steam executable
+						usedSteamLaunchHack = True
+						exeWithArgs = [
+							str(steamPath),
+							"-applaunch",
+							"427520"
+						] + launchArgs
+
+				if not usedSteamLaunchHack:	# if non steam factorio, or if steam factorio but steam executable isnt found.
+					exeWithArgs = [
+						str(factorioPath)
+					] + launchArgs
+
 				if args.verbose:
-					printErase(popenArgs)
+					printErase(exeWithArgs)
 
 				condition = mp.Condition()
 				results = manager.list()
@@ -545,7 +578,7 @@ def auto(*args):
 				printErase("starting factorio")
 				startLogProcess = mp.Process(
 					target=startGameAndReadGameLogs,
-					args=(results, condition, popenArgs, tempDir, pidBlacklist, rawTags, args)
+					args=(results, condition, exeWithArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args)
 				)
 				startLogProcess.daemon = True
 				startLogProcess.start()
