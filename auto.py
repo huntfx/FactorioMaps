@@ -402,7 +402,7 @@ def auto(*args):
 	parser.add_argument("--delete", action="store_true", help="Deletes the output folder specified before running the script.")
 	parser.add_argument("--dry", action="store_true", help="Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script.")
 	parser.add_argument("targetname", nargs="?", help="output folder name for the generated snapshots.")
-	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated.")
+	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated. Glob patterns are supported.")
 	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
 
 	args = parser.parse_args()
@@ -470,7 +470,7 @@ def auto(*args):
 
 	workthread = None
 
-	workfolder = Path(args.basepath, foldername).resolve()
+	workfolder = Path(args.basepath, foldername.replace('*', '').replace('?', '')).resolve()
 	try:
 		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
 	except ValueError:
