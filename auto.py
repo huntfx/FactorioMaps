@@ -268,7 +268,7 @@ def changeModlist(modpath: Path,newState: bool):
 		json.dump(modlist, f, indent=2)
 
 
-def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnapshot: bool):
+def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnapshot: bool, daytime: str):
 	printErase("Building autorun.lua")
 	mapInfoPath = Path(workFolder, "mapInfo.json")
 	if mapInfoPath.is_file():
@@ -302,8 +302,7 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 		autorunString = \
 			f'''fm.autorun = {{
 			HD = {lowerBool(args.hd)},
-			day = {lowerBool(args.day)},
-			night = {lowerBool(args.night)},
+			daytime = "{daytime}",
 			alt_mode = {lowerBool(args.altmode)},
 			tags = {lowerBool(args.tags)},
 			around_tag_range = {args.tag_range},
@@ -517,169 +516,176 @@ def auto(*args):
 
 	try:
 
+		daytimes = []
+		if args.day:
+			daytimes.append("day")
+		if args.night:
+			daytimes.append("night")
+
 		for index, savename in () if args.dry else enumerate(saveGames):
+			for daytimeIndex, setDaytime in enumerate(daytimes):
 
-			printErase("cleaning up")
-			if datapath.is_file():
-				datapath.unlink()
+				printErase("cleaning up")
+				if datapath.is_file():
+					datapath.unlink()
 
-			buildAutorun(args, workfolder, foldername, isFirstSnapshot)
-			isFirstSnapshot = False
+				buildAutorun(args, workfolder, foldername, isFirstSnapshot, setDaytime)
+				isFirstSnapshot = False
 
-			with TemporaryDirectory(prefix="FactorioMaps-") as tmpDir:
-				configPath = buildConfig(args, tmpDir, args.basepath)
+				with TemporaryDirectory(prefix="FactorioMaps-") as tmpDir:
+					configPath = buildConfig(args, tmpDir, args.basepath)
 
-				pid = None
-				isSteam = None
-				pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
+					pid = None
+					isSteam = None
+					pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
 
 
-				launchArgs = [
-					'--load-game',
-					str(Path(userFolder, 'saves', savename).absolute()),
-					'--disable-audio',
-					'--config',
-					str(configPath),
-					"--mod-directory",str(args.mod_path.absolute()),
-					"--disable-migration-window"
-				]
+					launchArgs = [
+						'--load-game',
+						str(Path(userFolder, 'saves', savename).absolute()),
+						'--disable-audio',
+						'--config',
+						str(configPath),
+						"--mod-directory",str(args.mod_path.absolute()),
+						"--disable-migration-window"
+					]
 
-				usedSteamLaunchHack = False
+					usedSteamLaunchHack = False
 
-				if os.name == "nt":
-					steamApiPath = Path(factorioPath, "..", "steam_api64.dll")
-				else:
-					steamApiPath = Path(factorioPath, "..", "steam_api64.so")
-
-				if steamApiPath.exists():	# chances are this is a steam install..
 					if os.name == "nt":
-						steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
+						steamApiPath = Path(factorioPath, "..", "steam_api64.dll")
 					else:
-						steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
-					
-					if steamPath.exists(): # found a steam executable
-						usedSteamLaunchHack = True
+						steamApiPath = Path(factorioPath, "..", "steam_api64.so")
+
+					if steamApiPath.exists():	# chances are this is a steam install..
+						if os.name == "nt":
+							steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
+						else:
+							steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
+						
+						if steamPath.exists(): # found a steam executable
+							usedSteamLaunchHack = True
+							exeWithArgs = [
+								str(steamPath),
+								"-applaunch",
+								"427520"
+							] + launchArgs
+
+					if not usedSteamLaunchHack:	# if non steam factorio, or if steam factorio but steam executable isnt found.
 						exeWithArgs = [
-							str(steamPath),
-							"-applaunch",
-							"427520"
+							str(factorioPath)
 						] + launchArgs
 
-				if not usedSteamLaunchHack:	# if non steam factorio, or if steam factorio but steam executable isnt found.
-					exeWithArgs = [
-						str(factorioPath)
-					] + launchArgs
+					if args.verbose:
+						printErase(exeWithArgs)
 
-				if args.verbose:
-					printErase(exeWithArgs)
+					condition = mp.Condition()
+					results = manager.list()
 
-				condition = mp.Condition()
-				results = manager.list()
+					printErase("starting factorio")
+					startLogProcess = mp.Process(
+						target=startGameAndReadGameLogs,
+						args=(results, condition, exeWithArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args)
+					)
+					startLogProcess.daemon = True
+					startLogProcess.start()
 
-				printErase("starting factorio")
-				startLogProcess = mp.Process(
-					target=startGameAndReadGameLogs,
-					args=(results, condition, exeWithArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args)
-				)
-				startLogProcess.daemon = True
-				startLogProcess.start()
+					with condition:
+						condition.wait()
+					isSteam, pid = results[:]
 
-				with condition:
-					condition.wait()
-				isSteam, pid = results[:]
+					if isSteam is None:
+						raise Exception("isSteam error")
+					if pid is None:
+						raise Exception("pid error")
 
-				if isSteam is None:
-					raise Exception("isSteam error")
-				if pid is None:
-					raise Exception("pid error")
+					while not datapath.exists():
+						time.sleep(0.4)
 
-				while not datapath.exists():
-					time.sleep(0.4)
+					# empty autorun.lua
+					open("autorun.lua", 'w').close()
 
-				# empty autorun.lua
-				open("autorun.lua", 'w').close()
+					latest = []
+					with datapath.open('r') as f:
+						for line in f:
+							latest.append(line.rstrip("\n"))
+					if args.verbose:
+						printErase(latest)
 
-				latest = []
-				with datapath.open('r') as f:
-					for line in f:
-						latest.append(line.rstrip("\n"))
-				if args.verbose:
-					printErase(latest)
+					firstOutFolder, timestamp, surface, daytime = latest[-1].split(" ")
+					firstOutFolder = firstOutFolder.replace("/", " ")
+					waitfilename = Path(args.basepath, firstOutFolder, "images", timestamp, surface, daytime, "done.txt")
 
-				firstOutFolder, timestamp, surface, daytime = latest[-1].split(" ")
-				firstOutFolder = firstOutFolder.replace("/", " ")
-				waitfilename = Path(args.basepath, firstOutFolder, "images", timestamp, surface, daytime, "done.txt")
+					isKilled = [False]
+					def waitKill(isKilled, pid):
+						while not isKilled[0]:
+							#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
+							if os.path.isfile(waitfilename):
+								isKilled[0] = True
+								kill(pid)
+								break
+							else:
+								time.sleep(0.4)
 
-				isKilled = [False]
-				def waitKill(isKilled, pid):
-					while not isKilled[0]:
-						#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
-						if os.path.isfile(waitfilename):
-							isKilled[0] = True
-							kill(pid)
-							break
+					killThread = threading.Thread(target=waitKill, args=(isKilled, pid))
+					killThread.daemon = True
+					killThread.start()
+
+					if workthread and workthread.isAlive():
+						#print("waiting for workthread")
+						workthread.join()
+
+					timestamp = None
+					daytimeSurfaces = {}
+					for jindex, screenshot in enumerate(latest):
+						outFolder, timestamp, surface, daytime = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
+						outFolder = outFolder.replace("/", " ")
+						print(f"Processing {outFolder}/{'/'.join([timestamp, surface, daytime])} ({len(latest) * index + jindex + 1 + daytimeIndex} of {len(latest) * len(saveGames) * len(daytimes)})")
+
+						if daytime in daytimeSurfaces:
+							daytimeSurfaces[daytime].append(surface)
 						else:
-							time.sleep(0.4)
+							daytimeSurfaces[daytime] = [surface]
 
-				killThread = threading.Thread(target=waitKill, args=(isKilled, pid))
-				killThread.daemon = True
-				killThread.start()
-
-				if workthread and workthread.isAlive():
-					#print("waiting for workthread")
-					workthread.join()
-
-				timestamp = None
-				daytimeSurfaces = {}
-				for jindex, screenshot in enumerate(latest):
-					outFolder, timestamp, surface, daytime = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
-					outFolder = outFolder.replace("/", " ")
-					print(f"Processing {outFolder}/{'/'.join([timestamp, surface, daytime])} ({len(latest) * index + jindex + 1} of {len(latest) * len(saveGames)})")
-
-					if daytime in daytimeSurfaces:
-						daytimeSurfaces[daytime].append(surface)
-					else:
-						daytimeSurfaces[daytime] = [surface]
-
-					#print("Cropping %s images" % screenshot)
-					crop(outFolder, timestamp, surface, daytime, args.basepath, args)
-					waitlocalfilename = os.path.join(args.basepath, outFolder, "Images", timestamp, surface, daytime, "done.txt")
-					if not os.path.exists(waitlocalfilename):
-						#print("waiting for done.txt")
-						while not os.path.exists(waitlocalfilename):
-							time.sleep(0.4)
+						#print("Cropping %s images" % screenshot)
+						crop(outFolder, timestamp, surface, daytime, args.basepath, args)
+						waitlocalfilename = os.path.join(args.basepath, outFolder, "Images", timestamp, surface, daytime, "done.txt")
+						if not os.path.exists(waitlocalfilename):
+							#print("waiting for done.txt")
+							while not os.path.exists(waitlocalfilename):
+								time.sleep(0.4)
 
 
 
-					def refZoom():
-						needsThumbnail = index + 1 == len(saveGames)
-						#print("Crossreferencing %s images" % screenshot)
-						ref(outFolder, timestamp, surface, daytime, args.basepath, args)
-						#print("downsampling %s images" % screenshot)
-						zoom(outFolder, timestamp, surface, daytime, args.basepath, needsThumbnail, args)
+						def refZoom():
+							needsThumbnail = index + 1 == len(saveGames)
+							#print("Crossreferencing %s images" % screenshot)
+							ref(outFolder, timestamp, surface, daytime, args.basepath, args)
+							#print("downsampling %s images" % screenshot)
+							zoom(outFolder, timestamp, surface, daytime, args.basepath, needsThumbnail, args)
 
-						if jindex == len(latest) - 1:
-							print("zooming renderboxes", timestamp)
-							zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(args.basepath, firstOutFolder, "Images"), args)
+							if jindex == len(latest) - 1:
+								print("zooming renderboxes", timestamp)
+								zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(args.basepath, firstOutFolder, "Images"), args)
 
-					if screenshot != latest[-1]:
-						refZoom()
-					else:
-						startLogProcess.terminate()
-
-						# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
-
-						onlyStall = isKilled[0]
-						isKilled[0] = True
-						kill(pid, onlyStall)
-
-						if savename == saveGames[-1]:
+						if screenshot != latest[-1]:
 							refZoom()
-
 						else:
-							workthread = threading.Thread(target=refZoom)
-							workthread.daemon = True
-							workthread.start()
+							startLogProcess.terminate()
+
+							# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
+
+							onlyStall = isKilled[0]
+							isKilled[0] = True
+							kill(pid, onlyStall)
+
+							if savename == saveGames[-1] and daytimeIndex == len(daytimes) - 1:
+								refZoom()
+
+							else:
+								workthread = threading.Thread(target=refZoom)
+								workthread.daemon = True
+								workthread.start()
 
 
 

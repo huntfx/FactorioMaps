@@ -54,7 +54,7 @@ function fm.generateMap(data)
 
 	-- delete folder (if it already exists)
 	local basePath = fm.topfolder
-	local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime
+	local subPath = basePath .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.autorun.daytime
 	game.remove_path(subPath)
 	subPath = subPath .. "/"
 
@@ -165,7 +165,7 @@ function fm.generateMap(data)
 				end
 				if tonumber(mapTick) == fm.autorun.tick then
 					for i, map in pairs(fm.autorun.mapInfo.maps) do
-						if map.tick == mapTick then
+						if map.tick == fm.autorun.tick then
 							surfaceWasScanned = v[fm.currentSurface.name] ~= nil
 							mapIndex = i
 							break
@@ -240,10 +240,10 @@ function fm.generateMap(data)
 		-- build range
 		for chunk in fm.currentSurface.get_chunks() do
 			if fm.currentSurface.is_chunk_generated(chunk) then
-				log(chunk.x .. " " .. chunk.y)
+				-- log(chunk.x .. " " .. chunk.y)
 				for _, force in pairs(game.forces) do
 					if #force.players > 0 and force.is_chunk_charted(fm.currentSurface, chunk) then
-						log("charted by " .. force.name)
+						-- log("charted by " .. force.name)
 						forceStats[force.name] = forceStats[force.name] + 1
 						imageStats.charted = imageStats.charted + 1
 						for gridX = chunk.x * tilesPerChunk / gridPixelSize, (chunk.x + 1) * tilesPerChunk / gridPixelSize - 1 do
@@ -551,7 +551,7 @@ function fm.generateMap(data)
 		game.write_file(basePath .. "chunkCache.json", prettyjson(fm.autorun.chunkCache), false, data.player_index)
 	
 	end
-	fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name][fm.daytime] = true
+	fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name][fm.autorun.daytime] = true
 
 
 	-- todo: if fm.autorun.mapInfo.maps[mapIndex].surfaces[fm.currentSurface.name].hidden is true, only care about the chunks linked to by renderboxes.
@@ -561,7 +561,7 @@ function fm.generateMap(data)
 
 
 	
-	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime)
+	log("[info]Surface capture " .. fm.savename .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.autorun.daytime)
 
 
 
@@ -605,7 +605,7 @@ function fm.generateMap(data)
 			{ x = (chunk.x+1) * gridPixelSize, y = (chunk.y+1) * gridPixelSize  }
 		}
 
-		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.daytime .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. extension)
+		capture(positionTable, fm.currentSurface, fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.autorun.daytime .. "/" .. maxZoom .. "/" .. chunk.x .. "/" .. chunk.y .. extension)
 	end 
 
 
@@ -621,14 +621,14 @@ function fm.generateMap(data)
 	while #linkWorkList > 0 do
 		local link = table.remove(linkWorkList)
 
-		local folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.daytime .. "/" .. "renderboxes" .. "/"
+		local folder = fm.autorun.filePath .. "/" .. link.toSurface .. "/" .. fm.autorun.daytime .. "/" .. "renderboxes" .. "/"
 		local filename = link.to[1].x .. "_" .. link.to[1].y .. "_" .. link.to[2].x .. "_" .. link.to[2].y
 		local path = folder .. maxZoom .. "/"  .. filename
 
 		local surface = game.surfaces[link.toSurface]
 		link.daynight = not surface.freeze_daytime
 		if link.daynight then
-			surface.daytime = fm.daytime == "day" and 0 or 0.5
+			surface.daytime = fm.autorun.daytime == "day" and 0 or 0.5
 		end
 		
 		

@@ -267,6 +267,7 @@ def zoom(
 	needsThumbnail: bool = True,
 	args: Namespace = Namespace(),
 ):
+
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10)
 
 	workFolder = basepath if basepath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps")
