@@ -69,6 +69,22 @@ end
 
 
 
+-- user_tiles = []
+-- for key, item in pairs(data.raw["item"]) do
+-- 	if item.place_as_tile then
+
+-- 	end
+-- end
+
+
+for key, tile in pairs(data.raw["tile"]) do
+	no = "NO"
+	if tile.items_to_place_this then
+		no = "YES"
+	end
+	log(key .. " " .. no)
+end
+
 
 data.raw["utility-sprites"].default["ammo_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"
 data.raw["utility-sprites"].default["danger_icon"]["filename"] = "__L0laapk3_FactorioMaps__/graphics/empty64.png"

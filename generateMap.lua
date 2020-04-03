@@ -90,8 +90,18 @@ function fm.generateMap(data)
 			"ghost"
 		}
 
+		local craftableItems = {}
+		for _, recipe in pairs(game.recipe_prototypes) do
+			for _, product in pairs(recipe.products) do
+				if product.type == "item" then
+					craftableItems[product.name] = true
+				end
+			end
+		end
+
 		local tilenamedict = {}
-		for _, item in pairs(game.item_prototypes) do 
+		for itemName, _ in pairs(craftableItems) do
+			item = game.item_prototypes[itemName]
 			if item.place_as_tile_result ~= nil and tilenamedict[item.place_as_tile_result.result.name] == nil then
 				for _, keyword in pairs(blacklist) do
 					if string.match(item.place_as_tile_result.result.name, keyword) then
@@ -99,6 +109,7 @@ function fm.generateMap(data)
 						goto continue
 					end
 				end
+				log(item.place_as_tile_result.result.name .. " placed by " .. item.name)
 				tilenamedict[item.place_as_tile_result.result.name] = true
 			end
 			::continue::
