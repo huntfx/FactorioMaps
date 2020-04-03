@@ -78,18 +78,6 @@ function fm.generateMap(data)
 
 	
 	if fm.tilenames == nil then
-		local blacklist = {
-			"water",
-			"dirt",
-			"grass",
-			"lab",
-			"out-of-map",
-			"desert",
-			"sand",
-			"tutorial",
-			"ghost"
-		}
-
 		local craftableItems = {}
 		for _, recipe in pairs(game.recipe_prototypes) do
 			for _, product in pairs(recipe.products) do
@@ -102,24 +90,15 @@ function fm.generateMap(data)
 		local tilenamedict = {}
 		for itemName, _ in pairs(craftableItems) do
 			item = game.item_prototypes[itemName]
-			if item.place_as_tile_result ~= nil and tilenamedict[item.place_as_tile_result.result.name] == nil then
-				for _, keyword in pairs(blacklist) do
-					if string.match(item.place_as_tile_result.result.name, keyword) then
-						tilenamedict[item.place_as_tile_result.result.name] = false
-						goto continue
-					end
-				end
-				log(item.place_as_tile_result.result.name .. " placed by " .. item.name)
+			if item.place_as_tile_result ~= nil and item.place_as_tile_result.result.autoplace_specification == nil then
 				tilenamedict[item.place_as_tile_result.result.name] = true
 			end
 			::continue::
 		end
 
 		fm.tilenames = {}
-		for tilename, value in pairs(tilenamedict) do
-			if value then
-				fm.tilenames[#fm.tilenames+1] = tilename
-			end
+		for tilename, _ in pairs(tilenamedict) do
+			fm.tilenames[#fm.tilenames+1] = tilename
 		end
 	end
 
