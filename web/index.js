@@ -425,7 +425,7 @@ let currentSurface = defaultSurface in someSurfaces ? defaultSurface : Object.ke
 let loadLayer = someSurfaces[currentSurface].layers;
 let timestamp = (loadLayer.day || loadLayer.night).path;
 
-let startZ = 16, startX = 0, startY = 0;
+let startZ = 16, startX = NaN, startY = NaN;
 try {
 	let split = window.location.hash.substr(1).split('/').map(decodeURIComponent);
 	if (window.location.hash[0] == '#' && split[0] == "1") {
@@ -444,6 +444,11 @@ try {
 } catch (_) {
 		window.location.href = "#";
 		window.location.reload();
+}
+if (isNaN(startX) || isNaN(startY)) {
+	let spawn = mapInfo.maps.find(m => m.path == timestamp).surfaces[currentSurface].spawn;
+	startX = -spawn.y / 2**(startZ-1);
+	startY = spawn.x / 2**(startZ-1);
 }
 
 
