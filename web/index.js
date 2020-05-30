@@ -420,12 +420,14 @@ if (countAvailableSaves > 0 || mapInfo.links && mapInfo.links.save) {
 
 const defaultSurface = mapInfo.defaultSurface || "nauvis";
 let nightOpacity = 0;
-const someSurfaces = mapInfo.maps[mapInfo.maps.length-1].surfaces;
+const defaultMapPath = mapInfo.options.defaultTimestamp;
+console.assert(0 <= defaultMapPath && defaultMapPath < mapInfo.maps.length, "Default map path is out of bounds.");
+const someSurfaces = mapInfo.maps[defaultMapPath].surfaces;
 let currentSurface = defaultSurface in someSurfaces ? defaultSurface : Object.keys(someSurfaces).sort()[0]
 let loadLayer = someSurfaces[currentSurface].layers;
 let timestamp = (loadLayer.day || loadLayer.night).path;
 
-let startZ = 16, startX = 0, startY = 0;
+let startZ = 16, startX = NaN, startY = NaN;
 try {
 	let split = window.location.hash.substr(1).split('/').map(decodeURIComponent);
 	if (window.location.hash[0] == '#' && split[0] == "1") {
@@ -444,6 +446,11 @@ try {
 } catch (_) {
 		window.location.href = "#";
 		window.location.reload();
+}
+if (isNaN(startX) || isNaN(startY)) {
+	let spawn = mapInfo.maps.find(m => m.path == timestamp).surfaces[currentSurface].spawn;
+	startX = -spawn.y / 2**(startZ-1);
+	startY = spawn.x / 2**(startZ-1);
 }
 
 

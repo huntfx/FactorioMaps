@@ -13,22 +13,52 @@
     "2.4.0": "Fixed a bug in the image deduplicator",
     "2.4.1": "Added a simple gui with instructions",
     "2.4.2": "Fix for dual python installation",
-    "3.0.0": ["Tags can now be seen on the map!", "Linux support", "Switched to python 3"],
+    "3.0.0": [
+        "Tags can now be seen on the map!",
+        "Linux support",
+        "Switched to python 3"
+    ],
     "3.0.1": "Added flags to set maximum threads used",
     "3.0.2": "Added flag to disable alt-mode",
     "3.1.0": "!Better implementation of tag image extraction",
     "3.1.1": "!Fixed bugs when no mod path is specified",
     "3.1.2": "!Fixed bug where the entire script-output folder is sometimes removed due to inconsistent symlink behavior",
-    "3.2.0": ["!Considerable speedup for most users that haven't bothered changing the factorio config.ini", "Loads of bugfixes"],
+    "3.2.0": [
+        "!Considerable speedup for most users that haven't bothered changing the factorio config.ini",
+        "Loads of bugfixes"
+    ],
     "3.2.1": "Fixed various bugs",
-    "3.3.0": ["Updated for 0.17", "Some minor bugfixes"],
+    "3.3.0": [
+        "Updated for 0.17",
+        "Some minor bugfixes"
+    ],
     "3.3.1": "Fixed a bug where some parts of the map could be missing if multiple factions were used",
     "3.3.2": "Many bugfixes.",
-    "3.4.0": ["Separated map tags to surface and snapshot level", "Thumbnail generation of the map"],
-    "3.5.0": ["!Added API for integration with i.a. Factorissimo", "Better dependency management", "Several bugfixes"],
+    "3.4.0": [
+        "Separated map tags to surface and snapshot level",
+        "Thumbnail generation of the map"
+    ],
+    "3.5.0": [
+        "!Added API for integration with i.a. Factorissimo",
+        "Better dependency management",
+        "Several bugfixes"
+    ],
     "3.5.1": "Removed dependency on package that isnt being updated anymore",
     "3.5.2": "Added support for unicode characters",
     "3.5.3": "Bugfixes",
     "3.5.4": "Extended API",
-    "3.5.5": "Updated for 0.18"
+    "3.5.5": "Updated for 0.18",
+    "4.0.0": [
+        "!Fixed bug when dealing with near empty factorio config files",
+        "Better defaults for pvp scenario",
+        "Allow running for any working directory",
+        "Added wildcards for savefile names",
+        "Added option to output to any directory",
+        "Improved launching factorio trough steam",
+        "Better handling for modded ground tiles",
+        "Fixed nasty bug with image cross-referencing",
+        "Fixed scale of map label image sizes",
+        "Day and night snapshots are now completely identical instead of 1 tick apart",
+        "Added option to set the default snapshot when the page loads"
+    ]
 }

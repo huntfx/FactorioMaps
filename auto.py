@@ -1,82 +1,59 @@
 
 import sys
 
-if sys.maxsize <= 2**32:
-	raise Exception("64 bit Python is required.")
+if sys.maxsize <= 2**32 or sys.hexversion < 0x3060000:
+	raise Exception("64 bit Python 3.6 or higher is required for this script.")
 
-if sys.hexversion < 0x3060000:
-	raise Exception("Python 3.6 or higher is required for this script.")
-
-import traceback, os, pkg_resources
+import os
+import traceback
+import pkg_resources
 from pkg_resources import DistributionNotFound, VersionConflict
+from pathlib import Path
 
 try:
-	with open('packages.txt') as f:
+	with Path(__file__, "..", "packages.txt").open("r", encoding="utf-8") as f:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
 	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
 	sys.exit(1)
-	
 
-
-
-import subprocess, signal
-import json
-import threading, psutil
-import time
-import re
-import random
-import math
+import argparse
 import configparser
-from subprocess import call
 import datetime
-import urllib.request, urllib.error, urllib.parse
-from socket import timeout
-from shutil import copy, copytree, rmtree, get_terminal_size as tsize
-from zipfile import ZipFile
-import tempfile
-from PIL import Image, ImageChops
+import json
+import math
 import multiprocessing as mp
+import random
+import re
+import string
+import signal
+import subprocess
+import tempfile
+from tempfile import TemporaryDirectory
+import threading
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from argparse import Namespace
+from shutil import copy, copytree
+from shutil import get_terminal_size as tsize
+from shutil import rmtree
+from socket import timeout
+from subprocess import call
+from zipfile import ZipFile
+
+import psutil
+from PIL import Image, ImageChops
+from orderedset import OrderedSet
 
 from crop import crop
 from ref import ref
-from zoom import zoom, zoomRenderboxes
 from updateLib import update as updateLib
+from zoom import zoom, zoomRenderboxes
 
-
-
-kwargs = {
-	'dayonly': False,
-	'nightonly': False,
-	'hd': False,
-	'no-altmode': False,
-	'no-tags': False,
-	'tag-range': 5.2,
-	'build-range': 5.2,
-	'connect-range': 1.2,
-	'factorio': None,
-	'modpath': "../../mods",
-	'basepath': "FactorioMaps",
-	'date': datetime.date.today().strftime("%d/%m/%y"),
-	'verbosegame': False,
-	'verbose': False,
-	'noupdate': False,
-	'reverseupdatetest': False,
-	'maxthreads': mp.cpu_count(),	
-	'cropthreads': None,
-	'refthreads': None,
-	'zoomthreads': None,
-	'screenshotthreads': None,
-	'delete': False,
-	'dry': False,
-	'surface': []
-}
-changedKwargs = []
-
-
-
-
+userFolder = Path(__file__, "..", "..", "..").resolve()
 
 def printErase(arg):
 	try:
@@ -87,7 +64,7 @@ def printErase(arg):
 		pass
 
 
-def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags, **kwargs):
+def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args):
 
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
@@ -102,9 +79,9 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			if prevPrinted:
 				printErase(line)
 			return
-		
+
 		prevPrinted = False
-		
+
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
 		if m is not None:
 			rawTags[m.group(1)] = m.group(2)
@@ -119,29 +96,31 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 			if m is not None and m.group(2) is not None:
 				printErase(m.group(3))
 				prevPrinted = True
-			elif m is not None and kwargs["verbose"]:
+			elif m is not None and args.verbose:
 				printErase(m.group(1))
 				prevPrinted = True
-			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (kwargs["verbosegame"] and len(line) > 0):
+			elif line.lower() in ("error", "warn", "exception", "fail", "invalid") or (args.verbosegame and len(line) > 0):
 				printErase("[GAME] %s" % line)
 				prevPrinted = True
 		return False
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-		
+
 		line = pipef.readline().rstrip("\n")
 		printingStackTraceback = handleGameLine(line)
 		isSteam = False
-		if line.endswith("Initializing Steam API."):
+		if line.endswith("Initializing Steam API.") or usedSteamLaunchHack:
 			isSteam = True
 		elif not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
-			# note: possibility to avoid this: https://www.reddit.com/r/Steam/comments/4rgrxj/where_are_launch_options_saved_for_games/
-			# requirements for this approach: root?, need to figure out steam userid, parse the file format, ensure no conflicts between instances. overall probably not worth it.
-			print("WARNING: Running in limited support mode trough steam. Consider using standalone factorio instead.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t (Yes, you'll have to click this every time the game starts for the steam version)")
+			if usedSteamLaunchHack:
+				printErase("using steam launch hack.")
+			else:
+				printErase("WARNING: Could not find steam exe. Falling back to old steam method.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t To avoid this in the future, use the --steam-exe argument.")
+			
 			attrs = ('pid', 'name', 'create_time')
 
 			# on some devices, the previous check wasn't enough apparently, so explicitely wait until the log file is created.
@@ -170,7 +149,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 
 		if isSteam:
 			pipef.close()
-			with open(os.path.join(tmpDir, "factorio-current.log"), "r") as f:
+			with Path(tmpDir, "factorio-current.log").open("r", encoding="utf-8") as f:
 				while psutil.pid_exists(pid):
 					where = f.tell()
 					line = f.readline()
@@ -185,9 +164,192 @@ def startGameAndReadGameLogs(results, condition, popenArgs, tmpDir, pidBlacklist
 				line = pipef.readline()
 				printingStackTraceback = handleGameLine(line)
 
-			
+
+def checkUpdate(reverseUpdateTest:bool = False):
+	try:
+		print("checking for updates")
+		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
+		with Path(__file__, "..", "updates.json").open("r", encoding="utf-8") as f:
+			currentUpdates = json.load(f)
+		if reverseUpdateTest:
+			latestUpdates, currentUpdates = currentUpdates, latestUpdates
+
+		updates = []
+		majorUpdate = False
+		currentVersion = (0, 0, 0)
+		for verStr, changes in currentUpdates.items():
+			ver = tuple(map(int, verStr.split(".")))
+			if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
+				currentVersion = ver
+		for verStr, changes in latestUpdates.items():
+			if verStr not in currentUpdates:
+				ver = tuple(map(int, verStr.split(".")))
+				updates.append((verStr, changes))
+		updates.sort(key = lambda u: u[0])
+		if len(updates) > 0:
+
+			padding = max(map(lambda u: len(u[0]), updates))
+			changelogLines = []
+			for update in updates:
+				if isinstance(update[1], str):
+					updateText = update[1]
+				else:
+					updateText = str(("\r\n      " + " "*padding).join(update[1]))
+				if updateText[0] == "!":
+					majorUpdate = True
+					updateText = updateText[1:]
+				changelogLines.append("    %s: %s" % (update[0].rjust(padding), updateText))
+			print("")
+			print("")
+			print("================================================================================")
+			print("")
+			print(("  An " + ("important" if majorUpdate else "incremental") + " update has been found!"))
+			print("")
+			print("  Here's what changed:")
+			for line in changelogLines:
+				print(line)
+			print("")
+			print("")
+			print("  Download: https://git.io/factoriomaps")
+			if majorUpdate:
+				print("")
+				print("  You can dismiss this by using --no-update (not recommended)")
+			print("")
+			print("================================================================================")
+			print("")
+			print("")
+		if majorUpdate or reverseUpdateTest:
+			exit(1)
+
+	except (urllib.error.URLError, timeout) as e:
+		print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
 
 
+def linkDir(src: Path, dest:Path):
+	if os.name == 'nt':
+		subprocess.check_call(("MKLINK", "/J", src.resolve(), dest.resolve()), stdout=subprocess.DEVNULL, shell=True)
+	else:
+		os.symlink(dest.resolve(), src.resolve())
+
+
+def linkCustomModFolder(modpath: Path):
+	print(f"Verifying mod version in custom mod folder ({modpath})")
+	modPattern = re.compile(r'^L0laapk3_FactorioMaps_', flags=re.IGNORECASE)
+	for entry in [entry for entry in modpath.iterdir() if modPattern.match(entry.name)]:
+		print("Found other factoriomaps mod in custom mod folder, deleting.")
+		path = Path(modpath, entry)
+		if path.is_file() or path.is_symlink():
+			path.unlink()
+		elif path.is_dir():
+			rmtree(path)
+		else:
+			raise Exception(f"Unable to remove {path} unknown type")
+
+	linkDir(Path(modpath, Path('.').resolve().name), Path("."))
+
+
+def changeModlist(modpath: Path,newState: bool):
+	print(f"{'Enabling' if newState else 'Disabling'} FactorioMaps mod")
+	done = False
+	modlistPath = Path(modpath, "mod-list.json")
+	with modlistPath.open("r", encoding="utf-8") as f:
+		modlist = json.load(f)
+	for mod in modlist["mods"]:
+		if mod["name"] == "L0laapk3_FactorioMaps":
+			mod["enabled"] = newState
+			done = True
+			break
+	if not done:
+		modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
+	with modlistPath.open("w", encoding="utf-8") as f:
+		json.dump(modlist, f, indent=2)
+
+
+def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnapshot: bool, daytime: str):
+	printErase("Building autorun.lua")
+	mapInfoPath = Path(workFolder, "mapInfo.json")
+	if mapInfoPath.is_file():
+		with mapInfoPath.open("r", encoding='utf-8') as f:
+			mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
+			# TODO: Update for new argument parsing
+#			if isFirstSnapshot:
+#				f.seek(0)
+#				mapInfo = json.load(f)
+#				if "options" in mapInfo:
+#					for kwarg in changedKwargs:
+#						if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
+#							printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
+	else:
+		mapInfoLua = "{}"
+
+	isFirstSnapshot = False
+
+	chunkCachePath = Path(workFolder, "chunkCache.json")
+	if chunkCachePath.is_file():
+		with chunkCachePath.open("r", encoding="utf-8") as f:
+			chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
+	else:
+		chunkCache = "{}"
+
+	def lowerBool(value: bool):
+		return str(value).lower()
+
+	with open("autorun.lua", "w", encoding="utf-8") as f:
+		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
+		autorunString = \
+			f'''fm.autorun = {{
+			HD = {lowerBool(args.hd)},
+			daytime = "{daytime}",
+			alt_mode = {lowerBool(args.altmode)},
+			tags = {lowerBool(args.tags)},
+			around_tag_range = {args.tag_range},
+			around_build_range = {args.build_range},
+			around_connect_range = {args.connect_range},
+			connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},
+			date = "{datetime.datetime.strptime(args.date, "%d/%m/%y").strftime("%d/%m/%y")}",
+			surfaces = {surfaceString},
+			name = "{str(outFolder) + "/"}",
+			mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},
+			chunkCache = {chunkCache}
+			}}'''
+		f.write(autorunString)
+		if args.verbose:
+			printErase(autorunString)
+
+
+def buildConfig(args: Namespace, tmpDir, basepath):
+	printErase("Building config.ini")
+	if args.verbose > 2:
+		print(f"Using temporary directory '{tmpDir}'")
+	configPath = Path(tmpDir, "config","config.ini")
+	configPath.parent.mkdir(parents=True)
+
+	config = configparser.ConfigParser()
+	config.read(Path(args.config_path, "config.ini"))
+
+	if "interface" not in config:
+		config["interface"] = {}
+	config["interface"]["show-tips-and-tricks"] = "false"
+
+	if "path" not in config:
+		config["path"] = {}
+	config["path"]["write-data"] = tmpDir
+
+	if "graphics" not in config:
+		config["graphics"] = {}
+	config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
+	config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
+
+	with configPath.open("w+", encoding="utf-8") as configFile:
+		configFile.writelines(("; version=3\n", ))
+		config.write(configFile, space_around_delimiters=False)
+
+	# TODO: change this when https://forums.factorio.com/viewtopic.php?f=28&t=81221 is implemented
+	linkDir(Path(tmpDir, "script-output"), basepath)
+
+	copy(Path(userFolder, 'player-data.json'), tmpDir)
+
+	return configPath
 
 
 def auto(*args):
@@ -209,47 +371,74 @@ def auto(*args):
 					printErase("killed factorio")
 
 		#time.sleep(0.1)
-		
 
+	parser = argparse.ArgumentParser(description="FactorioMaps")
+	daytime = parser.add_mutually_exclusive_group()
+	daytime.add_argument("--dayonly", dest="night", action="store_false", help="Only take daytime screenshots.")
+	daytime.add_argument("--nightonly", dest="day", action="store_false", help="Only take nighttime screenshots.")
+	parser.add_argument("--hd", action="store_true", help="Take screenshots of resolution 64 x 64 pixels per in-game tile.")
+	parser.add_argument("--no-altmode", dest="altmode", action="store_false", help="Hides entity info (alt mode).")
+	parser.add_argument("--no-tags", dest="tags", action="store_false", help="Hides map tags")
+	parser.add_argument("--default-timestamp", type=int, default=None, dest="default_timestamp", help="Snapshot that will be loaded by the webpage by default. Negative values indicate newest snapshots, so -1 indicates the newest map while 0 indicates the oldest map.")
+	parser.add_argument("--build-range", type=float, default=5.2, help="The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles).")
+	parser.add_argument("--connect-range", type=float, default=1.2, help="The maximum range from connection buildings (rails, electric poles) around which pictures are saved.")
+	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
+	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
+	parser.add_argument("--factorio", type=lambda p: Path(p).resolve(), help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
+	parser.add_argument("--output-path", dest="basepath", type=lambda p: Path(p).resolve(), default=Path(userFolder, "script-output", "FactorioMaps"), help="path to the output folder (default is '..\\..\\script-output\\FactorioMaps')")
+	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
+	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'config'), help="Use PATH as the mod folder. (default is '..\\..\\config')")
+	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
+	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
+	parser.add_argument('--verbosegame', action='count', default=0, help="Displays all game logs.")
+	parser.add_argument("--no-update", "--noupdate", dest="update", action="store_false", help="Skips the update check.")
+	parser.add_argument("--reverseupdatetest", action="store_true", help=argparse.SUPPRESS)
+	parser.add_argument("--maxthreads", type=int, default=mp.cpu_count(), help="Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available.")
+	parser.add_argument("--cropthreads", type=int, default=None, help="Sets the number of threads used for the crop step.")
+	parser.add_argument("--refthreads", type=int, default=None, help="Sets the number of threads used for the crossreferencing step.")
+	parser.add_argument("--zoomthreads", type=int, default=None, help="Sets the number of threads used for the zoom step.")
+	parser.add_argument("--screenshotthreads", type=int, default=None, help="Set the number of screenshotting threads factorio uses.")
+	parser.add_argument("--delete", action="store_true", help="Deletes the output folder specified before running the script.")
+	parser.add_argument("--dry", action="store_true", help="Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script.")
+	parser.add_argument("targetname", nargs="?", help="output folder name for the generated snapshots.")
+	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated. Glob patterns are supported.")
+	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
 
-
-	
-	def parseArg(arg):
-		if arg[0:2] != "--":
-			return True
-		key = arg[2:].split("=",2)[0].lower()
-		if key in kwargs:
-			changedKwargs.append(key)
-			if isinstance(kwargs[key], list):
-				kwargs[key].append(arg[2:].split("=",2)[1])
-			else:
-				kwargs[key] = arg[2:].split("=",2)[1].lower() if len(arg[2:].split("=",2)) > 1 else True
-				if kwargs[key] == "true":
-					kwargs[key] = True
-				if kwargs[key] == "false":
-					kwargs[key] = False
-		else:
-			print(f'Bad flag: "{key}"')
-			raise ValueError(f'Bad flag: "{key}"')
-		return False
-
-
-
-	newArgs = list(filter(parseArg, args))
-	if kwargs["verbose"]:
+	args = parser.parse_args()
+	if args.verbose > 0:
 		print(args)
-	if len(newArgs) > 0:
-		foldername = newArgs[0]
-	else:
-		foldername = os.path.splitext(os.path.basename(max([os.path.join("../../saves", basename) for basename in os.listdir("../../saves") if basename not in { "_autosave1.zip", "_autosave2.zip", "_autosave3.zip" }], key=os.path.getmtime)))[0]
-		print("No save name passed. Using most recent save: %s" % foldername)
-	savenames = newArgs[1:] or [ foldername ]
 
-	for saveName in savenames:
-		savePath = os.path.join("../../saves", saveName)
-		if not (os.path.isdir(savePath) or os.path.isfile(savePath) or os.path.isfile(savePath + ".zip")):
+	if args.update:
+		checkUpdate(args.reverseupdatetest)
+
+	saves = Path(userFolder, "saves")
+	if args.targetname:
+		foldername = args.targetname
+	else:
+		timestamp, filePath = max(
+			(save.stat().st_mtime, save)
+			for save in saves.iterdir()
+			if save.stem not in {"_autosave1", "_autosave2", "_autosave3"}
+		)
+		foldername = filePath.stem
+		print("No save name passed. Using most recent save: %s" % foldername)
+	saveNames = args.savename or [foldername]
+	foldername = foldername.replace('*', '').replace('?', '')
+
+	saveGames = OrderedSet()
+	for saveName in saveNames:
+		globResults = list(saves.glob(saveName))
+		globResults += list(saves.glob(f"{saveName}.zip"))
+
+		if not globResults:
 			print(f'Cannot find savefile: "{saveName}"')
 			raise ValueError(f'Cannot find savefile: "{saveName}"')
+		results = [save for save in globResults if save.is_file()]
+		for result in results:
+			saveGames.add(result.stem)
+
+	if args.verbose > 0:
+		print(f"Will generate snapshots for : {list(saveGames)}")
 
 	windowsPaths = [
 		"Program Files/Factorio/bin/x64/factorio.exe",
@@ -257,395 +446,256 @@ def auto(*args):
 		"Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 	]
-	possiblePaths = [driveletter + ":/" + path for driveletter in 'CDEFGHIJKL' for path in windowsPaths] + [
-		"../../bin/x64/factorio.exe",
-		"../../bin/x64/factorio",
+
+	availableDrives = [
+		"%s:/" % d for d in string.ascii_uppercase if Path(f"{d}:/").exists()
 	]
+	possiblePaths = [
+		drive + path for drive in availableDrives for path in windowsPaths
+	] + ["../../bin/x64/factorio.exe", "../../bin/x64/factorio",]
 	try:
-		factorioPath = next(x for x in map(os.path.abspath, [kwargs["factorio"]] if kwargs["factorio"] else possiblePaths) if os.path.isfile(x))
+		factorioPath = next(
+			x
+			for x in map(Path, [args.factorio] if args.factorio else possiblePaths)
+			if x.is_file()
+		)
 	except StopIteration:
-		raise Exception("Can't find factorio.exe. Please pass --factorio=PATH as an argument.")
+		raise Exception(
+			"Can't find factorio.exe. Please pass --factorio=PATH as an argument."
+		)
 
 	print("factorio path: {}".format(factorioPath))
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
-	basepath = os.path.join("../../script-output", kwargs["basepath"])
 	workthread = None
 
-	workfolder = os.path.join(basepath, foldername)
-	print("output folder: {}".format(os.path.relpath(workfolder, "../..")))
-
- 
+	workfolder = Path(args.basepath, foldername).resolve()
 	try:
-		os.makedirs(workfolder)
+		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
+	except ValueError:
+		print("output folder: {}".format(workfolder.resolve()))
+
+	try:
+		workfolder.mkdir(parents=True, exist_ok=True)
 	except FileExistsError:
-		pass
+		raise Exception(f"{workfolder} exists and is not a directory!")
 
+	updateLib(args.force_lib_update)
 
-	if not kwargs["noupdate"]:
-		try:
-			print("checking for updates")
-			latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
-			with open("updates.json", "r") as f:
-				currentUpdates = json.load(f)
-			if kwargs["reverseupdatetest"]:
-				latestUpdates, currentUpdates = currentUpdates, latestUpdates
+	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
-			updates = []
-			majorUpdate = False
-			currentVersion = (0, 0, 0)
-			for verStr, changes in currentUpdates.items():
-				ver = tuple(map(int, verStr.split(".")))
-				if currentVersion[0] < ver[0] or (currentVersion[0] == ver[0] and currentVersion[1] < ver[1]):
-					currentVersion = ver
-			for verStr, changes in latestUpdates.items():
-				if verStr not in currentUpdates:
-					ver = tuple(map(int, verStr.split(".")))
-					updates.append((verStr, changes))
-			updates.sort(key = lambda u: u[0])
-			if len(updates) > 0:
+	if args.mod_path.resolve() != Path(userFolder,"mods").resolve():
+		linkCustomModFolder(args.mod_path)
 
-				padding = max(map(lambda u: len(u[0]), updates))
-				changelogLines = []
-				for update in updates:
-					if isinstance(update[1], str):
-						updateText = update[1]
-					else: 
-						updateText = str(("\r\n      " + " "*padding).join(update[1]))
-					if updateText[0] == "!":
-						majorUpdate = True
-						updateText = updateText[1:]
-					changelogLines.append("    %s: %s" % (update[0].rjust(padding), updateText))
-				print("")
-				print("")
-				print("================================================================================")
-				print("")
-				print(("  an " + ("important" if majorUpdate else "incremental") + " update has been found!"))
-				print("")
-				print("  heres what changed:")
-				for line in changelogLines:
-					print(line)
-				print("")
-				print("")
-				print("  Download: https://git.io/factoriomaps")
-				if majorUpdate:
-					print("")
-					print("You can dismiss this by using --noupdate (not recommended)")
-				print("")
-				print("================================================================================")
-				print("")
-				print("")
-				if majorUpdate or kwargs["reverseupdatetest"]:
-					sys.exit(1)(1)
-
-
-		except (urllib.error.URLError, timeout) as e:
-			print("Failed to check for updates. %s: %s" % (type(e).__name__, e))
-
-
-
-
-	updateLib(False)
-
-
-
-	#TODO: integrity check, if done files arent there or there are any bmp's left, complain.
-
-
-	def linkDir(src, dest):
-		if os.name == 'nt':
-			subprocess.check_call(("MKLINK", "/J", os.path.abspath(src), os.path.abspath(dest)), stdout=subprocess.DEVNULL, shell=True)
-		else:
-			os.symlink(os.path.abspath(dest), os.path.abspath(src))
-		
-
-	print("enabling FactorioMaps mod")
-	modListPath = os.path.join(kwargs["modpath"], "mod-list.json")
-	
-	if not os.path.samefile(kwargs["modpath"], "../../mods"):
-		for f in os.listdir(kwargs["modpath"]):
-			if re.match(r'^L0laapk3_FactorioMaps_', f, flags=re.IGNORECASE):
-				print("Found other factoriomaps mod in custom mod folder, deleting.")
-				path = os.path.join(kwargs["modpath"], f)
-				if os.path.islink(path):
-					os.unlink(path)
-				else:
-					os.remove(path)
-
-		linkDir(os.path.join(kwargs["modpath"], os.path.basename(os.path.abspath("."))), ".")
-	
-		
-	
-	def changeModlist(newState):
-		done = False
-		with open(modListPath, "r") as f:
-			modlist = json.load(f)
-		for mod in modlist["mods"]:
-			if mod["name"] == "L0laapk3_FactorioMaps":
-				mod["enabled"] = newState
-				done = True
-		if not done:
-			modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
-		with open(modListPath, "w") as f:
-			json.dump(modlist, f, indent=2)
-
-	changeModlist(True)
-
+	changeModlist(args.mod_path, True)
 
 	manager = mp.Manager()
 	rawTags = manager.dict()
 	rawTags["__used"] = False
 
-
-
-			
-	if kwargs["delete"]:
-		print("deleting output folder")
+	if args.delete:
+		print(f"Deleting output folder ({workfolder})")
 		try:
 			rmtree(workfolder)
 		except (FileNotFoundError, NotADirectoryError):
 			pass
 
 
+	###########################################
+	#                                         #
+	#              Start of Work              #
+	#                                         #
+	###########################################
 
-
-
-
-	datapath = os.path.join(workfolder, "latest.txt")
-	allTmpDirs = []
+	datapath = Path(workfolder, "latest.txt")
 
 	isFirstSnapshot = True
 
 	try:
 
-		for index, savename in () if kwargs["dry"] else enumerate(savenames):
+		daytimes = []
+		if args.day:
+			daytimes.append("day")
+		if args.night:
+			daytimes.append("night")
 
+		for index, savename in () if args.dry else enumerate(saveGames):
+			for daytimeIndex, setDaytime in enumerate(daytimes):
 
+				printErase("cleaning up")
+				if datapath.is_file():
+					datapath.unlink()
 
-			printErase("cleaning up")
-			if os.path.isfile(datapath):
-				os.remove(datapath)
-
-
-
-			printErase("building autorun.lua")
-			if (os.path.isfile(os.path.join(workfolder, "mapInfo.json"))):
-				with open(os.path.join(workfolder, "mapInfo.json"), "r", encoding='utf-8') as f:
-					mapInfoLua = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
-					if isFirstSnapshot:
-						f.seek(0)
-						mapInfo = json.load(f)
-						if "options" in mapInfo:
-							for kwarg in changedKwargs:
-								if kwarg in ("hd", "dayonly", "nightonly", "build-range", "connect-range", "tag-range"):
-									printErase("Warning: flag '" + kwarg + "' is overriden by previous setting found in existing timeline.")
-						isFirstSnapshot = False
-
-			else:
-				mapInfoLua = "{}"
+				buildAutorun(args, workfolder, foldername, isFirstSnapshot, setDaytime)
 				isFirstSnapshot = False
 
-			if (os.path.isfile(os.path.join(workfolder, "chunkCache.json"))):
-				with open(os.path.join(workfolder, "chunkCache.json"), "r") as f:
-					chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
-			else:
-				chunkCache = "{}"
+				with TemporaryDirectory(prefix="FactorioMaps-") as tmpDir:
+					configPath = buildConfig(args, tmpDir, args.basepath)
 
-			with open("autorun.lua", "w", encoding="utf-8") as f:
-				surfaceString = '{"' + '", "'.join(kwargs["surface"]) + '"}' if len(kwargs["surface"]) > 0 else "nil"
-				autorunString = (f'fm.autorun = {{\n'
-				f'HD = {str(kwargs["hd"] == True).lower()},\n'
-				f'day = {str(kwargs["nightonly"] != True).lower()},\n'
-				f'night = {str(kwargs["dayonly"] != True).lower()},\n'
-				f'alt_mode = {str(kwargs["no-altmode"] != True).lower()},\n'
-				f'tags = {str(kwargs["no-tags"] != True).lower()},\n'
-				f'around_tag_range = {float(kwargs["tag-range"])},\n'
-				f'around_build_range = {float(kwargs["build-range"])},\n'
-				f'around_connect_range = {float(kwargs["connect-range"])},\n'
-				f'connect_types = {{"lamp", "electric-pole", "radar", "straight-rail", "curved-rail", "rail-signal", "rail-chain-signal", "locomotive", "cargo-wagon", "fluid-wagon", "car"}},\n'
-				f'date = "{datetime.datetime.strptime(kwargs["date"], "%d/%m/%y").strftime("%d/%m/%y")}",\n'
-				f'surfaces = {surfaceString},\n'
-				f'name = "{foldername + "/"}",\n'
-				f'mapInfo = {mapInfoLua.encode("utf-8").decode("unicode-escape")},\n'
-				f'chunkCache = {chunkCache},\n'
-				f'}}')
-				f.write(autorunString)
-				if kwargs["verbose"]:
-					printErase(autorunString)
+					pid = None
+					isSteam = None
+					pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
 
 
-			printErase("building config.ini")
-			tmpDir = os.path.join(tempfile.gettempdir(), "FactorioMaps-%s" % random.randint(1, 999999999))
-			allTmpDirs.append(tmpDir)
-			try:
-				rmtree(tmpDir)
-			except (FileNotFoundError, NotADirectoryError):
-				pass
-			os.makedirs(os.path.join(tmpDir, "config"))
+					launchArgs = [
+						'--load-game',
+						str(Path(userFolder, 'saves', savename).absolute()),
+						'--disable-audio',
+						'--config',
+						str(configPath),
+						"--mod-directory",str(args.mod_path.absolute()),
+						"--disable-migration-window"
+					]
 
-			configPath = os.path.join(tmpDir, "config/config.ini")
-			config = configparser.ConfigParser()
-			config.read("../../config/config.ini")
+					usedSteamLaunchHack = False
 
-			config["interface"]["show-tips-and-tricks"] = "false"
-			
-			config["path"]["write-data"] = tmpDir
-			config["graphics"]["screenshots-threads-count"] = str(int(kwargs["screenshotthreads" if kwargs["screenshotthreads"] else "maxthreads"]))
-			config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
-			
-			with open(configPath, 'w+') as outf:
-				outf.writelines(("; version=3\n", ))
-				config.write(outf, space_around_delimiters=False)
-				
-
-			linkDir(os.path.join(tmpDir, "script-output"), "../../script-output")
-			copy("../../player-data.json", os.path.join(tmpDir, "player-data.json"))
-
-			pid = None
-			isSteam = None
-			pidBlacklist = [p.info["pid"] for p in psutil.process_iter(attrs=['pid', 'name']) if p.info['name'] == "factorio.exe"]
-
-			popenArgs = (factorioPath, '--load-game', os.path.abspath(os.path.join("../../saves", savename)), '--disable-audio', '--config', configPath, "--mod-directory", os.path.abspath(kwargs["modpath"]), "--disable-migration-window")
-			if kwargs["verbose"]:
-				printErase(popenArgs)
-
-
-			condition = mp.Condition()
-
-
-			results = manager.list()
-
-			printErase("starting factorio")
-			startLogProcess = mp.Process(target=startGameAndReadGameLogs, args=(results, condition, popenArgs, tmpDir, pidBlacklist, rawTags), kwargs=kwargs)
-			startLogProcess.daemon = True
-			startLogProcess.start()
-
-
-			with condition:
-				condition.wait()
-			isSteam, pid = results[:]
-
-
-			if isSteam is None:
-				raise Exception("isSteam error")
-			if pid is None:
-				raise Exception("pid error")
-				
-
-
-
-			while not os.path.exists(datapath):
-				time.sleep(0.4)
-			
-
-			open("autorun.lua", 'w').close()
-
-				
-
-			latest = []
-			with open(datapath, 'r') as f:
-				for line in f:
-					latest.append(line.rstrip("\n"))
-			if kwargs["verbose"]:
-				printErase(latest)
-
-			
-			firstOtherInputs = latest[-1].split(" ")
-			firstOutFolder = firstOtherInputs.pop(0).replace("/", " ")
-			waitfilename = os.path.join(basepath, firstOutFolder, "Images", firstOtherInputs[0], firstOtherInputs[1], firstOtherInputs[2], "done.txt")
-
-			
-			isKilled = [False]
-			def waitKill(isKilled, pid):
-				while not isKilled[0]:
-					#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
-					if os.path.isfile(waitfilename):
-						isKilled[0] = True
-						kill(pid)
-						break
+					if os.name == "nt":
+						steamApiPath = Path(factorioPath, "..", "steam_api64.dll")
 					else:
+						steamApiPath = Path(factorioPath, "..", "steam_api64.so")
+
+					if steamApiPath.exists():	# chances are this is a steam install..
+						if os.name == "nt":
+							steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
+						else:
+							steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
+						
+						if steamPath.exists(): # found a steam executable
+							usedSteamLaunchHack = True
+							exeWithArgs = [
+								str(steamPath),
+								"-applaunch",
+								"427520"
+							] + launchArgs
+
+					if not usedSteamLaunchHack:	# if non steam factorio, or if steam factorio but steam executable isnt found.
+						exeWithArgs = [
+							str(factorioPath)
+						] + launchArgs
+
+					if args.verbose:
+						printErase(exeWithArgs)
+
+					condition = mp.Condition()
+					results = manager.list()
+
+					printErase("starting factorio")
+					startLogProcess = mp.Process(
+						target=startGameAndReadGameLogs,
+						args=(results, condition, exeWithArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args)
+					)
+					startLogProcess.daemon = True
+					startLogProcess.start()
+
+					with condition:
+						condition.wait()
+					isSteam, pid = results[:]
+
+					if isSteam is None:
+						raise Exception("isSteam error")
+					if pid is None:
+						raise Exception("pid error")
+
+					while not datapath.exists():
 						time.sleep(0.4)
 
-			killThread = threading.Thread(target=waitKill, args=(isKilled, pid))
-			killThread.daemon = True
-			killThread.start()
+					# empty autorun.lua
+					open("autorun.lua", 'w', encoding="utf-8").close()
+
+					latest = []
+					with datapath.open('r', encoding="utf-8") as f:
+						for line in f:
+							latest.append(line.rstrip("\n"))
+					if args.verbose:
+						printErase(latest)
+
+					firstOutFolder, timestamp, surface, daytime = latest[-1].split(" ")
+					firstOutFolder = firstOutFolder.replace("/", " ")
+					waitfilename = Path(args.basepath, firstOutFolder, "images", timestamp, surface, daytime, "done.txt")
+
+					isKilled = [False]
+					def waitKill(isKilled, pid):
+						while not isKilled[0]:
+							#print(f"Can I kill yet? {os.path.isfile(waitfilename)} {waitfilename}")
+							if os.path.isfile(waitfilename):
+								isKilled[0] = True
+								kill(pid)
+								break
+							else:
+								time.sleep(0.4)
+
+					killThread = threading.Thread(target=waitKill, args=(isKilled, pid))
+					killThread.daemon = True
+					killThread.start()
+
+					if workthread and workthread.is_alive():
+						#print("waiting for workthread")
+						workthread.join()
+
+					timestamp = None
+					daytimeSurfaces = {}
+					for jindex, screenshot in enumerate(latest):
+						outFolder, timestamp, surface, daytime = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
+						outFolder = outFolder.replace("/", " ")
+						print(f"Processing {outFolder}/{'/'.join([timestamp, surface, daytime])} ({len(latest) * index + jindex + 1 + daytimeIndex} of {len(latest) * len(saveGames) * len(daytimes)})")
+
+						if daytime in daytimeSurfaces:
+							daytimeSurfaces[daytime].append(surface)
+						else:
+							daytimeSurfaces[daytime] = [surface]
+
+						#print("Cropping %s images" % screenshot)
+						crop(outFolder, timestamp, surface, daytime, args.basepath, args)
+						waitlocalfilename = os.path.join(args.basepath, outFolder, "Images", timestamp, surface, daytime, "done.txt")
+						if not os.path.exists(waitlocalfilename):
+							#print("waiting for done.txt")
+							while not os.path.exists(waitlocalfilename):
+								time.sleep(0.4)
 
 
 
-			if workthread and workthread.isAlive():
-				#print("waiting for workthread")
-				workthread.join()
+						def refZoom():
+							needsThumbnail = index + 1 == len(saveGames)
+							#print("Crossreferencing %s images" % screenshot)
+							ref(outFolder, timestamp, surface, daytime, args.basepath, args)
+							#print("downsampling %s images" % screenshot)
+							zoom(outFolder, timestamp, surface, daytime, args.basepath, needsThumbnail, args)
+
+							if jindex == len(latest) - 1:
+								print("zooming renderboxes", timestamp)
+								zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, Path(args.basepath, firstOutFolder, "Images"), args)
+
+						if screenshot != latest[-1]:
+							refZoom()
+						else:
+							startLogProcess.terminate()
+
+							# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
+
+							onlyStall = isKilled[0]
+							isKilled[0] = True
+							kill(pid, onlyStall)
+
+							if savename == saveGames[-1] and daytimeIndex == len(daytimes) - 1:
+								refZoom()
+
+							else:
+								workthread = threading.Thread(target=refZoom)
+								workthread.daemon = True
+								workthread.start()
 
 
 
 
 
-			timestamp = None
-			daytimeSurfaces = {}
-			for jindex, screenshot in enumerate(latest):
-				otherInputs = list(map(lambda s: s.replace("|", " "), screenshot.split(" ")))
-				outFolder = otherInputs.pop(0).replace("/", " ")
-				print("Processing {}/{} ({} of {})".format(outFolder, "/".join(otherInputs), len(latest) * index + jindex + 1, len(latest) * len(savenames)))
-
-				timestamp = otherInputs[0]
-				if otherInputs[2] in daytimeSurfaces:
-					daytimeSurfaces[otherInputs[2]].append(otherInputs[1])
-				else:
-					daytimeSurfaces[otherInputs[2]] = [otherInputs[1]]
-
-				#print("Cropping %s images" % screenshot)
-				crop(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
-				waitlocalfilename = os.path.join(basepath, outFolder, "Images", otherInputs[0], otherInputs[1], otherInputs[2], "done.txt")
-				if not os.path.exists(waitlocalfilename):
-					#print("waiting for done.txt")
-					while not os.path.exists(waitlocalfilename):
-						time.sleep(0.4)
 
 
 
-				def refZoom():
-					needsThumbnail = index + 1 == len(savenames)
-					#print("Crossreferencing %s images" % screenshot)
-					ref(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, **kwargs)
-					#print("downsampling %s images" % screenshot)
-					zoom(outFolder, otherInputs[0], otherInputs[1], otherInputs[2], basepath, needsThumbnail, **kwargs)
-
-					if jindex == len(latest) - 1:
-						print("zooming renderboxes", timestamp)
-						zoomRenderboxes(daytimeSurfaces, workfolder, timestamp, os.path.join(basepath, firstOutFolder, "Images"), **kwargs)
-
-				if screenshot != latest[-1]:
-					refZoom()
-				else:
-					
-					startLogProcess.terminate()
-
-					# I have receieved a bug report from feidan in which he describes what seems like that this doesnt kill factorio?
-					
-					onlyStall = isKilled[0]
-					isKilled[0] = True
-					kill(pid, onlyStall)
-
-					if savename == savenames[-1]:
-						refZoom()
-
-					else:
-						workthread = threading.Thread(target=refZoom)
-						workthread.daemon = True
-						workthread.start()
-
-			
-
-
-
-		
-
-			
 
 		if os.path.isfile(os.path.join(workfolder, "mapInfo.out.json")):
 			print("generating mapInfo.json")
-			with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as destf, open(os.path.join(workfolder, "mapInfo.out.json"), "r", encoding='utf-8') as srcf:
+			with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as destf, Path(workfolder, "mapInfo.out.json").open("r", encoding='utf-8') as srcf:
 				data = json.load(destf)
 				for mapIndex, mapStuff in json.load(srcf)["maps"].items():
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
@@ -663,7 +713,7 @@ def auto(*args):
 
 		print("updating labels")
 		tags = {}
-		with open(os.path.join(workfolder, "mapInfo.json"), 'r+', encoding='utf-8') as mapInfoJson:
+		with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
 			data = json.load(mapInfoJson)
 			for mapStuff in data["maps"]:
 				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
@@ -673,22 +723,22 @@ def auto(*args):
 								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
 
 		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
-		
+
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
 						map(lambda f: re.search(r"^((.*)_(\d+)\.(\d+)\.(\d+))(\.zip)?$", f, flags=re.IGNORECASE),
-							os.listdir(os.path.join(basepath, kwargs["modpath"]))))),
+							os.listdir(os.path.join(args.basepath, args.mod_path))))),
 				key = lambda t: t[1],
 				reverse = True)
 
 
 		rawTags["__used"] = True
-		if not kwargs["no-tags"]:
+		if args.tags:
 			for _, tag in tags.items():
 				dest = os.path.join(workfolder, tag["iconPath"])
 				os.makedirs(os.path.dirname(dest), exist_ok=True)
-				
+
 
 				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
 
@@ -707,7 +757,7 @@ def auto(*args):
 					else:
 						mod = next(mod for mod in modVersions if mod[0] == m.group(1).lower())
 						if not mod[1][3]: #true if mod is zip
-							zipPath = os.path.join(basepath, kwargs["modpath"], mod[2] + ".zip")
+							zipPath = os.path.join(args.basepath, args.mod_path, mod[2] + ".zip")
 							with ZipFile(zipPath, 'r') as zipObj:
 								if len(icons) == 1:
 									zipInfo = zipObj.getinfo(os.path.join(mod[2], icon + ".png").replace('\\', '/'))
@@ -717,18 +767,18 @@ def auto(*args):
 								else:
 									src = zipObj.extract(os.path.join(mod[2], icon + ".png").replace('\\', '/'), os.path.join(tempfile.gettempdir(), "FactorioMaps"))
 						else:
-							src = os.path.join(basepath, kwargs["modpath"], mod[2], icon + ".png")
-					
+							src = os.path.join(args.basepath, args.mod_path, mod[2], icon + ".png")
+
 					if len(icons) == 1:
 						if src is not None:
 							img = Image.open(src)
 							w, h = img.size
-							img = img.crop((0, 0, h, h))
+							img = img.crop((0, 0, h, h)).resize((64, 64))
 							img.save(dest)
 					else:
 						newImg = Image.open(src)
 						w, h = newImg.size
-						newImg = newImg.crop((0, 0, h, h)).convert("RGBA")
+						newImg = newImg.crop((0, 0, h, h)).resize((64, 64)).convert("RGBA")
 						if len(iconColor) > 1:
 							newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
 						if i == 0:
@@ -740,28 +790,34 @@ def auto(*args):
 
 
 
+		print("applying configuration")
+		with Path(workfolder, "mapInfo.json").open("r+", encoding='utf-8') as f:
+			mapInfo = json.load(f)
+			if args.default_timestamp != None or "defaultTimestamp" not in mapInfo["options"]:
+				if args.default_timestamp == None:
+					args.default_timestamp = -1
+				mapInfo["options"]["defaultTimestamp"] = args.default_timestamp
+				f.seek(0)
+				json.dump(mapInfo, f)
+				f.truncate()
 
 
-
-
-		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
-		with open(os.path.join(workfolder, "mapInfo.js"), 'w') as outf, open(os.path.join(workfolder, "mapInfo.json"), "r", encoding='utf-8') as inf:
+		with Path(workfolder, "mapInfo.js").open('w', encoding="utf-8") as outf, Path(workfolder, "mapInfo.json").open("r", encoding='utf-8') as inf:
 			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(')
 			outf.write(json.dumps(inf.read()))
 			outf.write(");")
-			
-			
+
+
 		print("creating index.html")
-		copy("web/index.html", os.path.join(workfolder, "index.html"))
-		copy("web/index.css", os.path.join(workfolder, "index.css"))
-		copy("web/index.js", os.path.join(workfolder, "index.js"))
+		for fileName in ("index.html", "index.css", "index.js"):
+			copy(Path(__file__, "..", "web", fileName).resolve(), os.path.join(workfolder, fileName))
 		try:
 			rmtree(os.path.join(workfolder, "lib"))
 		except (FileNotFoundError, NotADirectoryError):
 			pass
-		copytree("web/lib", os.path.join(workfolder, "lib"))
+		copytree(Path(__file__, "..", "web", "lib").resolve(), os.path.join(workfolder, "lib"))
 
 
 
@@ -777,26 +833,7 @@ def auto(*args):
 		except:
 			pass
 
-		print("disabling FactorioMaps mod")
-		changeModlist(False)
-
-
-
-		print("cleaning up")
-		for tmpDir in allTmpDirs:
-			try:
-				os.unlink(os.path.join(tmpDir, "script-output"))
-				rmtree(tmpDir)
-			except (FileNotFoundError, NotADirectoryError):
-				pass
-
-
-
-
-
-
-
-
+		changeModlist(args.mod_path, False)
 
 if __name__ == '__main__':
 	auto(*sys.argv[1:])

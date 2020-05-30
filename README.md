@@ -22,6 +22,7 @@ Make sure to do a select the "add python to PATH" and "install pip" options.
     * `python auto.py savename` Generate a snapshot of *savename* and store it to folder *savename*.
     * `python auto.py outfolder savename` Generate a snapshot of *savename* and store it to folder *outfolder*.
     * `python auto.py outfolder savename1 savename2 savename3` Generate timeline snapshots of *savename1*, *savename2*, *savename3* in that order, and store it to folder *outfolder*.
+    * `python auto.py outfolder savename*` Generate timeline snapshots of all savefiles that match the glob pattern `savename*` in natural order, and store it to folder *outfolder*.
     * `python auto.py --factorio=PATH` Same as `python auto.py`, but will use `factorio.exe` from *PATH* instead of attempting to find it in common locations.
     * `python auto.py --verbose` Displays factoriomaps related logs.
     * `python auto.py --verbosegame` Displays *all* game logs.
@@ -40,6 +41,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--hd`*\** | Take screenshots of resolution 64 x 64 pixels per in-game tile instead of 32 x 32 to match the resolution of the newer HD textures. |
 | `--no-altmode` | Hides entity info (alt mode) |
 | `--no-tags` | Hides map tags |
+| `--default-timestamp=-1` | Snapshot that will be loaded by the webpage by default. Negative values indicate newest snapshots, so -1 indicates the newest map while 0 indicates the oldest map. |
 | `--build-range=5.2`*\** | The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles). |
 | `--connect-range=1.2`*\** | The maximum range from connection buildings (rails, electric poles) around which pictures are saved. |
 | `--tag-range=5.2`*\** | The maximum range from mapview tags around which pictures are saved. |
@@ -50,7 +52,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
 | `--verbose` | Displays factoriomaps script logs. |
 | `--verbosegame` | Displays *all* game logs. |
-| `--noupdate` | Skips the update check. |
+| `--no-update` | Skips the update check. |
 | `--maxthreads=N` | Sets the number of threads used for all steps. By default this is equal to the amount of logical processor cores available. |
 | `--cropthreads=N` | Sets the number of threads used for the crop step. |
 | `--refthreads=N` | Sets the number of threads used for the crossreferencing step. |
@@ -58,6 +60,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--screenshotthreads=N` | Set the number of screenshotting threads factorio uses. |
 | `--delete` | Deletes the output folder specified before running the script. |
 | `--dry` | Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script. |
+| `--force-lib-update` | Forces an update of the web dependencies. |
  
 Image quality settings can be changed in the top of `zoom.py`.
 
@@ -77,7 +80,7 @@ If you wish to host your map for other people to a server, you need to take into
     All other files, including txt and other non-image files in `Images\`, are not used by the client. Some of them are temporary files, some of them are used as savestate to create additional snapshots on the timeline.
 
 # Known mods that make use of the API to improve compability
-    * **Factorissimo** ⩾2.3.5: Able to render the inside of factory buildings recursively.
+    * Factorissimo ⩾2.3.5: Able to render the inside of factory buildings recursively.
     * Your mod? If you want to have a chat, you can always find me on discord: L0laapk3#2010
 
 # Known limitations

@@ -63,7 +63,7 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 		
 			fm.savename = fm.autorun.name or ""
-			fm.topfolder = "FactorioMaps/" .. fm.savename
+			fm.topfolder = fm.savename
 			fm.autorun.tick = game.tick
 
 			hour = math.ceil(fm.autorun.tick / 60 / 60 / 60)
@@ -74,7 +74,7 @@ script.on_event(defines.events.on_tick, function(event)
 				exists = false
 				if fm.autorun.mapInfo.maps ~= nil then
 					for _, map in pairs(fm.autorun.mapInfo.maps) do
-						if map.path == fm.autorun.filePath then
+						if map.path == fm.autorun.filePath and map.tick ~= fm.autorun.tick then
 							exists = true
 							break
 						end
@@ -87,9 +87,17 @@ script.on_event(defines.events.on_tick, function(event)
 			end
 			
 			fm.API.pull()
+
 			
 			if fm.autorun.surfaces == nil then
-				fm.autorun.surfaces = { fm.autorun.mapInfo.defaultSurface or "nauvis" }
+				if fm.autorun.mapInfo.defaultSurface == nil then
+					if game.surfaces["battle_surface_1"] then	-- detect pvp scenario
+						fm.autorun.mapInfo.defaultSurface = "battle_surface_1"
+					else
+						fm.autorun.mapInfo.defaultSurface = "nauvis"
+					end
+				end
+				fm.autorun.surfaces = { fm.autorun.mapInfo.defaultSurface }
 			else
 				for index, surfaceName in pairs(fm.autorun.surfaces) do
 					if player.surface.name == surfaceName then	-- move surface the player is on to first
@@ -150,12 +158,7 @@ script.on_event(defines.events.on_tick, function(event)
 			latest = ""
 			for _, surfaceName in pairs(fm.autorun.surfaces) do
 				local surface = game.surfaces[surfaceName]
-				if fm.autorun.mapInfo.options.night and not surface.freeze_daytime then
-					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " night\n" .. latest
-				end
-				if fm.autorun.mapInfo.options.day or (surface.freeze_daytime and fm.autorun.mapInfo.options.night) then
-					latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " day\n" .. latest
-				end
+				latest = fm.autorun.name:sub(1, -2):gsub(" ", "/") .. " " .. fm.autorun.filePath .. " " .. surfaceName:gsub(" ", "|") .. " " .. fm.autorun.daytime .. "\n" .. latest
 			end
 			game.write_file(fm.topfolder .. "latest.txt", latest, false, event.player_index)
 			
@@ -198,9 +201,11 @@ script.on_event(defines.events.on_tick, function(event)
 
 
 
-			if fm.autorun.mapInfo.options.day then
+			if fm.autorun.daytime == "day" then
 				fm.currentSurface.daytime = 0
-				fm.daytime = "day"
+				fm.generateMap(event)
+			else
+				fm.currentSurface.daytime = 0.5
 				fm.generateMap(event)
 			end
 			
@@ -208,46 +213,17 @@ script.on_event(defines.events.on_tick, function(event)
 
 		elseif fm.ticks < 2 then
 			
-			if fm.autorun.mapInfo.options.day then
-				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/day/done.txt", "", false, event.player_index)
-			end
+			game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/" .. fm.autorun.daytime .. "/done.txt", "", false, event.player_index)
 	
 			-- remove no path sign
 			for key, entity in pairs(fm.currentSurface.find_entities_filtered({type="flying-text"})) do
 				entity.destroy()
 			end
 
-			if fm.autorun.mapInfo.options.night then
-				fm.currentSurface.daytime = 0.5
-				fm.daytime = "night"
-				fm.generateMap(event)
-			end
 	
 			fm.ticks = 2
-	
-		elseif fm.ticks < 3 then
-			
-			if fm.autorun.mapInfo.options.night then
-				game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/night/done.txt", "", false, event.player_index)
-			end
-			
-			game.write_file(fm.topfolder .. "Images/" .. fm.autorun.filePath .. "/" .. fm.currentSurface.name .. "/done.txt", "", false, event.player_index)
-		   
-			
-			-- unfreeze all entities
-			for key, entity in pairs(fm.currentSurface.find_entities_filtered({})) do
-				entity.active = true
-			end
-
-	
-			if #fm.autorun.surfaces > 0 then
-				fm.ticks = nil
-			else
-				fm.ticks = 3
-			end
 
 		else
-			fm.daytime = nil
 			fm.topfolder = nil
 
 			fm.done = true
