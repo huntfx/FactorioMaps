@@ -379,6 +379,7 @@ def auto(*args):
 	parser.add_argument("--hd", action="store_true", help="Take screenshots of resolution 64 x 64 pixels per in-game tile.")
 	parser.add_argument("--no-altmode", dest="altmode", action="store_false", help="Hides entity info (alt mode).")
 	parser.add_argument("--no-tags", dest="tags", action="store_false", help="Hides map tags")
+	parser.add_argument("--default-timestamp", type=int, default=None, dest="default_timestamp", help="Snapshot that will be loaded by the webpage by default. Negative values indicate newest snapshots, so -1 indicates the newest map while 0 indicates the oldest map.")
 	parser.add_argument("--build-range", type=float, default=5.2, help="The maximum range from buildings around which pictures are saved (in chunks, 32 by 32 in-game tiles).")
 	parser.add_argument("--connect-range", type=float, default=1.2, help="The maximum range from connection buildings (rails, electric poles) around which pictures are saved.")
 	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
@@ -787,6 +788,18 @@ def auto(*args):
 				if len(icons) > 1:
 					img.save(dest)
 
+
+
+		print("applying configuration")
+		with Path(workfolder, "mapInfo.json").open("r+", encoding='utf-8') as f:
+			mapInfo = json.load(f)
+			if args.default_timestamp != None or "defaultTimestamp" not in mapInfo["options"]:
+				if args.default_timestamp == None:
+					args.default_timestamp = -1
+				mapInfo["options"]["defaultTimestamp"] = args.default_timestamp
+				f.seek(0)
+				json.dump(mapInfo, f)
+				f.truncate()
 
 
 

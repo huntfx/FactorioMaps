@@ -48,11 +48,17 @@
     "3.5.3": "Bugfixes",
     "3.5.4": "Extended API",
     "3.5.5": "Updated for 0.18",
-    "3.6.0": [
-        "Fixed bug when dealing with near empty factorio config files",
+    "4.0.0": [
+        "!Fixed bug when dealing with near empty factorio config files",
         "Better defaults for pvp scenario",
         "Allow running for any working directory",
+        "Added wildcards for savefile names",
         "Added option to output to any directory",
-        "Improved launching factorio trough steam"
+        "Improved launching factorio trough steam",
+        "Better handling for modded ground tiles",
+        "Fixed nasty bug with image cross-referencing",
+        "Fixed scale of map label image sizes",
+        "Day and night snapshots are now completely identical instead of 1 tick apart",
+        "Added option to set the default snapshot when the page loads"
     ]
 }
