@@ -57,7 +57,7 @@ def crop(outFolder, timestamp, surface, daytime, basePath=None, args: Namespace 
 	print(f"crop {0:5.1f}% [{' ' * (tsize()[0]-15)}]", end="")
 
 	files = []
-	with datapath.open("r") as data:
+	with datapath.open("r", encoding="utf-8") as data:
 		assert data.readline().rstrip("\n") == "v2"
 		for line in data:
 			files.append(line)

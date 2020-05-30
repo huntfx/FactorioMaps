@@ -75,12 +75,12 @@ def simpleZoom(workQueue):
 
 
 def zoomRenderboxes(daytimeSurfaces, toppath, timestamp, subpath, args):
-	with Path(toppath, "mapInfo.json").open("r+") as mapInfoFile:
+	with Path(toppath, "mapInfo.json").open("r+", encoding="utf-8") as mapInfoFile:
 		mapInfo = json.load(mapInfoFile)
 
 		outFile = Path(toppath, "mapInfo.out.json")
 		if outFile.exists():
-			with outFile.open("r") as mapInfoOutFile:
+			with outFile.open("r", encoding="utf-8") as mapInfoOutFile:
 				outInfo = json.load(mapInfoOutFile)
 		else:
 			outInfo = {"maps": {}}
@@ -151,7 +151,7 @@ def zoomRenderboxes(daytimeSurfaces, toppath, timestamp, subpath, args):
 									)
 								)
 
-		with outFile.open("w") as mapInfoOutFile:
+		with outFile.open("w", encoding="utf-8") as mapInfoOutFile:
 			json.dump(outInfo, mapInfoOutFile)
 			mapInfoOutFile.truncate()
 

@@ -1,11 +1,8 @@
 
 import sys
 
-if sys.maxsize <= 2**32:
-	raise Exception("64 bit Python is required.")
-
-if sys.hexversion < 0x3060000:
-	raise Exception("Python 3.6 or higher is required for this script.")
+if sys.maxsize <= 2**32 or sys.hexversion < 0x3060000:
+	raise Exception("64 bit Python 3.6 or higher is required for this script.")
 
 import os
 import traceback
@@ -14,7 +11,7 @@ from pkg_resources import DistributionNotFound, VersionConflict
 from pathlib import Path
 
 try:
-	with Path(__file__, "..", "packages.txt").open("r") as f:
+	with Path(__file__, "..", "packages.txt").open("r", encoding="utf-8") as f:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
@@ -152,7 +149,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack,
 
 		if isSteam:
 			pipef.close()
-			with Path(tmpDir, "factorio-current.log").open("r") as f:
+			with Path(tmpDir, "factorio-current.log").open("r", encoding="utf-8") as f:
 				while psutil.pid_exists(pid):
 					where = f.tell()
 					line = f.readline()
@@ -172,7 +169,7 @@ def checkUpdate(reverseUpdateTest:bool = False):
 	try:
 		print("checking for updates")
 		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
-		with Path(__file__, "..", "updates.json").open("r") as f:
+		with Path(__file__, "..", "updates.json").open("r", encoding="utf-8") as f:
 			currentUpdates = json.load(f)
 		if reverseUpdateTest:
 			latestUpdates, currentUpdates = currentUpdates, latestUpdates
@@ -255,7 +252,7 @@ def changeModlist(modpath: Path,newState: bool):
 	print(f"{'Enabling' if newState else 'Disabling'} FactorioMaps mod")
 	done = False
 	modlistPath = Path(modpath, "mod-list.json")
-	with modlistPath.open("r") as f:
+	with modlistPath.open("r", encoding="utf-8") as f:
 		modlist = json.load(f)
 	for mod in modlist["mods"]:
 		if mod["name"] == "L0laapk3_FactorioMaps":
@@ -264,7 +261,7 @@ def changeModlist(modpath: Path,newState: bool):
 			break
 	if not done:
 		modlist["mods"].append({"name": "L0laapk3_FactorioMaps", "enabled": newState})
-	with modlistPath.open("w") as f:
+	with modlistPath.open("w", encoding="utf-8") as f:
 		json.dump(modlist, f, indent=2)
 
 
@@ -289,7 +286,7 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 
 	chunkCachePath = Path(workFolder, "chunkCache.json")
 	if chunkCachePath.is_file():
-		with chunkCachePath.open("r") as f:
+		with chunkCachePath.open("r", encoding="utf-8") as f:
 			chunkCache = re.sub(r'"([^"]+)" *:', lambda m: '["'+m.group(1)+'"] = ', f.read().replace("[", "{").replace("]", "}"))
 	else:
 		chunkCache = "{}"
@@ -343,7 +340,7 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 	config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
 	config["graphics"]["max-threads"] = config["graphics"]["screenshots-threads-count"]
 
-	with configPath.open("w+") as configFile:
+	with configPath.open("w+", encoding="utf-8") as configFile:
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
 
@@ -603,10 +600,10 @@ def auto(*args):
 						time.sleep(0.4)
 
 					# empty autorun.lua
-					open("autorun.lua", 'w').close()
+					open("autorun.lua", 'w', encoding="utf-8").close()
 
 					latest = []
-					with datapath.open('r') as f:
+					with datapath.open('r', encoding="utf-8") as f:
 						for line in f:
 							latest.append(line.rstrip("\n"))
 					if args.verbose:
@@ -796,7 +793,7 @@ def auto(*args):
 		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
-		with Path(workfolder, "mapInfo.js").open('w') as outf, Path(workfolder, "mapInfo.json").open("r", encoding='utf-8') as inf:
+		with Path(workfolder, "mapInfo.js").open('w', encoding="utf-8") as outf, Path(workfolder, "mapInfo.json").open("r", encoding='utf-8') as inf:
 			outf.write('"use strict";\nwindow.mapInfo = JSON.parse(')
 			outf.write(json.dumps(inf.read()))
 			outf.write(");")

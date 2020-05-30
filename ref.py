@@ -120,7 +120,7 @@ def ref(
 		data = json.load(f)
 	outFile = Path(topPath, "mapInfo.out.json")
 	if outFile.exists():
-		with outFile.open("r") as mapInfoOutFile:
+		with outFile.open("r", encoding="utf-8") as mapInfoOutFile:
 			outdata = json.load(mapInfoOutFile)
 	else:
 		outdata = {}
@@ -172,7 +172,7 @@ def ref(
 
 
 					def readCropList(path, combinePrevious):
-						with open(path, "r") as f:
+						with open(path, "r", encoding="utf-8") as f:
 							version = 2 if f.readline().rstrip('\n') == "v2" else 1
 							for line in f:
 								if version == 1:
@@ -212,7 +212,7 @@ def ref(
 						else:
 							if args.verbose: print("found day surface, reuse results from ref.py from there")
 
-							with Path(topPath, "Images", newMap["path"], surfaceName, "day", "ref.txt").open("r") as f:
+							with Path(topPath, "Images", newMap["path"], surfaceName, "day", "ref.txt").open("r", encoding="utf-8") as f:
 								for line in f:
 									dayImages.append(tuple(line.rstrip("\n").split(" ", 2)))
 
@@ -280,7 +280,7 @@ def ref(
 		if args.verbose: print("creating render index")
 		for surfaceName, daytime in newComparedSurfaces:
 			z = surface["zoom"]["max"]
-			with Path(topPath, "Images", newMap["path"], surfaceName, daytime, "ref.txt").open("w") as f:
+			with Path(topPath, "Images", newMap["path"], surfaceName, daytime, "ref.txt").open("w", encoding="utf-8") as f:
 				for aList in (keepList, neighbourList):
 					for coord in aList:
 						if coord[0] == surfaceName and coord[1] == daytime and coord[2] == str(z):
