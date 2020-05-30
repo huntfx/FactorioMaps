@@ -772,12 +772,12 @@ def auto(*args):
 						if src is not None:
 							img = Image.open(src)
 							w, h = img.size
-							img = img.crop((0, 0, h, h))
+							img = img.crop((0, 0, h, h)).resize((64, 64))
 							img.save(dest)
 					else:
 						newImg = Image.open(src)
 						w, h = newImg.size
-						newImg = newImg.crop((0, 0, h, h)).convert("RGBA")
+						newImg = newImg.crop((0, 0, h, h)).resize((64, 64)).convert("RGBA")
 						if len(iconColor) > 1:
 							newImg = ImageChops.multiply(newImg, Image.new("RGBA", newImg.size, color=tuple(map(lambda s: int(round(float(s))), iconColor[1].split("%")))))
 						if i == 0:
@@ -789,8 +789,6 @@ def auto(*args):
 
 
 
-
-		#TODO: download leaflet shit
 
 		print("generating mapInfo.js")
 		with Path(workfolder, "mapInfo.js").open('w', encoding="utf-8") as outf, Path(workfolder, "mapInfo.json").open("r", encoding='utf-8') as inf:
