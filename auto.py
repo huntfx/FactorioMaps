@@ -628,7 +628,7 @@ def auto(*args):
 					killThread.daemon = True
 					killThread.start()
 
-					if workthread and workthread.isAlive():
+					if workthread and workthread.is_alive():
 						#print("waiting for workthread")
 						workthread.join()
 
