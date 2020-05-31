@@ -60,5 +60,6 @@
         "Fixed scale of map label image sizes",
         "Day and night snapshots are now completely identical instead of 1 tick apart",
         "Added option to set the default snapshot when the page loads"
-    ]
+    ],
+    "4.0.1": "!Bugfix with default snapshot index"
 }

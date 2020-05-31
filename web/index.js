@@ -420,7 +420,7 @@ if (countAvailableSaves > 0 || mapInfo.links && mapInfo.links.save) {
 
 const defaultSurface = mapInfo.defaultSurface || "nauvis";
 let nightOpacity = 0;
-const defaultMapPath = mapInfo.options.defaultTimestamp;
+const defaultMapPath = (mapInfo.options.defaultTimestamp < 0 ? mapInfo.maps.length : 0) + mapInfo.options.defaultTimestamp;
 console.assert(0 <= defaultMapPath && defaultMapPath < mapInfo.maps.length, "Default map path is out of bounds.");
 const someSurfaces = mapInfo.maps[defaultMapPath].surfaces;
 let currentSurface = defaultSurface in someSurfaces ? defaultSurface : Object.keys(someSurfaces).sort()[0]
