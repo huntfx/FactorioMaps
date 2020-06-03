@@ -11,7 +11,7 @@ from pkg_resources import DistributionNotFound, VersionConflict
 from pathlib import Path
 
 try:
-	with Path(__file__, "..", "packages.txt").open("r", encoding="utf-8") as f:
+	with Path(__file__, "..", "packages.txt").resolve().open("r", encoding="utf-8") as f:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
@@ -169,7 +169,7 @@ def checkUpdate(reverseUpdateTest:bool = False):
 	try:
 		print("checking for updates")
 		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
-		with Path(__file__, "..", "updates.json").open("r", encoding="utf-8") as f:
+		with Path(__file__, "..", "updates.json").resolve().open("r", encoding="utf-8") as f:
 			currentUpdates = json.load(f)
 		if reverseUpdateTest:
 			latestUpdates, currentUpdates = currentUpdates, latestUpdates
