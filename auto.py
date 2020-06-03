@@ -294,7 +294,7 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 	def lowerBool(value: bool):
 		return str(value).lower()
 
-	with open("autorun.lua", "w", encoding="utf-8") as f:
+	with Path(__file__, "..", "autorun.lua").resolve().open("autorun.lua", "w", encoding="utf-8") as f:
 		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
 		autorunString = \
 			f'''fm.autorun = {{
@@ -601,7 +601,7 @@ def auto(*args):
 						time.sleep(0.4)
 
 					# empty autorun.lua
-					open("autorun.lua", 'w', encoding="utf-8").close()
+					Path(__file__, "..", "autorun.lua").resolve().open('w', encoding="utf-8").close()
 
 					latest = []
 					with datapath.open('r', encoding="utf-8") as f:
