@@ -2,8 +2,6 @@
 ![image](https://user-images.githubusercontent.com/6313423/46447780-0d723880-c784-11e8-8e6f-2b35d24f25b9.png)
 This [Factorio](http://www.factorio.com/) mod turns your factory into a timeline! You can view the map locally or upload it to a web server.
 
-Live demo: https://factoriomaps.com/beta/user/L0laapk3/megabase/index.html
-
 Mod portal link: https://mods.factorio.com/mod/L0laapk3_FactorioMaps
 
 # How to Install
