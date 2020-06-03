@@ -335,6 +335,8 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 		config["path"] = {}
 	config["path"]["write-data"] = tmpDir
 
+	config["path"]["script-output"] = str(basepath)
+
 	if "graphics" not in config:
 		config["graphics"] = {}
 	config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
@@ -343,9 +345,6 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 	with configPath.open("w+", encoding="utf-8") as configFile:
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
-
-	# TODO: change this when https://forums.factorio.com/viewtopic.php?f=28&t=81221 is implemented
-	linkDir(Path(tmpDir, "script-output"), basepath)
 
 	copy(Path(userFolder, 'player-data.json'), tmpDir)
 
