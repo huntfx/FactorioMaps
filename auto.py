@@ -294,7 +294,7 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 	def lowerBool(value: bool):
 		return str(value).lower()
 
-	with Path(__file__, "..", "autorun.lua").resolve().open("autorun.lua", "w", encoding="utf-8") as f:
+	with Path(__file__, "..", "autorun.lua").resolve().open("w", encoding="utf-8") as f:
 		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
 		autorunString = \
 			f'''fm.autorun = {{
@@ -335,7 +335,6 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 		config["path"] = {}
 	config["path"]["write-data"] = tmpDir
 
-	print(tmpDir)
 	config["path"]["script-output"] = str(basepath)
 
 	if "graphics" not in config:
