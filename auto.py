@@ -335,6 +335,7 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 		config["path"] = {}
 	config["path"]["write-data"] = tmpDir
 
+	print(tmpDir)
 	config["path"]["script-output"] = str(basepath)
 
 	if "graphics" not in config:
