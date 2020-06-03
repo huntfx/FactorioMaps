@@ -288,3 +288,9 @@ script.on_event(defines.events.on_tick, function(event)
 		
 	end
 end)
+
+function unpause()
+	game.tick_paused = false
+end
+script.on_init(unpause)
+script.on_load(unpause)
