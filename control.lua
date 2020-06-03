@@ -255,7 +255,9 @@ script.on_event(defines.events.on_tick, function(event)
 
 		game.tick_paused = true
 		game.ticks_to_run = 0
-		player.character.active = false
+		if player.character then
+			player.character.active = false
+		end
 		
 		local main = player.gui.center.add{type = "frame", caption = text[1], direction = "vertical"}
 		local topLine = main.add{type = "flow", direction = "horizontal"}
