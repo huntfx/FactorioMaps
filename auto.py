@@ -702,9 +702,10 @@ def auto(*args):
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
 						if "chunks" in surfaceStuff:
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
-						for linkIndex, link in enumerate(surfaceStuff["links"]):
-							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
-							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
+						if "links" in surfaceStuff:
+							for linkIndex, link in enumerate(surfaceStuff["links"]):
+								data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
+								data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 				destf.seek(0)
 				json.dump(data, destf)
 				destf.truncate()
