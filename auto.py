@@ -18,6 +18,7 @@ except (DistributionNotFound, VersionConflict) as ex:
 	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
 	sys.exit(1)
 
+import glob
 import argparse
 import configparser
 import datetime
@@ -426,8 +427,9 @@ def auto(*args):
 
 	saveGames = OrderedSet()
 	for saveName in saveNames:
-		globResults = list(saves.glob(saveName))
-		globResults += list(saves.glob(f"{saveName}.zip"))
+		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
+		globResults = list(saves.glob(saveNameEscaped))
+		globResults += list(saves.glob(f"{saveNameEscaped}.zip"))
 
 		if not globResults:
 			print(f'Cannot find savefile: "{saveName}"')
