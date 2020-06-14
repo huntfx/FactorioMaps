@@ -293,4 +293,3 @@ function unpause()
 	game.tick_paused = false
 end
 script.on_init(unpause)
-script.on_load(unpause)
