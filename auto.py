@@ -11,13 +11,14 @@ from pkg_resources import DistributionNotFound, VersionConflict
 from pathlib import Path
 
 try:
-	with Path(__file__, "..", "packages.txt").open("r", encoding="utf-8") as f:
+	with Path(__file__, "..", "packages.txt").resolve().open("r", encoding="utf-8") as f:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
 	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
 	sys.exit(1)
 
+import glob
 import argparse
 import configparser
 import datetime
@@ -169,7 +170,7 @@ def checkUpdate(reverseUpdateTest:bool = False):
 	try:
 		print("checking for updates")
 		latestUpdates = json.loads(urllib.request.urlopen('https://cdn.jsdelivr.net/gh/L0laapk3/FactorioMaps@latest/updates.json', timeout=30).read())
-		with Path(__file__, "..", "updates.json").open("r", encoding="utf-8") as f:
+		with Path(__file__, "..", "updates.json").resolve().open("r", encoding="utf-8") as f:
 			currentUpdates = json.load(f)
 		if reverseUpdateTest:
 			latestUpdates, currentUpdates = currentUpdates, latestUpdates
@@ -294,7 +295,7 @@ def buildAutorun(args: Namespace, workFolder: Path, outFolder: Path, isFirstSnap
 	def lowerBool(value: bool):
 		return str(value).lower()
 
-	with open("autorun.lua", "w", encoding="utf-8") as f:
+	with Path(__file__, "..", "autorun.lua").resolve().open("w", encoding="utf-8") as f:
 		surfaceString = '{"' + '", "'.join(args.surface) + '"}' if args.surface else "nil"
 		autorunString = \
 			f'''fm.autorun = {{
@@ -335,6 +336,8 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 		config["path"] = {}
 	config["path"]["write-data"] = tmpDir
 
+	config["path"]["script-output"] = str(basepath)
+
 	if "graphics" not in config:
 		config["graphics"] = {}
 	config["graphics"]["screenshots-threads-count"] = str(args.screenshotthreads if args.screenshotthreads else args.maxthreads)
@@ -343,9 +346,6 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 	with configPath.open("w+", encoding="utf-8") as configFile:
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
-
-	# TODO: change this when https://forums.factorio.com/viewtopic.php?f=28&t=81221 is implemented
-	linkDir(Path(tmpDir, "script-output"), basepath)
 
 	copy(Path(userFolder, 'player-data.json'), tmpDir)
 
@@ -427,8 +427,9 @@ def auto(*args):
 
 	saveGames = OrderedSet()
 	for saveName in saveNames:
-		globResults = list(saves.glob(saveName))
-		globResults += list(saves.glob(f"{saveName}.zip"))
+		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
+		globResults = list(saves.glob(saveNameEscaped))
+		globResults += list(saves.glob(f"{saveNameEscaped}.zip"))
 
 		if not globResults:
 			print(f'Cannot find savefile: "{saveName}"')
@@ -601,7 +602,7 @@ def auto(*args):
 						time.sleep(0.4)
 
 					# empty autorun.lua
-					open("autorun.lua", 'w', encoding="utf-8").close()
+					Path(__file__, "..", "autorun.lua").resolve().open('w', encoding="utf-8").close()
 
 					latest = []
 					with datapath.open('r', encoding="utf-8") as f:
@@ -701,9 +702,10 @@ def auto(*args):
 					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
 						if "chunks" in surfaceStuff:
 							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["chunks"] = surfaceStuff["chunks"]
-						for linkIndex, link in enumerate(surfaceStuff["links"]):
-							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
-							data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
+						if "links" in surfaceStuff:
+							for linkIndex, link in enumerate(surfaceStuff["links"]):
+								data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["path"] = link["path"]
+								data["maps"][int(mapIndex)]["surfaces"][surfaceName]["links"][linkIndex]["zoom"]["min"] = link["zoom"]["min"]
 				destf.seek(0)
 				json.dump(data, destf)
 				destf.truncate()

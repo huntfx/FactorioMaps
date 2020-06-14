@@ -41,11 +41,11 @@ def printErase(arg):
 
 # note that these are all 64 bit libraries since factorio doesnt support 32 bit.
 if os.name == "nt":
-	jpeg = TurboJPEG(Path(__file__, "..", "mozjpeg/turbojpeg.dll").as_posix())
+	jpeg = TurboJPEG(Path(__file__, "..", "mozjpeg/turbojpeg.dll").resolve().as_posix())
 # elif _platform == "darwin":						# I'm not actually sure if mac can run linux libraries or not.
 # 	jpeg = TurboJPEG("mozjpeg/libturbojpeg.dylib")	# If anyone on mac has problems with the line below please make an issue :)
 else:
-	jpeg = TurboJPEG(Path(__file__, "..", "mozjpeg/libturbojpeg.so").as_posix())
+	jpeg = TurboJPEG(Path(__file__, "..", "mozjpeg/libturbojpeg.so").resolve().as_posix())
 
 
 def saveCompress(img, path: Path):
@@ -270,7 +270,7 @@ def zoom(
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == "nt" else 10)
 
-	workFolder = basepath if basepath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps")
+	workFolder = basepath if basepath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps").resolve()
 
 	topPath = Path(workFolder, outFolder)
 	dataPath = Path(topPath, "mapInfo.json")

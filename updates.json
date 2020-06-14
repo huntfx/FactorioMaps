@@ -61,5 +61,11 @@
         "Day and night snapshots are now completely identical instead of 1 tick apart",
         "Added option to set the default snapshot when the page loads"
     ],
-    "4.0.1": "!Bugfix with default snapshot index"
+    "4.0.1": "!Bugfix with default snapshot index",
+    "4.1.0": [
+        "Replace symlinks with the new script-output config option, restore linux compatibility",
+        "Fix for editor/god mode maps",
+        "Fix for when the CWD is different than the script directory",
+        "Bugfixes :)"
+    ]
 }

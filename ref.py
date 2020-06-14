@@ -107,7 +107,7 @@ def ref(
 
 	psutil.Process(os.getpid()).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 
-	workFolder = basepath if basepath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps")
+	workFolder = basepath if basepath else Path(__file__, "..", "..", "..", "script-output", "FactorioMaps").resolve()
 	topPath = Path(workFolder, outFolder)
 	dataPath = Path(topPath, "mapInfo.json")
 	maxthreads = args.refthreads if args.refthreads else args.maxthreads
