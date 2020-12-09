@@ -65,7 +65,7 @@ def printErase(arg):
 		pass
 
 
-def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args):
+def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pidBlacklist, rawTags, args):
 
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
@@ -107,21 +107,13 @@ def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack,
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-
-		line = pipef.readline().rstrip("\n")
-		print("YOOOOOOO", line)
+		line = pipef.readline().rstrip("\n") if isSteam else ""
 		printingStackTraceback = handleGameLine(line)
-		isSteam = False
-		if line.endswith("Initializing Steam API.") or usedSteamLaunchHack:
-			isSteam = True
-		elif not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
+		if not isSteam and not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
-			if usedSteamLaunchHack:
-				printErase("using steam launch hack.")
-			else:
-				printErase("WARNING: Could not find steam exe. Falling back to old steam method.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t To avoid this in the future, use the --steam-exe argument.")
+			printErase("using steam launch hack.")
 			
 			attrs = ('pid', 'name', 'create_time')
 
