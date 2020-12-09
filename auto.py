@@ -109,6 +109,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack,
 	with os.fdopen(pipeOut, 'r') as pipef:
 
 		line = pipef.readline().rstrip("\n")
+		print("YOOOOOOO", line)
 		printingStackTraceback = handleGameLine(line)
 		isSteam = False
 		if line.endswith("Initializing Steam API.") or usedSteamLaunchHack:
@@ -389,6 +390,8 @@ def auto(*args):
 	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
 	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'config'), help="Use PATH as the mod folder. (default is '..\\..\\config')")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
+	parser.add_argument("--steam", default=0, action="store_true", help="Only use factorio binary from steam")
+	parser.add_argument("--standalone", default=0, action="store_true", help="Only use standalone factorio binary")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
 	parser.add_argument('--verbosegame', action='count', default=0, help="Displays all game logs.")
 	parser.add_argument("--no-update", "--noupdate", dest="update", action="store_false", help="Skips the update check.")
@@ -447,28 +450,41 @@ def auto(*args):
 		"Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 		"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 	]
-	
-	def driveExists(drive):
-		try:
-			return Path(f"{drive}:/").exists()
-		except PermissionError:
-			return False
 
-	availableDrives = [
-		"%s:/" % d for d in string.ascii_uppercase if driveExists(d)
-	]
-	possiblePaths = [
-		drive + path for drive in availableDrives for path in windowsPaths
-	] + ["../../bin/x64/factorio.exe", "../../bin/x64/factorio",]
+	if args.factorio:
+		possibleFactorioPaths = [args.factorio]
+	else:
+		unixPaths = [
+			"../../bin/x64/factorio.exe",
+			"../../bin/x64/factorio",
+		]
+		windowsPathsStandalone = [
+			"Program Files/Factorio/bin/x64/factorio.exe",
+			"Games/Factorio/bin/x64/factorio.exe",
+		]
+		windowsPathsSteam = [
+			"Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+			"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+		]
+		availableDrives = [
+			"%s:/" % d for d in string.ascii_uppercase if Path(f"{d}:/").exists()
+		]
+		possibleFactorioPaths = unixPaths
+		if args.steam == 0:
+			possibleFactorioPaths += [ drive + path for drive in availableDrives for path in windowsPathsStandalone ]
+		if args.standalone == 0:
+			possibleFactorioPaths += [ drive + path for drive in availableDrives for path in windowsPathsSteam ]
+			
 	try:
 		factorioPath = next(
 			x
-			for x in map(Path, [args.factorio] if args.factorio else possiblePaths)
+			for x in map(Path, possibleFactorioPaths)
 			if x.is_file()
 		)
 	except StopIteration:
 		raise Exception(
-			"Can't find factorio.exe. Please pass --factorio=PATH as an argument."
+			"Can't find factorio.exe. Please pass --factorio=PATH as an argument.",
+			"Searched the following locations:", possibleFactorioPaths
 		)
 
 	print("factorio path: {}".format(factorioPath))

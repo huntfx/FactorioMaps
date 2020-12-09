@@ -48,6 +48,8 @@ Heres a list of flags that `auto.py` can accept:
 | `--modpath=PATH` | Use *PATH* as the mod folder. |
 | `--basepath=RELPATH` | Output to `script-output\RELPATH` instead of `script-output\FactorioMaps`. (Factorio cannot output outside of `script-output`) |
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
+| `--steam` | Only use factorio binary from steam. |
+| `--standalone` | Only use standalone factorio binary. |
 | `--verbose` | Displays factoriomaps script logs. |
 | `--verbosegame` | Displays *all* game logs. |
 | `--no-update` | Skips the update check. |
