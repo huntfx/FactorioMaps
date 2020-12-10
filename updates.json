@@ -67,5 +67,6 @@
         "Fix for editor/god mode maps",
         "Fix for when the CWD is different than the script directory",
         "Bugfixes :)"
-    ]
+    ],
+    "4.1.1": "Updated for 1.1"
 }

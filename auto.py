@@ -65,7 +65,7 @@ def printErase(arg):
 		pass
 
 
-def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack, tmpDir, pidBlacklist, rawTags, args):
+def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pidBlacklist, rawTags, args):
 
 	pipeOut, pipeIn = os.pipe()
 	p = subprocess.Popen(popenArgs, stdout=pipeIn)
@@ -107,20 +107,13 @@ def startGameAndReadGameLogs(results, condition, popenArgs, usedSteamLaunchHack,
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-
-		line = pipef.readline().rstrip("\n")
+		line = pipef.readline().rstrip("\n") if isSteam else ""
 		printingStackTraceback = handleGameLine(line)
-		isSteam = False
-		if line.endswith("Initializing Steam API.") or usedSteamLaunchHack:
-			isSteam = True
-		elif not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
+		if not isSteam and not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
 			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
 
 		if isSteam:
-			if usedSteamLaunchHack:
-				printErase("using steam launch hack.")
-			else:
-				printErase("WARNING: Could not find steam exe. Falling back to old steam method.\n\t If you have any default arguments set in steam for factorio, delete them and restart the script.\n\t Please alt tab to steam and confirm the steam 'start game with arguments' popup.\n\t To avoid this in the future, use the --steam-exe argument.")
+			printErase("using steam launch hack.")
 			
 			attrs = ('pid', 'name', 'create_time')
 
@@ -389,6 +382,8 @@ def auto(*args):
 	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
 	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'config'), help="Use PATH as the mod folder. (default is '..\\..\\config')")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
+	parser.add_argument("--steam", default=0, action="store_true", help="Only use factorio binary from steam")
+	parser.add_argument("--standalone", default=0, action="store_true", help="Only use standalone factorio binary")
 	parser.add_argument('--verbose', '-v', action='count', default=0, help="Displays factoriomaps script logs.")
 	parser.add_argument('--verbosegame', action='count', default=0, help="Displays all game logs.")
 	parser.add_argument("--no-update", "--noupdate", dest="update", action="store_false", help="Skips the update check.")
@@ -448,21 +443,40 @@ def auto(*args):
 		"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
 	]
 
-	availableDrives = [
-		"%s:/" % d for d in string.ascii_uppercase if Path(f"{d}:/").exists()
-	]
-	possiblePaths = [
-		drive + path for drive in availableDrives for path in windowsPaths
-	] + ["../../bin/x64/factorio.exe", "../../bin/x64/factorio",]
+	if args.factorio:
+		possibleFactorioPaths = [args.factorio]
+	else:
+		unixPaths = [
+			"../../bin/x64/factorio.exe",
+			"../../bin/x64/factorio",
+		]
+		windowsPathsStandalone = [
+			"Program Files/Factorio/bin/x64/factorio.exe",
+			"Games/Factorio/bin/x64/factorio.exe",
+		]
+		windowsPathsSteam = [
+			"Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+			"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
+		]
+		availableDrives = [
+			"%s:/" % d for d in string.ascii_uppercase if Path(f"{d}:/").exists()
+		]
+		possibleFactorioPaths = unixPaths
+		if args.steam == 0:
+			possibleFactorioPaths += [ drive + path for drive in availableDrives for path in windowsPathsStandalone ]
+		if args.standalone == 0:
+			possibleFactorioPaths += [ drive + path for drive in availableDrives for path in windowsPathsSteam ]
+			
 	try:
 		factorioPath = next(
 			x
-			for x in map(Path, [args.factorio] if args.factorio else possiblePaths)
+			for x in map(Path, possibleFactorioPaths)
 			if x.is_file()
 		)
 	except StopIteration:
 		raise Exception(
-			"Can't find factorio.exe. Please pass --factorio=PATH as an argument."
+			"Can't find factorio.exe. Please pass --factorio=PATH as an argument.",
+			"Searched the following locations:", possibleFactorioPaths
 		)
 
 	print("factorio path: {}".format(factorioPath))
