@@ -750,8 +750,6 @@ def auto(*args):
 							if "iconType" in tag:
 								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
 
-		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
-
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
@@ -763,6 +761,8 @@ def auto(*args):
 
 		rawTags["__used"] = True
 		if args.tags:
+			rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
+
 			for _, tag in tags.items():
 				dest = os.path.join(workfolder, tag["iconPath"])
 				os.makedirs(os.path.dirname(dest), exist_ok=True)
