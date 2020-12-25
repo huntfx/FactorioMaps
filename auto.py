@@ -738,18 +738,6 @@ def auto(*args):
 			os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 
-
-		print("updating labels")
-		tags = {}
-		with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
-			data = json.load(mapInfoJson)
-			for mapStuff in data["maps"]:
-				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
-					if "tags" in surfaceStuff:
-						for tag in surfaceStuff["tags"]:
-							if "iconType" in tag:
-								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
-
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
@@ -761,15 +749,40 @@ def auto(*args):
 
 		rawTags["__used"] = True
 		if args.tags:
+			print("updating labels")
+			tags = {}
+			def addTag(tags, itemType, itemName, force=False):
+				index = itemType + itemName[0].upper() + itemName[1:]
+				if index in rawTags:
+					print("added")
+					tags[index] = {
+						"itemType": itemType,
+						"itemName": itemName,
+						"iconPath": "Images/labels/" + itemType + "/" + itemName + ".png",
+					}
+				elif force:
+					raise "tag not found."
+			with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
+				data = json.load(mapInfoJson)
+				for mapStuff in data["maps"]:
+					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
+						if "tags" in surfaceStuff:
+							for tag in surfaceStuff["tags"]:
+								if "iconType" in tag:
+									addTag(tags, tag["iconType"], tag["iconName"], True)
+								if "text" in tag:
+									for match in re.finditer("\[([^=]+)=([^\]]+)", tag["text"]):
+										addTag(tags, match.group(1), match.group(2))
+
+			print(tags)
+
 			rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
 
-			for _, tag in tags.items():
+			for tagIndex, tag in tags.items():
 				dest = os.path.join(workfolder, tag["iconPath"])
 				os.makedirs(os.path.dirname(dest), exist_ok=True)
 
-
-				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
-
+				rawPath = rawTags[tagIndex]
 
 				icons = rawPath.split('|')
 				img = None
