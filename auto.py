@@ -47,7 +47,6 @@ from zipfile import ZipFile
 
 import psutil
 from PIL import Image, ImageChops
-from orderedset import OrderedSet
 
 from crop import crop
 from ref import ref
@@ -55,6 +54,11 @@ from updateLib import update as updateLib
 from zoom import zoom, zoomRenderboxes
 
 userFolder = Path(__file__, "..", "..", "..").resolve()
+
+def naturalSort(l): 
+	convert = lambda text: int(text) if text.isdigit() else text.lower() 
+	alphanum_key = lambda key: [ convert(c) for c in re.split('(\d+)', key) ] 
+	return sorted(l, key = alphanum_key)
 
 def printErase(arg):
 	try:
@@ -65,15 +69,18 @@ def printErase(arg):
 		pass
 
 
-def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pidBlacklist, rawTags, args):
+def startGameAndReadGameLogs(results, condition, exeWithArgs, isSteam, tmpDir, pidBlacklist, rawTags, args):
 
 	pipeOut, pipeIn = os.pipe()
-	p = subprocess.Popen(popenArgs, stdout=pipeIn)
+	p = subprocess.Popen(exeWithArgs, stdout=pipeIn)
 
 	printingStackTraceback = False
 	# TODO: keep printing multiline stuff until new print detected
 	prevPrinted = False
-	def handleGameLine(line):
+	def handleGameLine(line, isFirst):
+		if isFirst and not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
+			raise Exception("Unrecognised output from factorio (maybe your version is outdated or too new?)\n\nOutput from factorio:\n" + line)
+
 		nonlocal prevPrinted
 		line = line.rstrip('\n')
 		if re.match(r'^\ *\d+(?:\.\d+)? *[^\n]*$', line) is None:
@@ -82,7 +89,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pid
 			return
 
 		prevPrinted = False
-
+	
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
 		if m is not None:
 			rawTags[m.group(1)] = m.group(2)
@@ -107,11 +114,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pid
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-		line = pipef.readline().rstrip("\n") if isSteam else ""
-		printingStackTraceback = handleGameLine(line)
-		if not isSteam and not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
-			raise Exception("Unrecognised output from factorio (maybe your version is outdated?)\n\nOutput from factorio:\n" + line)
-
+		
 		if isSteam:
 			printErase("using steam launch hack.")
 			
@@ -141,6 +144,7 @@ def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pid
 
 		psutil.Process(pid).nice(psutil.BELOW_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 10)
 
+		isFirstLine = True
 		if isSteam:
 			pipef.close()
 			with Path(tmpDir, "factorio-current.log").open("r", encoding="utf-8") as f:
@@ -151,12 +155,14 @@ def startGameAndReadGameLogs(results, condition, popenArgs, isSteam, tmpDir, pid
 						time.sleep(0.4)
 						f.seek(where)
 					else:
-						printingStackTraceback = handleGameLine(line)
+						printingStackTraceback = handleGameLine(line, isFirstLine)
+						isFirstLine = False
 
 		else:
 			while True:
-				line = pipef.readline()
-				printingStackTraceback = handleGameLine(line)
+				line = pipef.readline().rstrip("\n")
+				printingStackTraceback = handleGameLine(line, isFirstLine)
+				isFirstLine = False
 
 
 def checkUpdate(reverseUpdateTest:bool = False):
@@ -420,7 +426,7 @@ def auto(*args):
 	saveNames = args.savename or [foldername]
 	foldername = foldername.replace('*', '').replace('?', '')
 
-	saveGames = OrderedSet()
+	saveGames = set()
 	for saveName in saveNames:
 		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
 		globResults = list(saves.glob(saveNameEscaped))
@@ -433,15 +439,10 @@ def auto(*args):
 		for result in results:
 			saveGames.add(result.stem)
 
-	if args.verbose > 0:
-		print(f"Will generate snapshots for : {list(saveGames)}")
+	saveGames = naturalSort(list(saveGames))
 
-	windowsPaths = [
-		"Program Files/Factorio/bin/x64/factorio.exe",
-		"Games/Factorio/bin/x64/factorio.exe",
-		"Program Files (x86)/Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-		"Steam/steamapps/common/Factorio/bin/x64/factorio.exe",
-	]
+	if args.verbose > 0:
+		print(f"Will generate snapshots for : {saveGames}")
 
 	if args.factorio:
 		possibleFactorioPaths = [args.factorio]
@@ -571,12 +572,23 @@ def auto(*args):
 						steamApiPath = Path(factorioPath, "..", "steam_api64.so")
 
 					if steamApiPath.exists():	# chances are this is a steam install..
-						if os.name == "nt":
-							steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
-						else:
-							steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
+						# try to find steam
+						try:
+							from winreg import OpenKey, HKEY_CURRENT_USER, ConnectRegistry, QueryValueEx, REG_SZ
+							
+							key = OpenKey(ConnectRegistry(None, HKEY_CURRENT_USER), r'Software\Valve\Steam')
+							val, valType = QueryValueEx(key, 'SteamExe')
+							if valType != REG_SZ:
+								raise FileNotFoundError( errno.ENOENT, os.strerror(errno.ENOENT), "SteamExe")
+							steamPath = Path(val)
+						except (ImportError, FileNotFoundError) as e:
+							# fallback to old method
+							if os.name == "nt":
+								steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
+							else:
+								steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
 						
-						if steamPath.exists(): # found a steam executable
+						if steamPath and steamPath.exists(): # found a steam executable
 							usedSteamLaunchHack = True
 							exeWithArgs = [
 								str(steamPath),
@@ -726,20 +738,6 @@ def auto(*args):
 			os.remove(os.path.join(workfolder, "mapInfo.out.json"))
 
 
-
-		print("updating labels")
-		tags = {}
-		with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
-			data = json.load(mapInfoJson)
-			for mapStuff in data["maps"]:
-				for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
-					if "tags" in surfaceStuff:
-						for tag in surfaceStuff["tags"]:
-							if "iconType" in tag:
-								tags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]] = tag
-
-		rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
-
 		modVersions = sorted(
 				map(lambda m: (m.group(2).lower(), (m.group(3), m.group(4), m.group(5), m.group(6) is None), m.group(1)),
 					filter(lambda m: m,
@@ -751,13 +749,40 @@ def auto(*args):
 
 		rawTags["__used"] = True
 		if args.tags:
-			for _, tag in tags.items():
+			print("updating labels")
+			tags = {}
+			def addTag(tags, itemType, itemName, force=False):
+				index = itemType + itemName[0].upper() + itemName[1:]
+				if index in rawTags:
+					tags[index] = {
+						"itemType": itemType,
+						"itemName": itemName,
+						"iconPath": "Images/labels/" + itemType + "/" + itemName + ".png",
+					}
+				else:
+					if force:
+						raise "tag not found."
+					else:
+						print(f"[WARNING] tag \"{index}\" not found.")
+			with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
+				data = json.load(mapInfoJson)
+				for mapStuff in data["maps"]:
+					for surfaceName, surfaceStuff in mapStuff["surfaces"].items():
+						if "tags" in surfaceStuff:
+							for tag in surfaceStuff["tags"]:
+								if "iconType" in tag:
+									addTag(tags, tag["iconType"], tag["iconName"], True)
+								if "text" in tag:
+									for match in re.finditer("\[([^=]+)=([^\]]+)", tag["text"]):
+										addTag(tags, match.group(1), match.group(2))
+
+			rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
+
+			for tagIndex, tag in tags.items():
 				dest = os.path.join(workfolder, tag["iconPath"])
 				os.makedirs(os.path.dirname(dest), exist_ok=True)
 
-
-				rawPath = rawTags[tag["iconType"] + tag["iconName"][0].upper() + tag["iconName"][1:]]
-
+				rawPath = rawTags[tagIndex]
 
 				icons = rawPath.split('|')
 				img = None

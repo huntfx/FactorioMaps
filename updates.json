@@ -68,5 +68,11 @@
         "Fix for when the CWD is different than the script directory",
         "Bugfixes :)"
     ],
-    "4.1.1": "Updated for 1.1"
+    "4.1.1": "Updated for 1.1",
+    "4.2.0": [
+        "Fix steam compatibility",
+        "Remove orderedset dependency",
+        "Add partial support for rich text in item labels",
+        "Security fix that prevents html injection"
+    ]
 }
