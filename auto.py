@@ -759,8 +759,11 @@ def auto(*args):
 						"itemName": itemName,
 						"iconPath": "Images/labels/" + itemType + "/" + itemName + ".png",
 					}
-				elif force:
-					raise "tag not found."
+				else:
+					if force:
+						raise "tag not found."
+					else:
+						print(f"[WARNING] tag \"{index}\" not found.")
 			with Path(workfolder, "mapInfo.json").open('r+', encoding='utf-8') as mapInfoJson:
 				data = json.load(mapInfoJson)
 				for mapStuff in data["maps"]:

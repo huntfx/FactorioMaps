@@ -72,7 +72,7 @@
     "4.2.0": [
         "Fix steam compatibility",
         "Remove orderedset dependency",
-        "Add support for rich text in item labels",
+        "Add partial support for rich text in item labels",
         "Security fix that prevents html injection"
     ]
 }
