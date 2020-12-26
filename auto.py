@@ -754,7 +754,6 @@ def auto(*args):
 			def addTag(tags, itemType, itemName, force=False):
 				index = itemType + itemName[0].upper() + itemName[1:]
 				if index in rawTags:
-					print("added")
 					tags[index] = {
 						"itemType": itemType,
 						"itemName": itemName,
@@ -773,8 +772,6 @@ def auto(*args):
 								if "text" in tag:
 									for match in re.finditer("\[([^=]+)=([^\]]+)", tag["text"]):
 										addTag(tags, match.group(1), match.group(2))
-
-			print(tags)
 
 			rmtree(os.path.join(workfolder, "Images", "labels"), ignore_errors=True)
 

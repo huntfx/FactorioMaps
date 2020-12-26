@@ -12,7 +12,7 @@ function prettyjson(o, i)
 	elseif type(o) == 'boolean' then
 		return o and "true" or "false"
 	else
-		return '"'..tostring(o)..'"'
+		return '"'..tostring(o):gsub('"', '\\"')..'"'
 	end
 end
 function json(o, i)
@@ -28,6 +28,6 @@ function json(o, i)
 	elseif type(o) == 'boolean' then
 		return o and "true" or "false"
 	else
-		return '"'..tostring(o)..'"'
+		return '"'..tostring(o):gsub('"', '\\"')..'"'
 	end
 end
