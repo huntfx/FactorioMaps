@@ -131,7 +131,6 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 		layer.tags.sort((a, b) => a.position.y - b.position.y);
 		const mapInfoTimeLayer = Object.values(mapInfo.maps).find(m => m.path == map.path);
 		for (const tag of layer.tags) {
-
 			let label = {
 				surface: surface,
 				path: map.path,
@@ -140,7 +139,9 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 					icon: new L.DivIcon({
 						className: 'map-tag',
 						html: 	(tag.iconPath ? '<map-marker><img src="' + tag.iconPath + '"/>' : '<map-marker class="map-marker-default">') +
-								'<span>' + tag.text + '</span></map-marker>',
+								'<span>' + tag.text.replaceAll(/</g, "&lt;").replaceAll(/>/g, "&gt;").replaceAll(/\[([^=]+)=([^\]]+)\]/g, (a, type, name) => {
+									return '<img src="Images/labels/' + type + "/" + name + '.png">';
+								}) + '</span></map-marker>',
 						iconSize: null,
 					})
 				}),
