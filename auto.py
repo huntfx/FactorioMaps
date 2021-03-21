@@ -11,11 +11,11 @@ from pkg_resources import DistributionNotFound, VersionConflict
 from pathlib import Path
 
 try:
-	with Path(__file__, "..", "packages.txt").resolve().open("r", encoding="utf-8") as f:
+	with Path(__file__, "..", "requirements.txt").resolve().open("r", encoding="utf-8") as f:
 		pkg_resources.require(f.read().splitlines())
 except (DistributionNotFound, VersionConflict) as ex:
 	traceback.print_exc()
-	print("\nDependencies not met. Run `pip install -r packages.txt` to install missing dependencies.")
+	print("\nDependencies not met. Run `pip install -r requirements.txt` to install missing dependencies.")
 	sys.exit(1)
 
 import glob
