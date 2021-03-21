@@ -419,7 +419,7 @@ def auto(*args):
 		timestamp, filePath = max(
 			(save.stat().st_mtime, save)
 			for save in saves.iterdir()
-			if save.stem not in {"_autosave1", "_autosave2", "_autosave3"}
+			if not save.stem.startswith("_autosave")
 		)
 		foldername = filePath.stem
 		print("No save name passed. Using most recent save: %s" % foldername)
