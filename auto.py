@@ -433,8 +433,7 @@ def auto(*args):
 		globResults += list(saves.glob(f"{saveNameEscaped}.zip"))
 
 		if not globResults:
-			print(f'Cannot find savefile: "{saveName}"')
-			raise ValueError(f'Cannot find savefile: "{saveName}"')
+			raise IOError(f"savefile {saveName!r} not found in '{saves!s}'")
 		results = [save for save in globResults if save.is_file()]
 		for result in results:
 			saveGames.add(result.stem)
