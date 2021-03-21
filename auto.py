@@ -388,9 +388,9 @@ def auto(*args):
 	parser.add_argument("--tag-range", type=float, default=5.2, help="The maximum range from mapview tags around which pictures are saved.")
 	parser.add_argument("--surface", action="append", default=[], help="Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: --surface nauvis --surface 'Factory floor 1'")
 	parser.add_argument("--factorio", type=lambda p: Path(p).resolve(), help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
-	parser.add_argument("--output-path", dest="basepath", type=lambda p: Path(p).resolve(), default=Path(userFolder, "script-output", "FactorioMaps"), help="path to the output folder (default is '..\\..\\script-output\\FactorioMaps')")
-	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'mods'), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
-	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), default=Path(userFolder, 'config'), help="Use PATH as the mod folder. (default is '..\\..\\config')")
+	parser.add_argument("--output-path", dest="basepath", type=lambda p: Path(p).resolve(), help="path to the output folder (default is '..\\..\\script-output\\FactorioMaps')")
+	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
+	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), help="Use PATH as the mod folder. (default is '..\\..\\config')")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument("--steam", default=0, action="store_true", help="Only use factorio binary from steam")
 	parser.add_argument("--standalone", default=0, action="store_true", help="Only use standalone factorio binary")
@@ -410,11 +410,30 @@ def auto(*args):
 	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
 
 	args = parser.parse_args()
+
 	if args.verbose > 0:
 		print(args)
 
 	if args.update:
 		checkUpdate(args.reverseupdatetest)
+
+	# Set the correct default paths for the mod and output directories,
+	# assuming a custom Factorio path means it's a portable install
+	if args.factorio is None:
+		basepath_default = Path(userFolder, "script-output", "FactorioMaps")
+		mod_path_default = Path(userFolder, "mods")
+		config_path_default = Path(userFolder, "config")
+	else:
+		factorioRoot = Path(args.factorio, "..", "..", "..").resolve()
+		basepath_default = Path(factorioRoot, "script-output", "FactorioMaps")
+		mod_path_default = Path(factorioRoot, "data", "mods")
+		config_path_default = Path(factorioRoot, "config")
+	if args.basepath is None:
+		args.basepath = basepath_default
+	if args.mod_path is None:
+		args.mod_path = mod_path_default
+	if args.config_path is None:
+		args.config_path = config_path_default
 
 	saves = Path(userFolder, "saves")
 	if args.targetname:
@@ -512,7 +531,7 @@ def auto(*args):
 
 	#TODO: integrity check, if done files aren't there or there are any bmps left, complain.
 
-	if args.mod_path.resolve() != Path(userFolder,"mods").resolve():
+	if args.mod_path.resolve() != mod_path_default.resolve():
 		linkCustomModFolder(args.mod_path)
 
 	changeModlist(args.mod_path, True)
