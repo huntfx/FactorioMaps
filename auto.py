@@ -54,7 +54,10 @@ from ref import ref
 from updateLib import update as updateLib
 from zoom import zoom, zoomRenderboxes
 
-userFolder = Path(__file__, "..", "..", "..").resolve()
+if os.name == 'nt':
+	userFolder = Path(os.getenv('APPDATA'), 'Factorio')
+else:
+	userFolder = Path(__file__, "..", "..", "..").resolve()
 
 def naturalSort(l):
 	convert = lambda text: int(text) if text.isdigit() else text.lower()
