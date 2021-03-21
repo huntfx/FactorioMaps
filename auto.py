@@ -422,63 +422,7 @@ def auto(*args):
 	if args.update:
 		checkUpdate(args.reverseupdatetest)
 
-	# Set the correct default paths for the mod and output directories,
-	# assuming a custom Factorio path means it's a portable install
-	if args.factorio is None:
-		basepath_default = Path(userFolder, "script-output", "FactorioMaps")
-		mod_path_default = Path(userFolder, "mods")
-		config_path_default = Path(userFolder, "config")
-		save_dir_default = Path(userFolder, "saves")
-	else:
-		factorioRoot = Path(args.factorio, "..", "..", "..").resolve()
-		basepath_default = Path(factorioRoot, "script-output", "FactorioMaps")
-		mod_path_default = Path(factorioRoot, "data", "mods")
-		config_path_default = Path(factorioRoot, "config")
-		save_dir_default = Path(factorioRoot, "saves")
-	if args.basepath is None:
-		args.basepath = basepath_default
-	if args.mod_path is None:
-		args.mod_path = mod_path_default
-	if args.config_path is None:
-		args.config_path = config_path_default
-	if args.save_dir is None:
-		args.save_dir = save_dir_default
-
-	if args.targetname:
-		foldername = args.targetname
-	else:
-		timestamp, filePath = max(
-			(save.stat().st_mtime, save)
-			for save in args.save_dir.iterdir()
-			if not save.stem.startswith("_autosave")
-		)
-		foldername = filePath.stem
-		print("No save name passed. Using most recent save: %s" % foldername)
-	saveNames = args.savename or [foldername]
-	foldername = foldername.replace('*', '').replace('?', '')
-
-	saveGames = set()
-	for saveName in saveNames:
-		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
-		try:
-			globResults = list(args.save_dir.glob(saveNameEscaped))
-			globResults += list(args.save_dir.glob(f"{saveNameEscaped}.zip"))
-		except NotImplementedError:
-			if os.path.isabs(saveName):
-				raise RuntimeError('save file must be relative, use --save-path to set a custom directory')
-			raise
-
-		if not globResults:
-			raise IOError(f"savefile {saveName!r} not found in '{args.save_dir!s}'")
-		results = [save for save in globResults if save.is_file()]
-		for result in results:
-			saveGames.add(result.stem)
-
-	saveGames = naturalSort(list(saveGames))
-
-	if args.verbose > 0:
-		print(f"Will generate snapshots for : {saveGames}")
-
+	# Get the factorio executable
 	if args.factorio:
 		possibleFactorioPaths = [args.factorio]
 	else:
@@ -516,6 +460,57 @@ def auto(*args):
 		)
 
 	print("factorio path: {}".format(factorioPath))
+
+	# Set default directories
+	rootDir = Path(__file__, "..", "..", "..").resolve()
+	basepath_default = Path(rootDir, "script-output", "FactorioMaps")
+	mod_path_default = Path(rootDir, "mods")
+	config_path_default = Path(rootDir, "config")
+	save_dir_default = Path(rootDir, "saves")
+	if args.basepath is None:
+		args.basepath = basepath_default
+	if args.mod_path is None:
+		args.mod_path = mod_path_default
+	if args.config_path is None:
+		args.config_path = config_path_default
+	if args.save_dir is None:
+		args.save_dir = save_dir_default
+
+	# Find the saves
+	if args.targetname:
+		foldername = args.targetname
+	else:
+		timestamp, filePath = max(
+			(save.stat().st_mtime, save)
+			for save in args.save_dir.iterdir()
+			if not save.stem.startswith("_autosave")
+		)
+		foldername = filePath.stem
+		print("No save name passed. Using most recent save: %s" % foldername)
+	saveNames = args.savename or [foldername]
+	foldername = foldername.replace('*', '').replace('?', '')
+
+	saveGames = set()
+	for saveName in saveNames:
+		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
+		try:
+			globResults = list(args.save_dir.glob(saveNameEscaped))
+			globResults += list(args.save_dir.glob(f"{saveNameEscaped}.zip"))
+		except NotImplementedError:
+			if os.path.isabs(saveName):
+				raise RuntimeError('save file must be relative, use --save-path to set a custom directory')
+			raise
+
+		if not globResults:
+			raise IOError(f"savefile {saveName!r} not found in '{args.save_dir!s}'")
+		results = [save for save in globResults if save.is_file()]
+		for result in results:
+			saveGames.add(result.stem)
+
+	saveGames = naturalSort(list(saveGames))
+
+	if args.verbose > 0:
+		print(f"Will generate snapshots for : {saveGames}")
 
 	psutil.Process(os.getpid()).nice(psutil.ABOVE_NORMAL_PRIORITY_CLASS if os.name == 'nt' else 5)
 
