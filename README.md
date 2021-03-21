@@ -45,8 +45,9 @@ Heres a list of flags that `auto.py` can accept:
 | `--tag-range=5.2`*\** | The maximum range from mapview tags around which pictures are saved. |
 | `--surface=nauvis` | Used to capture other surfaces. If left empty, the surface the player is standing on will be used. To capture multiple surfaces, use the argument multiple times: `--surface=nauvis --surface="Factory floor 1"`. To find out the names of surfaces, use the command `/c for _,s in pairs(game.surfaces) do game.print(s.name) end`. |
 | `--factorio=PATH` | Use `factorio.exe` from *PATH* instead of attempting to find it in common locations. |
-| `--modpath=PATH` | Use *PATH* as the mod folder. |
+| `--mod-path=PATH` | Use *PATH* as the mod folder. |
 | `--basepath=RELPATH` | Output to `script-output\RELPATH` instead of `script-output\FactorioMaps`. (Factorio cannot output outside of `script-output`) |
+| `--save-dir=PATH` | Look in *PATH* for the saves. |
 | `--date=dd/mm/yy` | Date attached to the snapshot, default is today. |
 | `--steam` | Only use factorio binary from steam. |
 | `--standalone` | Only use standalone factorio binary. |
@@ -61,6 +62,7 @@ Heres a list of flags that `auto.py` can accept:
 | `--delete` | Deletes the output folder specified before running the script. |
 | `--dry` | Skips starting factorio, making screenshots and doing the main steps, only execute setting up and finishing of script. |
 | `--force-lib-update` | Forces an update of the web dependencies. |
+| `--temp-dir=PATH` | Use *PATH* as a temporary directory. This is only needed if the current temporary directory is on a RAM disk, which Factorio does not support. |
 
 Image quality settings can be changed in the top of `zoom.py`.
 
