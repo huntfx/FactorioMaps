@@ -394,6 +394,7 @@ def auto(*args):
 	parser.add_argument("--output-path", dest="basepath", type=lambda p: Path(p).resolve(), help="path to the output folder (default is '..\\..\\script-output\\FactorioMaps')")
 	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
 	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), help="Use PATH as the mod folder. (default is '..\\..\\config')")
+	parser.add_argument("--save-dir", "--savedir", type=lambda p: Path(p).resolve(), help="Point to the save folder. (default is '..\\..\\saves')")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument("--steam", default=0, action="store_true", help="Only use factorio binary from steam")
 	parser.add_argument("--standalone", default=0, action="store_true", help="Only use standalone factorio binary")
@@ -427,25 +428,28 @@ def auto(*args):
 		basepath_default = Path(userFolder, "script-output", "FactorioMaps")
 		mod_path_default = Path(userFolder, "mods")
 		config_path_default = Path(userFolder, "config")
+		save_dir_default = Path(userFolder, "saves")
 	else:
 		factorioRoot = Path(args.factorio, "..", "..", "..").resolve()
 		basepath_default = Path(factorioRoot, "script-output", "FactorioMaps")
 		mod_path_default = Path(factorioRoot, "data", "mods")
 		config_path_default = Path(factorioRoot, "config")
+		save_dir_default = Path(factorioRoot, "saves")
 	if args.basepath is None:
 		args.basepath = basepath_default
 	if args.mod_path is None:
 		args.mod_path = mod_path_default
 	if args.config_path is None:
 		args.config_path = config_path_default
+	if args.save_dir is None:
+		args.save_dir = save_dir_default
 
-	saves = Path(userFolder, "saves")
 	if args.targetname:
 		foldername = args.targetname
 	else:
 		timestamp, filePath = max(
 			(save.stat().st_mtime, save)
-			for save in saves.iterdir()
+			for save in args.save_dir.iterdir()
 			if not save.stem.startswith("_autosave")
 		)
 		foldername = filePath.stem
@@ -456,11 +460,16 @@ def auto(*args):
 	saveGames = set()
 	for saveName in saveNames:
 		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
-		globResults = list(saves.glob(saveNameEscaped))
-		globResults += list(saves.glob(f"{saveNameEscaped}.zip"))
+		try:
+			globResults = list(args.save_dir.glob(saveNameEscaped))
+			globResults += list(args.save_dir.glob(f"{saveNameEscaped}.zip"))
+		except NotImplementedError:
+			if os.path.isabs(saveName):
+				raise RuntimeError('save file must be relative, use --save-path to set a custom directory')
+			raise
 
 		if not globResults:
-			raise IOError(f"savefile {saveName!r} not found in '{saves!s}'")
+			raise IOError(f"savefile {saveName!r} not found in '{args.save_dir!s}'")
 		results = [save for save in globResults if save.is_file()]
 		for result in results:
 			saveGames.add(result.stem)
