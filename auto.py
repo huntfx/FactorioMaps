@@ -22,6 +22,7 @@ import glob
 import argparse
 import configparser
 import datetime
+import errno
 import json
 import math
 import multiprocessing as mp
@@ -578,7 +579,7 @@ def auto(*args):
 							key = OpenKey(ConnectRegistry(None, HKEY_CURRENT_USER), r'Software\Valve\Steam')
 							val, valType = QueryValueEx(key, 'SteamExe')
 							if valType != REG_SZ:
-								raise FileNotFoundError( errno.ENOENT, os.strerror(errno.ENOENT), "SteamExe")
+								raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), "SteamExe")
 							steamPath = Path(val)
 						except (ImportError, FileNotFoundError) as e:
 							# fallback to old method
