@@ -408,6 +408,7 @@ def auto(*args):
 	parser.add_argument("targetname", nargs="?", help="output folder name for the generated snapshots.")
 	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated. Glob patterns are supported.")
 	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
+	parser.add_argument('--temp-dir', type=lambda p: Path(p).resolve(), help="Set a temporary directory to use (default is '%TEMP%')")
 
 	args = parser.parse_args()
 
@@ -576,7 +577,12 @@ def auto(*args):
 				buildAutorun(args, workfolder, foldername, isFirstSnapshot, setDaytime)
 				isFirstSnapshot = False
 
-				with TemporaryDirectory(prefix="FactorioMaps-") as tmpDir:
+				if args.temp_dir is not None:
+					try:
+						os.makedirs(args.temp_dir)
+					except OSError:
+						pass
+				with TemporaryDirectory(prefix="FactorioMaps-", dir=args.temp_dir) as tmpDir:
 					configPath = buildConfig(args, tmpDir, args.basepath)
 
 					pid = None
