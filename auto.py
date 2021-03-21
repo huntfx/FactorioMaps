@@ -456,22 +456,14 @@ def auto(*args):
 	saveGames = set()
 	for saveName in saveNames:
 		saveNameEscaped = glob.escape(saveName).replace("[*]", "*")
+		globResults = list(saves.glob(saveNameEscaped))
+		globResults += list(saves.glob(f"{saveNameEscaped}.zip"))
 
-		# Absolute save paths
-		if os.path.isabs(saveName):
-			saveGames.update(glob.glob(saveNameEscaped))
-			saveGames.update(glob.glob(f"{saveNameEscaped}.zip"))
-
-		# Relative save paths
-		else:
-			globResults = list(saves.glob(saveNameEscaped))
-			globResults += list(saves.glob(f"{saveNameEscaped}.zip"))
-
-			if not globResults:
-				raise IOError(f"savefile {saveName!r} not found in '{saves!s}'")
-			results = [save for save in globResults if save.is_file()]
-			for result in results:
-				saveGames.add(result.stem)
+		if not globResults:
+			raise IOError(f"savefile {saveName!r} not found in '{saves!s}'")
+		results = [save for save in globResults if save.is_file()]
+		for result in results:
+			saveGames.add(result.stem)
 
 	saveGames = naturalSort(list(saveGames))
 
