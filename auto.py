@@ -520,7 +520,7 @@ def auto(*args):
 
 	workthread = None
 
-	workfolder = Path(args.basepath, os.path.basename(foldername)).resolve()
+	workfolder = Path(args.basepath, foldername).resolve()
 	try:
 		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
 	except ValueError:
