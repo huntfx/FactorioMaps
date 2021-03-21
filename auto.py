@@ -83,7 +83,10 @@ def startGameAndReadGameLogs(results, condition, exeWithArgs, isSteam, tmpDir, p
 	prevPrinted = False
 	def handleGameLine(line, isFirst):
 		if isFirst and not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
-			raise Exception("Unrecognised output from factorio (maybe your version is outdated or too new?)\n\nOutput from factorio:\n" + line)
+			suggestion = "maybe your version is outdated or too new?"
+			if line.endswith('Error Util.cpp:83: weakly_canonical: Incorrect function.'):
+				suggestion = "maybe your temp directory is on a ramdisk?"
+			raise RuntimeError(f"Unrecognised output from factorio ({suggestion})\n\nOutput from factorio:\n{line}")
 
 		nonlocal prevPrinted
 		line = line.rstrip('\n')
@@ -408,7 +411,7 @@ def auto(*args):
 	parser.add_argument("targetname", nargs="?", help="output folder name for the generated snapshots.")
 	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated. Glob patterns are supported.")
 	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
-	parser.add_argument('--temp-dir', type=lambda p: Path(p).resolve(), help="Set a temporary directory to use (default is '%TEMP%')")
+	parser.add_argument('--temp-dir', type=lambda p: Path(p).resolve(), help="Use a custom temporary directory if the default is on a ramdisk")
 
 	args = parser.parse_args()
 
@@ -599,6 +602,7 @@ def auto(*args):
 						"--mod-directory",str(args.mod_path.absolute()),
 						"--disable-migration-window"
 					]
+					print(factorioPath, ' '.join(launchArgs))
 
 					usedSteamLaunchHack = False
 
