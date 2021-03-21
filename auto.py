@@ -54,10 +54,6 @@ from ref import ref
 from updateLib import update as updateLib
 from zoom import zoom, zoomRenderboxes
 
-if os.name == 'nt':
-	userFolder = Path(os.getenv('APPDATA'), 'Factorio')
-else:
-	userFolder = Path(__file__, "..", "..", "..").resolve()
 
 def naturalSort(l):
 	convert = lambda text: int(text) if text.isdigit() else text.lower()
@@ -353,7 +349,7 @@ def buildConfig(args: Namespace, tmpDir, basepath):
 		configFile.writelines(("; version=3\n", ))
 		config.write(configFile, space_around_delimiters=False)
 
-	copy(Path(userFolder, 'player-data.json'), tmpDir)
+	copy(str(args.player_data_path.absolute()), tmpDir)
 
 	return configPath
 
@@ -393,7 +389,7 @@ def auto(*args):
 	parser.add_argument("--factorio", type=lambda p: Path(p).resolve(), help="Use factorio.exe from PATH instead of attempting to find it in common locations.")
 	parser.add_argument("--output-path", dest="basepath", type=lambda p: Path(p).resolve(), help="path to the output folder (default is '..\\..\\script-output\\FactorioMaps')")
 	parser.add_argument("--mod-path", "--modpath", type=lambda p: Path(p).resolve(), help="Use PATH as the mod folder. (default is '..\\..\\mods')")
-	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), help="Use PATH as the mod folder. (default is '..\\..\\config')")
+	parser.add_argument("--config-path", type=lambda p: Path(p).resolve(), help="Use PATH as the config folder. (default is '..\\..\\config')")
 	parser.add_argument("--save-dir", "--savedir", type=lambda p: Path(p).resolve(), help="Point to the save folder. (default is '..\\..\\saves')")
 	parser.add_argument("--date", default=datetime.date.today().strftime("%d/%m/%y"), help="Date attached to the snapshot, default is today. [dd/mm/yy]")
 	parser.add_argument("--steam", default=0, action="store_true", help="Only use factorio binary from steam")
@@ -413,6 +409,8 @@ def auto(*args):
 	parser.add_argument("savename", nargs="*", help="Names of the savegames to generate snapshots from. If no savegames are provided the latest save or the save matching outfolder will be gerated. Glob patterns are supported.")
 	parser.add_argument("--force-lib-update", action="store_true", help="Forces an update of the web dependencies.")
 	parser.add_argument('--temp-dir', type=lambda p: Path(p).resolve(), help="Use a custom temporary directory if the default is on a ramdisk")
+	parser.add_argument('--player-data-path', type=lambda p: Path(p).resolve(), help="Use PATH as the player-data.json file. (default is '..\\..\\player-data.json')")
+
 
 	args = parser.parse_args()
 
@@ -467,6 +465,7 @@ def auto(*args):
 	mod_path_default = Path(rootDir, "mods")
 	config_path_default = Path(rootDir, "config")
 	save_dir_default = Path(rootDir, "saves")
+	player_data_default = Path(rootDir, "player-data.json")
 	if args.basepath is None:
 		args.basepath = basepath_default
 	if args.mod_path is None:
@@ -475,6 +474,8 @@ def auto(*args):
 		args.config_path = config_path_default
 	if args.save_dir is None:
 		args.save_dir = save_dir_default
+	if args.player_data_path is None:
+		args.player_data_path = player_data_default
 
 	# Find the saves
 	if args.targetname:
@@ -517,10 +518,7 @@ def auto(*args):
 	workthread = None
 
 	workfolder = Path(args.basepath, foldername).resolve()
-	try:
-		print("output folder: {}".format(workfolder.relative_to(Path(userFolder))))
-	except ValueError:
-		print("output folder: {}".format(workfolder.resolve()))
+	print("output folder: {}".format(workfolder.resolve()))
 
 	try:
 		workfolder.mkdir(parents=True, exist_ok=True)
@@ -591,7 +589,7 @@ def auto(*args):
 
 					launchArgs = [
 						'--load-game',
-						str(Path(userFolder, 'saves', savename).absolute()),
+						str(Path(args.save_dir, savename).absolute()),
 						'--disable-audio',
 						'--config',
 						str(configPath),
