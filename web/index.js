@@ -550,7 +550,7 @@ if (layersByTimestamp.length > 1 && true) {
 	let timeLabels = layersByTimestamp.map(function(layer, i) {
 		return {
 			name: mapInfo.maps[i].path + "h",
-			position: max == min ? i / (layersByTimestamp.length - 1) : i * 30/sliderHeight + (parseInt(mapInfo.maps[i].path) - min) / (max - min) * (1 - (layersByTimestamp.length - 1) * 30/sliderHeight),
+			position: max == min || layersByTimestamp.length * 30/sliderHeight > 1 ? i / (layersByTimestamp.length - 1) : i * 30/sliderHeight + (parseInt(mapInfo.maps[i].path) - min) / (max - min) * (1 - (layersByTimestamp.length - 1) * 30/sliderHeight),
 			layers: Object.values(layer).map(s => ["day", "night"].map(n => s[n]).filter(l => l)).flat()
 		}
 	});
