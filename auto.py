@@ -438,7 +438,7 @@ def auto(*args):
 
 		if not globResults:
 			print(f'Cannot find savefile: "{saveName}"')
-			raise ValueError(f'Cannot find savefile: "{saveName}"')
+			raise IOError(f"savefile {saveName!r} not found in {str(saves)!r}")
 		results = [save for save in globResults if save.is_file()]
 		for result in results:
 			saveGames.add(result.stem)
