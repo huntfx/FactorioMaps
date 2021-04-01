@@ -79,7 +79,10 @@ def startGameAndReadGameLogs(results, condition, exeWithArgs, isSteam, tmpDir, p
 	prevPrinted = False
 	def handleGameLine(line, isFirst):
 		if isFirst and not re.match(r'^ *\d+\.\d{3} \d{4}-\d\d-\d\d \d\d:\d\d:\d\d; Factorio (\d+\.\d+\.\d+) \(build (\d+), [^)]+\)$', line):
-			raise Exception("Unrecognised output from factorio (maybe your version is outdated or too new?)\n\nOutput from factorio:\n" + line)
+			suggestion = "maybe your version is outdated or too new?"
+			if line.endswith('Error Util.cpp:83: weakly_canonical: Incorrect function.'):
+				suggestion = "maybe your temp directory is on a ramdisk?"
+			raise RuntimeError(f"Unrecognised output from factorio ({suggestion})\n\nOutput from factorio:\n{line}")
 
 		nonlocal prevPrinted
 		line = line.rstrip('\n')
