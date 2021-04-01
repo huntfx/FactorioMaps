@@ -42,7 +42,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 	for (const surface of Object.keys(map.surfaces)) {
 		let layer = map.surfaces[surface];
 
-		
+
 		if (!layer.captured)
 			continue;
 
@@ -71,7 +71,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 
 			console.assert(row.length % 3 == 0); //corrupted data, prevent infinite loop
 			let j = 3, y = B64Parse(0) - 2**17;
-			
+
 			if (!globalTileNightIndex[surface][layer.zoom.max][y]){
 				globalTileNightIndex[surface][layer.zoom.max][y] = {};
 				globalTileIndex[surface][layer.zoom.max][y] = {};
@@ -127,7 +127,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 		layersByTimestamp[i][surface] = {};
 		map.surfaces[surface].layers = {};
 
-		
+
 		layer.tags.sort((a, b) => a.position.y - b.position.y);
 		const mapInfoTimeLayer = Object.values(mapInfo.maps).find(m => m.path == map.path);
 		for (const tag of layer.tags) {
@@ -185,7 +185,7 @@ for (let i = 0; i < mapInfo.maps.length; i++) {
 				});
 			}
 			marker.link = link;
-			
+
 			if (subMarkers) {
 				subMarkers.push(marker);
 			} else {
@@ -320,7 +320,7 @@ function updateLabels() {
 							}
 						}
 						break;
-					
+
 				}
 		} else if (!shouldBeVisible && label.visible)
 			for (const marker of [label.marker, ...label.subMarkers || []])
@@ -442,7 +442,7 @@ try {
 			timestamp = split[6];
 			if (!isNaN(parseInt(split[7])))
 				timestamp += "-" + split[7];
-		}		
+		}
 	}
 } catch (_) {
 		window.location.href = "#";
@@ -556,7 +556,7 @@ if (layersByTimestamp.length > 1 && true) {
 	});
 
 
-	
+
 	let initialTime;
 	for (let i = 0; i < timeLabels.length; i++) {
 		if (parseFloat(timestamp) < parseInt(timeLabels[i].name)) {

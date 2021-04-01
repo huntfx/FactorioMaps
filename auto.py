@@ -55,9 +55,9 @@ from zoom import zoom, zoomRenderboxes
 
 userFolder = Path(__file__, "..", "..", "..").resolve()
 
-def naturalSort(l): 
-	convert = lambda text: int(text) if text.isdigit() else text.lower() 
-	alphanum_key = lambda key: [ convert(c) for c in re.split('(\d+)', key) ] 
+def naturalSort(l):
+	convert = lambda text: int(text) if text.isdigit() else text.lower()
+	alphanum_key = lambda key: [ convert(c) for c in re.split('(\d+)', key) ]
 	return sorted(l, key = alphanum_key)
 
 def printErase(arg):
@@ -89,7 +89,7 @@ def startGameAndReadGameLogs(results, condition, exeWithArgs, isSteam, tmpDir, p
 			return
 
 		prevPrinted = False
-	
+
 		m = re.match(r'^\ *\d+(?:\.\d+)? *Script *@__L0laapk3_FactorioMaps__\/data-final-fixes\.lua:\d+: FactorioMaps_Output_RawTagPaths:([^:]+):(.*)$', line, re.IGNORECASE)
 		if m is not None:
 			rawTags[m.group(1)] = m.group(2)
@@ -114,10 +114,10 @@ def startGameAndReadGameLogs(results, condition, exeWithArgs, isSteam, tmpDir, p
 
 
 	with os.fdopen(pipeOut, 'r') as pipef:
-		
+
 		if isSteam:
 			printErase("using steam launch hack.")
-			
+
 			attrs = ('pid', 'name', 'create_time')
 
 			# on some devices, the previous check wasn't enough apparently, so explicitely wait until the log file is created.
@@ -467,7 +467,7 @@ def auto(*args):
 			possibleFactorioPaths += [ drive + path for drive in availableDrives for path in windowsPathsStandalone ]
 		if args.standalone == 0:
 			possibleFactorioPaths += [ drive + path for drive in availableDrives for path in windowsPathsSteam ]
-			
+
 	try:
 		factorioPath = next(
 			x
@@ -575,7 +575,7 @@ def auto(*args):
 						# try to find steam
 						try:
 							from winreg import OpenKey, HKEY_CURRENT_USER, ConnectRegistry, QueryValueEx, REG_SZ
-							
+
 							key = OpenKey(ConnectRegistry(None, HKEY_CURRENT_USER), r'Software\Valve\Steam')
 							val, valType = QueryValueEx(key, 'SteamExe')
 							if valType != REG_SZ:
@@ -587,7 +587,7 @@ def auto(*args):
 								steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam.exe")
 							else:
 								steamPath = Path(factorioPath, "..", "..", "..", "..", "..", "..", "steam")
-						
+
 						if steamPath and steamPath.exists(): # found a steam executable
 							usedSteamLaunchHack = True
 							exeWithArgs = [
